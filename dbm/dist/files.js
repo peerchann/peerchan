@@ -121,11 +121,8 @@ let FileDatabase = class FileDatabase extends Program {
         // this.documents = new Documents({ index: new DocumentIndex({ indexBy: '_id' }) })s
     }
     async open() {
-        // try {
+        //for some reason this proceeds to the next without finishing so it has to be delclared elsewhere (in .db .ts) //todo: revisit
         // 	await this.chunks.open();
-        // } catch (err) {
-        // 	console.log('file chunk database already open')
-        // }
         await this.files.open({
             type: File,
             index: { key: 'hash' },

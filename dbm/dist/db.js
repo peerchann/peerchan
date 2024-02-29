@@ -115,7 +115,7 @@ export async function delPost(whichPost, whichBoard) {
     if (!whichBoard) {
         throw new Error('No board specified.');
     }
-    let theseReplies = await openedBoards[whichBoard].documents.index.search(new SearchRequest({ query: [new StringMatch({ key: 'replyto', value: whichPost })] }), { local: true, remote: false });
+    let theseReplies = await openedBoards[whichBoard].documents.index.search(new SearchRequest({ query: [new StringMatch({ key: 'replyto', value: whichPost })] }), { local: true, remote: true });
     //delete post itself
     await openedBoards[whichBoard].documents.del(whichPost); //todo: need to return id?
     //then delete replies
@@ -130,12 +130,12 @@ export async function getAllPosts(query = {}) {
     //todo: add query?
     let results = [];
     for (let thisBoard of Object.keys(openedBoards)) {
-        results = results.concat(await openedBoards[thisBoard].documents.index.search(new SearchRequest, { local: true, remote: false }));
+        results = results.concat(await openedBoards[thisBoard].documents.index.search(new SearchRequest, { local: true, remote: true }));
     }
     // Sort the results by the 'date' property in descending order
     results.sort((a, b) => (a.date < b.date) ? -1 : ((a.date > b.date) ? 1 : 0)); //newest on top
     return results;
-    //return await Posts.documents.index.search(new SearchRequest, { local: true, remote: false });
+    //return await Posts.documents.index.search(new SearchRequest, { local: true, remote: true });
 }
 //todo: revisit remote
 //todo: revisit async
@@ -144,11 +144,11 @@ export async function getPosts(whichBoard) {
         throw new Error('No board specified.');
     }
     //todo: add query?
-    let results = await openedBoards[whichBoard].documents.index.search(new SearchRequest, { local: true, remote: false });
+    let results = await openedBoards[whichBoard].documents.index.search(new SearchRequest, { local: true, remote: true });
     // Sort the results by the 'date' property in descending order
     results.sort((a, b) => (a.date < b.date) ? -1 : ((a.date > b.date) ? 1 : 0)); //newest on top
     return results;
-    //return await Posts.documents.index.search(new SearchRequest, { local: true, remote: false });
+    //return await Posts.documents.index.search(new SearchRequest, { local: true, remote: true });
 }
 //todo: add sage
 //todo: optimize (less redundant queries, attach replies and omittedreplies counts to the threads themseleves)
@@ -156,10 +156,10 @@ export async function getThreadsWithReplies(whichBoard, numThreads = 10, numPrev
     if (!whichBoard) {
         throw new Error('No board specified.');
     }
-    let threads = await openedBoards[whichBoard].documents.index.search(new SearchRequest({ query: [new MissingField({ key: 'replyto' })] }), { local: true, remote: false });
+    let threads = await openedBoards[whichBoard].documents.index.search(new SearchRequest({ query: [new MissingField({ key: 'replyto' })] }), { local: true, remote: true });
     let lastbumps = new Array(threads.length);
     for (let i = 0; i < threads.length; i++) {
-        let thesereplies = await openedBoards[whichBoard].documents.index.search(new SearchRequest({ query: [new StringMatch({ key: 'replyto', value: threads[i]['hash'] })] }), { local: true, remote: false });
+        let thesereplies = await openedBoards[whichBoard].documents.index.search(new SearchRequest({ query: [new StringMatch({ key: 'replyto', value: threads[i]['hash'] })] }), { local: true, remote: true });
         threads[i].lastbumped = thesereplies.reduce((max, reply) => reply.date > max ? reply.date : max, threads[i].date);
     }
     // Sort the results by the 'date' property in descending order
@@ -171,7 +171,7 @@ export async function getThreadsWithReplies(whichBoard, numThreads = 10, numPrev
     let replies = new Array(threads.length);
     let omittedreplies = new Array(threads.length);
     for (let i = 0; i < threads.length; i++) {
-        let thesereplies = await openedBoards[whichBoard].documents.index.search(new SearchRequest({ query: [new StringMatch({ key: 'replyto', value: threads[i]['hash'] })] }), { local: true, remote: false });
+        let thesereplies = await openedBoards[whichBoard].documents.index.search(new SearchRequest({ query: [new StringMatch({ key: 'replyto', value: threads[i]['hash'] })] }), { local: true, remote: true });
         thesereplies.sort((a, b) => (a.date < b.date) ? -1 : ((a.date > b.date) ? 1 : 0)); //newest on bottom
         omittedreplies[i] = Math.max(0, thesereplies.length - numPreviewPostsPerThread);
         replies[i] = thesereplies.slice(-numPreviewPostsPerThread);
@@ -185,7 +185,7 @@ export async function getThreadsWithReplies_prev(whichBoard, numThreads = 10, nu
     if (!whichBoard) {
         throw new Error('No board specified.');
     }
-    let threads = await openedBoards[whichBoard].documents.index.search(new SearchRequest({ query: [new MissingField({ key: 'replyto' })] }), { local: true, remote: false });
+    let threads = await openedBoards[whichBoard].documents.index.search(new SearchRequest({ query: [new MissingField({ key: 'replyto' })] }), { local: true, remote: true });
     // Sort the results by the 'date' property in descending order
     threads.sort((a, b) => (a.date > b.date) ? -1 : ((a.date < b.date) ? 1 : 0)); //newest on top
     // Return only the 10 newest results
@@ -193,7 +193,7 @@ export async function getThreadsWithReplies_prev(whichBoard, numThreads = 10, nu
     let replies = new Array(threads.length);
     let omittedreplies = new Array(threads.length);
     for (let i = 0; i < threads.length; i++) {
-        let thesereplies = await openedBoards[whichBoard].documents.index.search(new SearchRequest({ query: [new StringMatch({ key: 'replyto', value: threads[i]['hash'] })] }), { local: true, remote: false });
+        let thesereplies = await openedBoards[whichBoard].documents.index.search(new SearchRequest({ query: [new StringMatch({ key: 'replyto', value: threads[i]['hash'] })] }), { local: true, remote: true });
         thesereplies.sort((a, b) => (a.date < b.date) ? -1 : ((a.date > b.date) ? 1 : 0)); //newest on bottom
         omittedreplies[i] = Math.max(0, thesereplies.length - numPreviewPostsPerThread);
         replies[i] = thesereplies.slice(-numPreviewPostsPerThread);
@@ -211,10 +211,10 @@ export async function getSpecificPost(whichBoard, whichThread) {
         throw new Error('No thread specified.');
     }
     //todo: add query?
-    let results = await openedBoards[whichBoard].documents.index.search(new SearchRequest({ query: [new StringMatch({ key: 'hash', value: whichThread })] }), { local: true, remote: false });
+    let results = await openedBoards[whichBoard].documents.index.search(new SearchRequest({ query: [new StringMatch({ key: 'hash', value: whichThread })] }), { local: true, remote: true });
     return results;
     // return results.length ? results[0] : []
-    //return await Posts.documents.index.search(new SearchRequest, { local: true, remote: false });
+    //return await Posts.documents.index.search(new SearchRequest, { local: true, remote: true });
 }
 //todo: revisit remote
 //todo: revisit async
@@ -226,10 +226,10 @@ export async function getRepliesToSpecificPost(whichBoard, whichThread) {
         throw new Error('No thread specified.');
     }
     //todo: add query?
-    let results = await openedBoards[whichBoard].documents.index.search(new SearchRequest({ query: [new StringMatch({ key: 'replyto', value: whichThread })] }), { local: true, remote: false });
+    let results = await openedBoards[whichBoard].documents.index.search(new SearchRequest({ query: [new StringMatch({ key: 'replyto', value: whichThread })] }), { local: true, remote: true });
     results.sort((a, b) => (a.date < b.date) ? -1 : ((a.date > b.date) ? 1 : 0)); //newest on bottom
     return results;
-    //return await Posts.documents.index.search(new SearchRequest, { local: true, remote: false });
+    //return await Posts.documents.index.search(new SearchRequest, { local: true, remote: true });
 }
 export async function putFile(fileData) {
     let fileDocument = await new File(fileData);
@@ -276,7 +276,7 @@ export async function fileExists(fileHash) {
 //todo: need to get this also deleting the file chunks whenever anyone deletes, not just us
 export async function delFile(fileHash) {
     //todo:
-    // let foundResults = await Files.files.index.search(new SearchRequest({ query: [new StringMatch({key: 'hash', value: fileHash })] }), { local: true, remote: false }).then(results => results[0])
+    // let foundResults = await Files.files.index.search(new SearchRequest({ query: [new StringMatch({key: 'hash', value: fileHash })] }), { local: true, remote: true }).then(results => results[0])
     //first delete all the chunks of the file we may have
     // for (let chunkCid in foundResults.chunkCids) {
     // 	await FileChunks.documents.del(chunkCid)
@@ -296,7 +296,7 @@ export async function delFile(fileHash) {
     // let chunksOfFile: Results<PeerchanFileChunk> | undefined;
     // await FileChunks.documents.index.query(new SearchRequest({ queries: [new StringMatch({key: 'fileHash', value: fileHash })] }), (results, from) => {
     // 	chunksOfFile = results
-    // }, { local: true, remote: false }) //todo: revisit remote search here and elsewhere
+    // }, { local: true, remote: true }) //todo: revisit remote search here and elsewhere
     // console.log("chunksOfFile to delete:")
     // console.log(chunksOfFile)
     // if (chunksOfFile) {
