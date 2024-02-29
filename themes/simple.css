@@ -43,8 +43,7 @@ p {
   margin-bottom: 5px; /* Add margin between posts */
   margin-top: 5px; /* Add margin between posts */
   box-shadow: 0px 0px 0px 2px rgba(0, 0, 0, 0.2); /* Add clean offset drop shadow */
-  width: 100%; /* Expand to full width */
-  max-width: 100vw; /* Limit to viewport width */
+  max-width: calc(100vw - 300px);  Limit to viewport width */
 }
 
 .post_reply {
@@ -52,7 +51,9 @@ p {
   display: inline-block; /* Set display to block to make replies appear on new lines */
   padding: 10px; /* Add padding for spacing */
   margin-bottom: 5px; /* Add margin between posts */
+  margin-top: 5px; /* Add margin between posts */
   box-shadow: 0px 0px 0px 2px rgba(0, 0, 0, 0.2); /* Add clean offset drop shadow */
+  max-width: calc(100vw - 300px); /* Limit to viewport width */
 }
 
 .wrapper {
