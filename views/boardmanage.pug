@@ -1,0 +1,17 @@
+extends home.pug
+
+block content
+  h2 Add Watched Board
+  form(action="/addWatchedBoard" method="POST")
+    label(for="boardId") Board ID: &nbsp;
+    input(type="text" id="boardId" name="boardId")
+    |  
+    button(type="submit", class="sidebarbutton") Add
+
+  h2 Currently Watched Boards
+  each board, index in watchedBoards
+    div.watched-board
+      a(href=`/${board}/index.html`, style="display:inline-block;") #{board}
+      form(action="/removeWatchedBoard" method="POST", style="display:inline-block; margin-left: 5px;")
+        input(type="hidden" name="boardId" value=board)
+        button(type="submit", class="delete-link") X

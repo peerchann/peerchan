@@ -1,0 +1,8 @@
+{
+	"browserPort": 8000,
+	"browserHost": "127.0.0.1",
+	"peerbitPort": 8500,
+	"threadsPerPage": 5,
+	"previewReplies": 3,
+	"defaultName": "Anonymous"
+}

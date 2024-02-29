@@ -1,0 +1,20 @@
+extends home.pug
+
+block content
+  h2 #{currentBoard} 
+  include pagelinks.pug
+  each post in posts
+    -var item = post
+    hr.dividing-line
+    div
+      include post.pug
+      if indexMode && post.omittedreplies
+        div
+          .omittedreplies #{post.omittedreplies} #{post.omittedreplies > 1 ? "replies" : "reply"} omitted, click Reply to view.
+      if post.replies && post.replies.length > 0
+        each reply in post.replies
+          - item = reply
+          div
+            include post.pug
+  hr.dividing-line
+  include pagelinks.pug

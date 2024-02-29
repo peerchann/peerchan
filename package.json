@@ -1,0 +1,19 @@
+{
+  "name": "Gladden",
+  "version": "0.0.0",
+  "description": "Distributed imageboard browsing.",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "build": "cd dbm && yarn install && cd .. && yarn install",
+    "start": "node server.js"
+  },
+  "author": "threshold",
+  "license": "AGPL-3.0-only",
+  "dependencies": {
+    "express": "^4.18.2",
+    "multer": "^1.4.5-lts.1",
+    "open": "^10.0.3",
+    "pug": "^3.0.2"
+  }
+}

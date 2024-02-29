@@ -1,0 +1,30 @@
+// Display filename, size, and hash
+p.embedded-info
+  a(href=`/download/file/${file.hash}.${file.extension}`, download=file.filename) #{file.filename}
+  | , Size: #{formatFileSize(file.size)} 
+
+if file.fileStatus
+  // Display image if file is an image
+  if ['png', 'gif', 'jpg'].includes(file.extension.toLowerCase())
+    // Add a container div to hold the image
+    div.embedded-image-container
+      img(src=`/download/file/${file.hash}.${file.extension}`, alt=file.filename, class="embedded-image", onclick="expandImage(this)")
+  else
+    a(href=`/download/file/${file.hash}.${file.extension}`, download=file.filename)
+      span.file-icon 🗎
+
+  // JavaScript function to toggle image size
+  script.
+    function expandImage(img) {
+      if (img.classList.contains('expanded')) {
+        img.style.maxWidth = '250px';
+        img.style.maxHeight = '250px' ;
+        img.classList.remove('expanded');
+      } else {
+        img.style.maxWidth = '100%';
+        img.style.maxHeight = '100%';
+        img.classList.add('expanded');
+      }
+    }
+else
+  span.file-not-found-icon ❌

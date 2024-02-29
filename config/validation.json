@@ -1,0 +1,49 @@
+{
+	"post": {
+		"date": {
+			"futureSecondsAllowed": 300
+		},
+		"replyto": {
+			"hashLength": 64 
+		},
+		"name": {
+			"maxLength": 128
+		},
+		"subject": {
+			"maxLength": 512
+		},
+		"email": {
+			"maxLength": 128
+		},
+		"message": {
+			"maxLength": 10000
+		},
+		"files": {
+			"maxFiles": 1,
+			"hashLength": 64,
+			"fileName": {
+				"maxLength": 128
+			},
+			"extension": {
+				"maxLength": 32
+			},
+			"size": {
+				"maxSize": 4194304
+			}
+		}
+	},
+	"file": {
+		"maxSize": 4194304
+	},
+	"filechunk": {
+		"fileHash": {
+			"hashLength": 64
+		},
+		"chunkIndex": {
+			"maxIndex": 1024
+		},
+		"chunkSize": {
+			"maxSize": 1048576
+		}
+	}
+}
