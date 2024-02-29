@@ -12,7 +12,7 @@ div(class=item.replyto ? 'post_reply' : 'post', hash=item.hash)
         // If email doesn't exist, display the name as normal text
         span.name #{item.name ? item.name : defaultName}
       | &nbsp;&nbsp;&nbsp;&nbsp;
-      span.date Date: #{item.date}
+      span.date #{new Date(parseInt(item.date)).toLocaleString()}
     if indexMode && !item.replyto
       span &nbsp;&nbsp;
       a(href=`/${currentBoard}/thread/${item.hash}.html`) Reply
@@ -25,4 +25,9 @@ div(class=item.replyto ? 'post_reply' : 'post', hash=item.hash)
             include embeddedfile.pug
 
     if item.message
-      p.message #{item.message}
+      div.message
+        each line in item.message.split('\n')
+          if line.startsWith('>')
+            span.message-quote #{line}
+          else
+            span #{line}
