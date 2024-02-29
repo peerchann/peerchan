@@ -87,7 +87,9 @@ export async function closePostsDb(postsDbId = "my_post_db") {
 // }
 //only one db for now
 export async function openFilesDb(filesDbId = "") {
-    Files = await client.open(new FileDatabase({ id: sha256Sync(Buffer.from(filesDbId)) }));
+    Files = new FileDatabase({ id: sha256Sync(Buffer.from(filesDbId)) });
+    await client.open(Files.chunks);
+    await client.open(Files);
 }
 //only one db for now
 //todo: remove?
@@ -245,7 +247,7 @@ export async function getFile(fileHash) {
     // let db = Files //todo: revisit this here and elsewhere
     // console.log("FileChunks.documents.index.size:")
     // console.log(FileChunks.documents.index.size)
-    let foundResults = await Files.files.index.search(new SearchRequest({ query: [new StringMatch({ key: 'hash', value: fileHash })] }), { local: true, remote: false }).then(results => results[0]);
+    let foundResults = await Files.files.index.search(new SearchRequest({ query: [new StringMatch({ key: 'hash', value: fileHash })] }), { local: true, remote: true }).then(results => results[0]);
     console.log("debug 2 in db.ts getFile():");
     console.log(foundResults);
     if (foundResults) {
@@ -260,7 +262,7 @@ export async function getFile(fileHash) {
 export async function fileExists(fileHash) {
     console.log('fileExist:');
     console.log(fileHash);
-    let foundResults = await Files.files.index.search(new SearchRequest({ query: [new StringMatch({ key: 'hash', value: fileHash })] }), { local: true, remote: false });
+    let foundResults = await Files.files.index.search(new SearchRequest({ query: [new StringMatch({ key: 'hash', value: fileHash })] }), { local: true, remote: true });
     console.log('foundResults:');
     console.log(foundResults);
     console.log(foundResults.length);

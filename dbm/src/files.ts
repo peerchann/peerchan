@@ -134,8 +134,9 @@ export class FileDatabase extends Program {
 	}
 
 	async open() {
-		await this.chunks.open();
 
+		//for some reason this proceeds to the next without finishing so it has to be delclared elsewhere (in .db .ts) //todo: revisit
+		// 	await this.chunks.open();
 		await this.files.open({
 			type: File,
 			index: { key: 'hash' },
