@@ -151,32 +151,30 @@ export async function getPosts(whichBoard) {
     //return await Posts.documents.index.search(new SearchRequest, { local: true, remote: true });
 }
 //todo: add sage
-//todo: optimize (less redundant queries, attach replies and omittedreplies counts to the threads themseleves)
+//todo: optimize
 export async function getThreadsWithReplies(whichBoard, numThreads = 10, numPreviewPostsPerThread = 5, whichPage = 1) {
     if (!whichBoard) {
         throw new Error('No board specified.');
     }
     let threads = await openedBoards[whichBoard].documents.index.search(new SearchRequest({ query: [new MissingField({ key: 'replyto' })] }), { local: true, remote: true });
-    let lastbumps = new Array(threads.length);
-    for (let i = 0; i < threads.length; i++) {
-        let thesereplies = await openedBoards[whichBoard].documents.index.search(new SearchRequest({ query: [new StringMatch({ key: 'replyto', value: threads[i]['hash'] })] }), { local: true, remote: true });
-        threads[i].lastbumped = thesereplies.reduce((max, reply) => reply.date > max ? reply.date : max, threads[i].date);
-    }
-    // Sort the results by the 'date' property in descending order
-    threads.sort((a, b) => (a.lastbumped > b.lastbumped) ? -1 : ((a.lastbumped < b.lastbumped) ? 1 : 0)); //newest on top
     const totalpages = Math.max(1, Math.ceil(threads.length / numThreads)); //still have an index page even if its empty
-    // Return only the 10 newest results
-    var numToSkip = (whichPage - 1) * numThreads;
-    threads = threads.slice(numToSkip, numThreads + numToSkip);
+    let lastbumps = new Array(threads.length);
     let replies = new Array(threads.length);
     let omittedreplies = new Array(threads.length);
     for (let i = 0; i < threads.length; i++) {
         let thesereplies = await openedBoards[whichBoard].documents.index.search(new SearchRequest({ query: [new StringMatch({ key: 'replyto', value: threads[i]['hash'] })] }), { local: true, remote: true });
-        thesereplies.sort((a, b) => (a.date < b.date) ? -1 : ((a.date > b.date) ? 1 : 0)); //newest on bottom
+        threads[i].lastbumped = thesereplies.reduce((max, reply) => reply.date > max ? reply.date : max, threads[i].date);
+        threads[i].index = i;
         omittedreplies[i] = Math.max(0, thesereplies.length - numPreviewPostsPerThread);
+        thesereplies.sort((a, b) => (a.date < b.date) ? -1 : ((a.date > b.date) ? 1 : 0)); //newest on bottom
         replies[i] = thesereplies.slice(-numPreviewPostsPerThread);
     }
-    // Return only the 10 newest results
+    threads.sort((a, b) => (a.lastbumped > b.lastbumped) ? -1 : ((a.lastbumped < b.lastbumped) ? 1 : 0)); //newest on top
+    // Return only the numThreads newest results
+    var numToSkip = (whichPage - 1) * numThreads;
+    threads = threads.slice(numToSkip, numThreads + numToSkip);
+    omittedreplies = threads.map((t) => omittedreplies[t.index]);
+    replies = threads.map((t) => replies[t.index]);
     return { threads, replies, omittedreplies, totalpages };
 }
 //todo: order by bumped
