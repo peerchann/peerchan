@@ -33,11 +33,13 @@ function loadConfig() {
         } else {
             const defaultConfig = {
                 browserPort: 8000,
-                browserHost: "127.0.0.1",
                 peerbitPort: 8500,
+                browserHost: "127.0.0.1",
+				replicationFactor: 0,
                 threadsPerPage: 5,
                 previewReplies: 3,
-                defaultName: "Anonymous"
+                defaultName: "Anonymous",
+                openHomeOnStartup: true
             };
 			fs.writeFileSync(configFile, JSON.stringify(defaultConfig, null, '\t'), 'utf8');
             return defaultConfig;
@@ -201,9 +203,10 @@ app.get('/mymultiaddr', async (req, res, next) => {
   } catch (err) {
   	console.log(`Failed to delete file: ${params.params.fileHash}.`)
   	lastError = err //todo: get this working
+  	res.redirect('/home')
   }
 
-	res.redirect(req.headers.referer); //todo: check propriety
+	// res.redirect(req.headers.referer); //todo: check propriety
 });
 
 //todo: make this into a post req.
@@ -240,6 +243,7 @@ app.post('/connectToPeer', upload.any(), async (req, res, next) => {
 	res.redirect(req.headers.referer); //todo: check propriety
 });
 
+//todo: consolidate duplicated functionality
 app.post('/addWatchedBoard', upload.any(), async (req, res, next) => {
   try {
     // Extract the board ID from the request body
@@ -256,12 +260,11 @@ app.post('/addWatchedBoard', upload.any(), async (req, res, next) => {
 	    saveWatchedBoards(watchedBoards);
     }
     // Redirect back to the previous page
-    res.redirect(req.headers.referer);
   } catch (err) {
 	    console.error('Error adding watched board:', err);
 	    // Handle the error appropriately
-	    res.status(500).send('Error adding watched board');
   }
+    res.redirect(req.headers.referer);
 });
 
 app.post('/removeWatchedBoard', upload.any(), async (req, res, next) => {
@@ -284,13 +287,168 @@ app.post('/removeWatchedBoard', upload.any(), async (req, res, next) => {
 	}
 
     // Redirect back to the previous page
-    res.redirect(req.headers.referer);
   } catch (err) {
     console.error('Error removing watched board:', err);
-    // Handle the error appropriately
-    res.status(500).send('Error removing watched board');
+    res.redirect(req.headers.referer);
   }
 });
+
+app.get('/function/addBoard/:boardId',  async (req, res, next) => {
+	console.log('ping')
+  try {
+    const boardId = req.params.boardId;
+    if (watchedBoards.indexOf(boardId) === -1) {
+    	watchedBoards.push(boardId);
+		const db = await import('./dbm/dist/db.js')
+	    await db.openPostsDb(boardId)
+	    saveWatchedBoards(watchedBoards);
+    }
+  } catch (err) {
+	    console.error('Error adding watched board:', err);
+  }
+});
+
+app.get('/function/removeBoard/:boardId', async (req, res, next) => {
+  try {
+    const boardId = req.params.boardId;
+    const index = watchedBoards.indexOf(boardId);
+    if (index !== -1) {
+		const db = await import('./dbm/dist/db.js')
+		await db.closePostsDb(boardId)
+		watchedBoards.splice(index, 1);
+		console.log("watchedBoards:")
+		console.log(watchedBoards)
+		saveWatchedBoards(watchedBoards);
+	}
+
+  } catch (err) {
+    console.error('Error removing watched board:', err);
+  }
+});
+
+const moderators = loadModerators()
+
+async function addModerator(moderatorId) {
+	if (!moderatorId || moderatorId.length != 44) {
+		throw new Error('Moderator ID should be 44-characters long.')
+	}
+    // Add the board ID to the watchedBoards array
+    if (moderators.indexOf(moderatorId) === -1) {
+    	moderators.push(moderatorId);
+    	await updateModerators()
+    }
+} 
+
+async function removeModerator(moderatorId) {
+    const index = moderators.indexOf(moderatorId);
+    if (index !== -1) {
+		moderators.splice(index, 1);
+		await updateModerators()
+	}
+} 
+
+async function updateModerators() {
+		saveModerators()
+		const db = await import('./dbm/dist/db.js')
+	    db.setModerators(moderators) 
+} 
+
+function loadModerators() {
+    const configFile = configDir+'/moderators.json';
+    try {
+        if (fs.existsSync(configFile)) {
+            return JSON.parse(fs.readFileSync(configFile, 'utf8')).moderators;
+        } else {
+            const defaultConfig = {
+                moderators: [
+                ],
+            };
+			fs.writeFileSync(configFile, JSON.stringify(defaultConfig, null, '\t'), 'utf8');
+            return defaultConfig.moderators;
+        }
+    } catch (err) {
+        console.error('Error loading or creating moderators file:', err);
+        return null;
+    }
+}
+
+function saveModerators() {
+    const configFile = configDir+'/moderators.json';
+    console.log("saveModerators called with moderators:")
+    console.log(moderators)
+    try {
+        const config = {
+            moderators: moderators
+        };
+        fs.writeFileSync(configFile, JSON.stringify(config, null, '\t'), 'utf8');
+        console.log('Moderators saved successfully.');
+    } catch (err) {
+        console.error('Error saving moderators:', err);
+    }
+}
+
+app.post('/addModerator', upload.any(), async (req, res, next) => {
+  try {
+    await addModerator(req.body.moderatorId)
+  } catch (err) {
+	    console.error('Error adding moderator:', err);
+		lastError = err
+  }
+  res.redirect(req.headers.referer);
+});
+
+app.post('/removeModerator', upload.any(), async (req, res, next) => {
+	console.log('removeModerator called')
+	console.log(req.body.moderatorId)
+  try {
+    await removeModerator(req.body.moderatorId)
+  } catch (err) {
+		console.error('Error adding moderator:', err);
+		lastError = err
+  }
+  res.redirect(req.headers.referer);
+});
+
+app.get('/function/addModerator/:moderatorId'),  async (req, res, next) => {
+  try {
+    await addModerator(req.params.moderatorId)
+  } catch (err) {
+	    console.error('Error adding moderator:', err);
+		lastError = err
+  }
+  res.redirect(req.headers.referer);
+}
+
+app.get('/function/removeModerator/:moderatorId', async (req, res, next) => {
+  try {
+    await removeModerator(req.params.moderatorId)
+  } catch (err) {
+		console.error('Error adding moderator:', err);
+		lastError = err
+  }
+    res.redirect(req.headers.referer);
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -373,6 +531,7 @@ app.get('/:board/:pagenumber.html', async (req, res, next) => {
 			alert: lastError,
 			formatFileSize: formatFileSize,
 			defaultName: cfg.defaultName,
+			moderators: moderators,
 			numPages: boardPagesCache[req.params.board],
 			myMultiAddr: db.client.libp2p.getMultiaddrs()[0],
 			indexMode: true,
@@ -432,6 +591,7 @@ app.get('/:board/thread/:thread.html', async (req, res, next) => {
 			alert: lastError,
 			numPages: boardPagesCache[req.params.board],
 			defaultName: cfg.defaultName,
+			moderators: moderators,
 			formatFileSize: formatFileSize,
 			alert: lastError,
 			currentBoard: req.params.board,
@@ -458,11 +618,6 @@ function resetError() {
 	lastError = undefined
 }
 
-
-//todo: get dynamically
-const dbToOpen = "myboard"
-
-
 var lastError
 
 //todo: different dependng on new thread/reply
@@ -472,9 +627,9 @@ var lastError
 //todo: projected post etc
 app.post('/submit', upload.any(), async (req, res, next) => {
 	try {
-		console.log('req.files:') //todo: remove debug
-		console.log(req.files)
-		console.log(req.body.message)
+		// console.log('req.files:') //todo: remove debug
+		// console.log(req.files)
+		// console.log(req.body.message)
 		// let lastbumps = new Array(threads.length)
 		const db = await import('./dbm/dist/db.js');
 		const dbPosts = await import('./dbm/dist/posts.js')
@@ -500,7 +655,7 @@ app.post('/submit', upload.any(), async (req, res, next) => {
 				postFiles
 		  	)
 		  const Validate = await import('./dbm/dist/validation.js')
-		  console.log(Validate)
+		  // console.log(Validate)
 		  Validate.default.post(newPost)
 		  //todo: make pass post document
 		  await db.makeNewPost(newPost, req.body.whichBoard)
@@ -522,43 +677,9 @@ app.post('/submit', upload.any(), async (req, res, next) => {
 	  console.log(err)
 	  lastError = err
 	}
-	console.log('req.headers.referer')
-	console.log(req.headers.referer)
 	res.redirect(req.headers.referer);
     // res.send({ reload: true });
 });
-
-
-// app.post('/generateRandomPost', async (req, res, next) => {
-
-// 	// console.log('ping' +(Math.floor(Math.random() * 100000) + 1))
-	
-// 	console.log("Generating random post")
-
-// 	try {
-// 		const db = await import('./dbm/dist/db.js');
-// 		await db.makeNewPost({
-// 			date:  BigInt(Date.now()),
-// 	    	replyto: undefined,
-// 			// replyto: `replyto ${generateRandomSubstring()}`,
-// 			name: `name ${generateRandomSubstring()}`,
-// 			subject: `subject ${generateRandomSubstring()}`,
-// 			message: `message ${generateRandomSubstring()}`,
-// 			email: `email ${generateRandomSubstring()}`
-
-// 		}, dbToOpen) //todo: make dynamic
-// 		resetError()
-
-// 	} catch (err) {
-// 		console.log('Failed to generate new post:')
-// 		console.log(err)
-// 		lastError = err
-
-// 	}
-
-// 	res.redirect('/home')
-
-// });
 
 app.get('', async (req, res, next) => { //todo: merge with above functionality or filegateway
 	res.redirect('/home')
@@ -573,7 +694,7 @@ app.get('/home', async (req, res, next) => { //todo: merge with above functional
 			boards: watchedBoards,
 			alert: lastError,
 			watchedBoards: watchedBoards,
-			
+			moderators: moderators,
 			myMultiAddr: db.client.libp2p.getMultiaddrs()[0],
 			posts: []} //todo: make dynamic
 		const html = await rt['home'](options)
@@ -679,65 +800,28 @@ app.listen(cfg.browserPort, cfg.browserHost, () => {
 
 
 	try {
-		await db.openFilesDb()
+		await db.openFilesDb("", {factor: cfg.replicationFactor})
 		console.log("Successfully opened Files Database.")
 		// await db.openFileChunksDb()
 		// console.log("Successfully opened FileChunks Database.")	
 		// await db.openBoardsDb()
 		// console.log("Successfully opened Boards Database.")
 		for (let thisBoard of watchedBoards) {
-			await db.openPostsDb(thisBoard)
+			await db.openPostsDb(thisBoard, {factor: cfg.replicationFactor})
 			console.log("Successfully open Posts Database for \""+thisBoard+"\".")
 
 		}
-
-
+		db.setModerators(moderators)
 
 	} catch (err) {
-		console.log("Failed to open Database.")
+		console.log("Failed to open Databases.")
 		console.log(err)
 	}
 
-// await db.pbInitKeys()
-// // await db.pbInitNode()
-// await db.pbInitClient(9005) //todo: revisit
-// let mediatorData = {}
-// try {
-// 	mediatorData = await nf(medURL+'/addresses.json').then(result => result.json())
-// 	mediatorData = new Uint8Array(mediatorData.data)
-// 	console.log('debug1')
-// 	console.log(mediatorData)
-// 	mediatorData = db.deserializeMediatorDatabaseInfo(mediatorData)
-// 	console.log('debug2')
-// 	console.log(mediatorData)
-// 	// console.log('debug3')
-// 	// console.log(mediatorData.multiAddr)
-// 	//Construct the appropriate multiaddr string for the mediator based on the configuration settings and data from the API:
-// 	let mediatorMultiAddr = '/'+cfg.mediator.multiaddr_protocol+'/'+cfg.mediator.host+'/tcp/'+cfg.mediator.multiaddr_port+"/wss"+mediatorData.multiAddr.match(/\/p2p\/.*$/g)[0]
-
-// 	// let bootstrapMultiAddr = '/dns4/b7bb11f066b285b3ac8cca2cc5030a0094293f05.peerchecker.com/tcp/4003/wss/p2p/12D3KooWBKx9dtKCSy2j1NpdFMSDQcQmRqTee8wSetuMZhSifAPs'
-// 	// mediatorMultiAddr = '/dns4/peerchan.net/tcp/9999/wss/p2p/'
-// 	// localDb.tryConnectToKnownPeers([bootstrapMultiAddr])
-	
-// 	console.log(mediatorMultiAddr)
-
-// 	mediatorMultiAddr = '/ip4/127.0.0.1/tcp/9001/p2p/12D3KooWMm4DEdk4bMAc6Brnr1FLopcZC9GPabHsoaDZ3PSQjN3e'
-
-// 	await localDb.tryConnectToKnownPeers([mediatorMultiAddr])
-	
-// 	// localDb.tryConnectToKnownPeers([mediatorData.multiAddr])
-// } catch (err) {
-// 	console.log('Failed to connect to mediator at '+medURL)
-// }
-
-// //todo: handling of what to do if couldn't connect to mediator
-// await db.openSpecificDbs(mediatorData) //todo: revisit/get from local db if can't connect (and overall handling of mediator offline)
-
 //open the boardlist:
-open('http://'+cfg.browserHost+':'+cfg.browserPort+'/home');
-// if (cfg.home.open_home_on_startup) {
-// 	open('http://'+cfg.peer.host+(cfg.peer.port ? ':'+cfg.peer.port : '')+cfg.home.homepath);
-// }
+if (cfg.openHomeOnStartup) {
+	open('http://'+cfg.browserHost+':'+cfg.browserPort+'/home');
+}
 
 
 })();

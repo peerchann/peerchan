@@ -49,7 +49,7 @@ html
         document.documentElement.style.cursor = deleteMode ? 'crosshair' : 'default';
 
         // Toggle the 'deletion-mode' class on post elements
-        const posts = document.querySelectorAll('.post');
+        const posts = document.querySelectorAll('.post, .post_reply');
         posts.forEach(post => {
             post.classList.toggle('deletion-mode', deleteMode === 'post');
         });
@@ -89,8 +89,8 @@ html
           });
 
           // Toggle the 'deletion-mode' class off all post elements
-          const allPosts = document.querySelectorAll('.post');
-          allOosts.forEach(post => {
+          const allPosts = document.querySelectorAll('.post, .post_reply');
+          allPosts.forEach(post => {
             post.classList.remove('deletion-mode');
           });
 
@@ -122,7 +122,7 @@ html
             handleFileClick(fileHash);
           });
         });
-        const allPosts = document.querySelectorAll('.post');
+        const allPosts = document.querySelectorAll('.post, .post_reply');
         allPosts.forEach(thisOne => {
           thisOne.addEventListener('click', function() {
             const hash = thisOne.getAttribute('hash');
@@ -134,9 +134,6 @@ html
     body
       .wrapper
         .content
-          h1 Welcome
-          if alert
-            .alert #{alert}
           div
             | [ 
             each boardName, index in watchedBoards
@@ -145,9 +142,9 @@ html
             |  ] [ 
             a(href="/home") home
             |  ]
+          if alert
+            .alert #{alert}
           block content
-
-
         .sidebar
           h2 Post Form
           include postform.pug

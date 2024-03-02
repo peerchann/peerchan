@@ -2,20 +2,11 @@ import { field, variant, vec, option, serialize, deserialize } from "@dao-xyz/bo
 import { Peerbit, createLibp2pExtended } from "peerbit"
 import { Program } from "@peerbit/program"
 //import { createBlock, getBlockValue } from "@peerbit/libp2p-direct-block"
-import { sha256Sync, toHexString, PublicSignKey } from "@peerbit/crypto"
+import { sha256Sync, toBase64, toHexString, PublicSignKey } from "@peerbit/crypto"
 import { Documents, DocumentIndex, SearchRequest, StringMatch, Results, PutOperation, DeleteOperation } from "@peerbit/document" //todo: remove address redundancy
 
-//todo: check if '' needed
-//todo: synonyms for type
-//todo: consistency with "" vs '' vs <nothing>
+import { currentModerators } from './db.js'
 
-//Classes below here
-//todo: consider moving
-//todo: consider not exporting where not necessary
-
-//todo: revisit async stuff
-//todo: consider removing chunk hash? or use array of hashes to add a new one whenever another file happens to use the same 1mb
-//todo: editable: false?
 //todo: consider removing receivedHash check
 //todo: reconsider how to handle when number of chunks doesn't match
 //todo: consider chunk size being dynamic? and also a field in the File data
@@ -27,11 +18,14 @@ import { Documents, DocumentIndex, SearchRequest, StringMatch, Results, PutOpera
 const fileChunkingSize = 1 * 1024 ** 2 //1MB
 
 //todo: consolidate/move to validation file along with posts.ts one
-function isModerator(theSigner: PublicSignKey, theIdentity: PublicSignKey) {
+//todo: avoid needing as many args?
+function isModerator(theSigner: PublicSignKey, theIdentity: PublicSignKey, moderators: string[] = []) {
 	if (theSigner && theIdentity) {
 		if(theSigner.equals(theIdentity)) {
 			return true;
 		}
+	} else if (moderators.includes(toBase64(sha256Sync(theSigner.bytes)))) {
+		return true
 	}
 	return false
 }
@@ -41,10 +35,6 @@ export class FileChunkDatabase extends Program {
 
 	@field({ type: Documents })
 	documents: Documents<FileChunk>
-	// @field({ type: vec(PublicSignKey) })
-	// rootKeys: PublicSignKey[] //todo: consider optionality
-	// @field({ type: option(Uint8Array) })
-	// id?: Uint8Array
 
 	constructor(properties?: { id?: Uint8Array }) {
 		super()
@@ -90,7 +80,7 @@ export class FileChunkDatabase extends Program {
 					}
 				} else if (operation instanceof DeleteOperation) {
 					for (var signer of signers) {
-						if (isModerator(signer, this.node.identity.publicKey)) {//todo: board specific, more granularcontrol, etc.
+						if (isModerator(signer, this.node.identity.publicKey, currentModerators)) {//todo: board specific, more granularcontrol, etc.
 							return true;
 						}
 					}
@@ -115,15 +105,8 @@ export class FileDatabase extends Program {
 
 	@field({ type: Documents })
 	files: Documents<File>
-
 	@field({ type: FileChunkDatabase })
 	chunks: FileChunkDatabase
-
-	// @field({ type: vec(PublicSignKey) })
-	// rootKeys: PublicSignKey[] //todo: consider optionality
-	// @field({ type: option(Uint8Array) })
-	// id?: Uint8Array
-
 	constructor(properties?: { id?: Uint8Array }) {
 		super()
 		// this.id = properties?.id
@@ -153,10 +136,7 @@ export class FileDatabase extends Program {
 						if (operation.value.chunkCids.length > 16) {
 							throw new Error('Expected file size greater than configured maximum of ' + 16 * fileChunkingSize + ' bytes.')
 						}
-						console.log('debug 1 in files.ts:')
-						console.log(operation.value)
 						let fileData = await operation.value.getFile(this.chunks) //todo: revisit/check eg. for dynamic/variable chunking sizes
-						console.log('debug 2 in files.ts:')
 						let checkFile = new File(fileData)
 						checkFile.chunkCids = operation.value.chunkCids
 						checkFile.fileHash = toHexString(sha256Sync(fileData))
@@ -175,7 +155,7 @@ export class FileDatabase extends Program {
 				}
 				if (operation instanceof DeleteOperation) {
 					for (var signer of signers) {
-						if (isModerator(signer, this.node.identity.publicKey)) {//todo: board specific, more granularcontrol, etc.
+						if (isModerator(signer, this.node.identity.publicKey, currentModerators)) {//todo: board specific, more granularcontrol, etc.
 							return true;
 						}
 					}
@@ -211,11 +191,8 @@ export class FileDatabase extends Program {
 
 	async deleteFile(hash: string) {
 		let file = await this.files.index.get(hash)
-		console.log('file here to delete:')
-		console.log(file)
 		if (file) {
 			for (let chunkHash of file.chunkCids) {
-				console.log(chunkHash)
 				await this.chunks.documents.del(chunkHash)
 			}
 			return await this.files.del(hash)
@@ -305,8 +282,6 @@ export class File extends BaseFileDocument {
 				fileContents.slice(chunkStartIndex, chunkStartIndex += fileChunkingSize)
 			)
 			await fileChunks.documents.put(newFileChunk)
-			console.log("newFileChunk added")
-			console.log(newFileChunk)
 			this.chunkCids.push(newFileChunk.hash)
 			// await client.services.blocks.put(fileContents.slice(chunkStartIndex, chunkStartIndex += this.chunkSize))
 			// .then(resultHash => this.chunkCids.push(newFileChunk.hash))

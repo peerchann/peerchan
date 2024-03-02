@@ -9,19 +9,18 @@ import { field, variant, vec, option, serialize } from "@dao-xyz/borsh";
 import { Program } from "@peerbit/program";
 import { Documents, PutOperation, DeleteOperation } from "@peerbit/document"; //todo: remove address redundancy
 // import { nanoid } from 'nanoid'
-import { sha256Sync, toHexString } from "@peerbit/crypto";
+import { currentModerators } from './db.js';
+import { sha256Sync, toBase64, toHexString } from "@peerbit/crypto";
 import Validate from "./validation.js";
-// import {
-// 	updateOne,
-// 	insertOne,
-// 	findOne
-// } from "./index.js" //todo: consider not importing everything 
 //todo: consolidate/move to validation file along with files.ts one
-function isModerator(theSigner, theIdentity) {
+function isModerator(theSigner, theIdentity, moderators = []) {
     if (theSigner && theIdentity) {
         if (theSigner.equals(theIdentity)) {
             return true;
         }
+    }
+    else if (moderators.includes(toBase64(sha256Sync(theSigner.bytes)))) {
+        return true;
     }
     return false;
 }
@@ -212,7 +211,7 @@ let PostDatabase = class PostDatabase extends Program {
                 }
                 else if (operation instanceof DeleteOperation) {
                     for (var signer of signers) {
-                        if (isModerator(signer, this.node.identity.publicKey)) { //todo: board specific, more granularcontrol, etc.
+                        if (isModerator(signer, this.node.identity.publicKey, currentModerators)) { //todo: board specific, more granularcontrol, etc.
                             return true;
                         }
                     }

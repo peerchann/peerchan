@@ -1,6 +1,9 @@
 {
 	"watchedBoards": [
 		"landing",
-		"help"
+		"help",
+		"secret1",
+		"greentextest",
+		"soy"
 	]
 }

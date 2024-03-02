@@ -1,6 +1,7 @@
 extends home.pug
 
 block content
+  h2 Welcome
   h2 Add Watched Board
   form(action="/addWatchedBoard" method="POST")
     label(for="boardId") Board ID: &nbsp;
@@ -14,4 +15,20 @@ block content
       a(href=`/${board}/index.html`, style="display:inline-block;") #{board}
       form(action="/removeWatchedBoard" method="POST", style="display:inline-block; margin-left: 5px;")
         input(type="hidden" name="boardId" value=board)
+        button(type="submit", class="delete-link") X
+
+
+  h2 Add Moderator
+  form(action="/addModerator" method="POST")
+    label(for="moderatorId") Moderator Client ID: &nbsp;
+    input(type="text" id="moderatorId" name="moderatorId")
+    |  
+    button(type="submit", class="sidebarbutton") Add
+
+  h2 Current Moderators
+  each moderator, index in moderators
+    div.moderator
+      span #{moderator}
+      form(action="/removeModerator" method="POST", style="display:inline-block; margin-left: 5px;")
+        input(type="hidden" name="moderatorId" value=moderator)
         button(type="submit", class="delete-link") X

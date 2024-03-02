@@ -23,6 +23,8 @@ div(class=item.replyto ? 'post_reply' : 'post', hash=item.hash)
         each file in item.files
           div.embedded-file(filehash=file.hash)
             include embeddedfile.pug
+    else
+      div.embedded-nothing
 
     if item.message
       div.message
