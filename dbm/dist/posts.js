@@ -19,7 +19,7 @@ function isModerator(theSigner, theIdentity, moderators = []) {
             return true;
         }
     }
-    else if (moderators.includes(toBase64(sha256Sync(theSigner.bytes)))) {
+    if (moderators.includes(toBase64(sha256Sync(theSigner.bytes)))) {
         return true;
     }
     return false;

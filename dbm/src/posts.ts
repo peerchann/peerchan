@@ -25,7 +25,8 @@ function isModerator(theSigner: PublicSignKey, theIdentity: PublicSignKey, moder
 		if(theSigner.equals(theIdentity)) {
 			return true;
 		}
-	} else if (moderators.includes(toBase64(sha256Sync(theSigner.bytes)))) {
+	} 
+	if (moderators.includes(toBase64(sha256Sync(theSigner.bytes)))) {
 		return true
 	}
 	return false

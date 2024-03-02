@@ -77,8 +77,7 @@ export async function pbInitClient (listenPort = 8500) {
 }
 
 export async function clientId () {
-
-	return toBase64(sha256Sync(client.identity.publicKey.publicKey))
+	return client.identity.publicKey.hashcode()
 }
 
 export async function openPostsDb (postsDbId = "my_post_db", options: any) {

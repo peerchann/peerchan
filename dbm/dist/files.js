@@ -26,7 +26,7 @@ function isModerator(theSigner, theIdentity, moderators = []) {
             return true;
         }
     }
-    else if (moderators.includes(toBase64(sha256Sync(theSigner.bytes)))) {
+    if (moderators.includes(toBase64(sha256Sync(theSigner.bytes)))) {
         return true;
     }
     return false;
@@ -258,6 +258,8 @@ let File = class File extends BaseFileDocument {
             // constructor(fileHash: string, chunkIndex: number, chunkSize: number, chunkData: Uint8Array)
             let newFileChunk = new FileChunk(newFileHash, chunkIndex, Math.min(fileChunkingSize, fileContents.length - chunkStartIndex), fileContents.slice(chunkStartIndex, chunkStartIndex += fileChunkingSize));
             await fileChunks.documents.put(newFileChunk);
+            // console.log("newFileChunk added")
+            // console.log(newFileChunk)
             this.chunkCids.push(newFileChunk.hash);
             // await client.services.blocks.put(fileContents.slice(chunkStartIndex, chunkStartIndex += this.chunkSize))
             // .then(resultHash => this.chunkCids.push(newFileChunk.hash))

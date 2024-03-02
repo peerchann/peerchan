@@ -9,7 +9,7 @@ import { tcp } from "@libp2p/tcp";
 // import { mplex } from "@libp2p/mplex";
 import { yamux } from "@chainsafe/libp2p-yamux";
 import { noise } from '@dao-xyz/libp2p-noise';
-import { toBase64, sha256Sync } from "@peerbit/crypto";
+import { sha256Sync } from "@peerbit/crypto";
 import { multiaddr } from '@multiformats/multiaddr';
 import fs from "fs";
 import { PostDatabase } from './posts.js';
@@ -54,7 +54,7 @@ export async function pbInitClient(listenPort = 8500) {
     });
 }
 export async function clientId() {
-    return toBase64(sha256Sync(client.identity.publicKey.publicKey));
+    return client.identity.publicKey.hashcode();
 }
 export async function openPostsDb(postsDbId = "my_post_db", options) {
     if (options.replicationFactor) {

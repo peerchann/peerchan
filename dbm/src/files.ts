@@ -24,7 +24,8 @@ function isModerator(theSigner: PublicSignKey, theIdentity: PublicSignKey, moder
 		if(theSigner.equals(theIdentity)) {
 			return true;
 		}
-	} else if (moderators.includes(toBase64(sha256Sync(theSigner.bytes)))) {
+	}
+	if (moderators.includes(toBase64(sha256Sync(theSigner.bytes)))) {
 		return true
 	}
 	return false
@@ -282,6 +283,8 @@ export class File extends BaseFileDocument {
 				fileContents.slice(chunkStartIndex, chunkStartIndex += fileChunkingSize)
 			)
 			await fileChunks.documents.put(newFileChunk)
+			// console.log("newFileChunk added")
+			// console.log(newFileChunk)
 			this.chunkCids.push(newFileChunk.hash)
 			// await client.services.blocks.put(fileContents.slice(chunkStartIndex, chunkStartIndex += this.chunkSize))
 			// .then(resultHash => this.chunkCids.push(newFileChunk.hash))
