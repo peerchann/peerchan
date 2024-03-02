@@ -253,7 +253,7 @@ app.post('/addWatchedBoard', upload.any(), async (req, res, next) => {
     if (watchedBoards.indexOf(boardId) === -1) {
     	watchedBoards.push(boardId);
 		const db = await import('./dbm/dist/db.js')
-	    await db.openPostsDb(boardId)
+	    await db.openPostsDb(boardId, {replicationFactor: cfg.replicationFactor})
 	    // Invoke the saveWatchedBoards function to save the updated watchedBoards array
 	    console.log("watchedBoards:")
 	    console.log(watchedBoards)
@@ -280,9 +280,6 @@ app.post('/removeWatchedBoard', upload.any(), async (req, res, next) => {
 		await db.closePostsDb(boardId)
 		watchedBoards.splice(index, 1);
 
-      // Invoke the saveWatchedBoards function to save the updated watchedBoards array
-		console.log("watchedBoards:")
-		console.log(watchedBoards)
 		saveWatchedBoards(watchedBoards);
 	}
 
@@ -809,7 +806,7 @@ app.listen(cfg.browserPort, cfg.browserHost, () => {
 		// await db.openBoardsDb()
 		// console.log("Successfully opened Boards Database.")
 		for (let thisBoard of watchedBoards) {
-			await db.openPostsDb(thisBoard, {factor: cfg.replicationFactor})
+			await db.openPostsDb(thisBoard, {replicationFactor: cfg.replicationFactor})
 			console.log("Successfully open Posts Database for \""+thisBoard+"\".")
 
 		}

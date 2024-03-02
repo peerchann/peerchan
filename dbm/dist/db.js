@@ -56,8 +56,10 @@ export async function pbInitClient(listenPort = 8500) {
 export async function clientId() {
     return client.identity.publicKey.hashcode();
 }
+//todo: move the config to a different spot
 export async function openPostsDb(postsDbId = "my_post_db", options) {
-    if (options.replicationFactor) {
+    console.log(options);
+    if (options?.replicationFactor) {
         openedBoards[postsDbId] = await client.open(new PostDatabase({ id: sha256Sync(Buffer.from(postsDbId)) }), {
             args: {
                 role: {
