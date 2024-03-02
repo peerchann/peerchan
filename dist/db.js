@@ -58,13 +58,13 @@ export async function clientId() {
 }
 //todo: move the config to a different spot
 export async function openPostsDb(postsDbId = "my_post_db", options) {
-    console.log(options);
     if (options?.replicationFactor) {
+        console.log(options);
         openedBoards[postsDbId] = await client.open(new PostDatabase({ id: sha256Sync(Buffer.from(postsDbId)) }), {
             args: {
                 role: {
                     type: "replicator",
-                    factor: 1
+                    factor: options.replicationFactor
                 }
             }
         });

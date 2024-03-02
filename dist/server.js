@@ -717,6 +717,8 @@ app.listen(cfg.browserPort, cfg.browserHost, () => {
 
 (async () => {
 
+	process.setMaxListeners(0);
+
 	const db = await import('./db.js');
 	// console.log('db:')
 	// console.log(db)
@@ -797,8 +799,17 @@ app.listen(cfg.browserPort, cfg.browserHost, () => {
 	// 	console.log(err)
 	// }
 
+	process.on('uncaughtException', (error) => {
+		    console.error('An uncaught exception occurred:', error.message);
+		    console.error('Stack trace:', error.stack);
+	});
+
 
 	try {
+
+
+
+
 		await db.openFilesDb("", {factor: cfg.replicationFactor})
 		console.log("Successfully opened Files Database.")
 		// await db.openFileChunksDb()
