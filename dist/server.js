@@ -137,7 +137,7 @@ function makeRenderSafe(inputObj = {}) {
 
 //todo: make more efficient/combine with above?
 async function addFileStatuses (inputObj = {}) {
-	const db = await import('./dbm/dist/db.js')
+	const db = await import('./db.js')
     for (let thisKey of Object.keys(inputObj)) {
         if (thisKey == 'files') {
         	for (let thisFile of inputObj[thisKey]) {
@@ -185,7 +185,7 @@ function formatFileSize(size) {
 app.get('/:board/deletepost=:posthash', async (req, res, next) => {
   try {
   	console.log(`Deleting post: ${req.params.posthash}.`);
-	const db = await import('./dbm/dist/db.js')
+	const db = await import('./db.js')
 	await db.delPost(req.params.posthash, req.params.board)
 
   } catch (err) {
@@ -198,7 +198,7 @@ app.get('/:board/deletepost=:posthash', async (req, res, next) => {
 
 app.get('/mymultiaddr', async (req, res, next) => {
   try {
-	const db = await import('./dbm/dist/db.js')
+	const db = await import('./db.js')
 	res.send(db.client.libp2p.getMultiaddrs()[0])
   } catch (err) {
   	console.log(`Failed to delete file: ${params.params.fileHash}.`)
@@ -214,7 +214,7 @@ app.get('/deletefile=:filehash', async (req, res, next) => {
   try {
   	const fileHash = req.params.filehash
   	console.log(`Deleting file: ${fileHash}.`);
-	const db = await import('./dbm/dist/db.js')
+	const db = await import('./db.js')
 	await db.delFile(fileHash)
 
   } catch (err) {
@@ -232,7 +232,7 @@ app.post('/connectToPeer', upload.any(), async (req, res, next) => {
   	// console.log(req)
   	console.log(req.body)
   	console.log(`Connecting to peer: ${peerMultiAddr}.`);
-	const db = await import('./dbm/dist/db.js')
+	const db = await import('./db.js')
 	await db.connectToPeer(peerMultiAddr)
 
   } catch (err) {
@@ -252,7 +252,7 @@ app.post('/addWatchedBoard', upload.any(), async (req, res, next) => {
     // Add the board ID to the watchedBoards array
     if (watchedBoards.indexOf(boardId) === -1) {
     	watchedBoards.push(boardId);
-		const db = await import('./dbm/dist/db.js')
+		const db = await import('./db.js')
 	    await db.openPostsDb(boardId, {replicationFactor: cfg.replicationFactor})
 	    // Invoke the saveWatchedBoards function to save the updated watchedBoards array
 	    console.log("watchedBoards:")
@@ -276,7 +276,7 @@ app.post('/removeWatchedBoard', upload.any(), async (req, res, next) => {
     const index = watchedBoards.indexOf(boardId);
     if (index !== -1) {
       // Remove the board ID from the watchedBoards array
-		const db = await import('./dbm/dist/db.js')
+		const db = await import('./db.js')
 		await db.closePostsDb(boardId)
 		watchedBoards.splice(index, 1);
 
@@ -296,7 +296,7 @@ app.get('/function/addBoard/:boardId',  async (req, res, next) => {
     const boardId = req.params.boardId;
     if (watchedBoards.indexOf(boardId) === -1) {
     	watchedBoards.push(boardId);
-		const db = await import('./dbm/dist/db.js')
+		const db = await import('./db.js')
 	    await db.openPostsDb(boardId)
 	    saveWatchedBoards(watchedBoards);
     }
@@ -311,7 +311,7 @@ app.get('/function/removeBoard/:boardId', async (req, res, next) => {
     const boardId = req.params.boardId;
     const index = watchedBoards.indexOf(boardId);
     if (index !== -1) {
-		const db = await import('./dbm/dist/db.js')
+		const db = await import('./db.js')
 		await db.closePostsDb(boardId)
 		watchedBoards.splice(index, 1);
 		console.log("watchedBoards:")
@@ -348,7 +348,7 @@ async function removeModerator(moderatorId) {
 
 async function updateModerators() {
 		saveModerators()
-		const db = await import('./dbm/dist/db.js')
+		const db = await import('./db.js')
 	    db.setModerators(moderators) 
 } 
 
@@ -457,7 +457,7 @@ app.get('/download/file/:filename.:fileext', async (req, res, next) => {
 	// console.log(req.params.filename)
 	// console.log(req.params.fileext)
 	try {
-		const db = await import('./dbm/dist/db.js')
+		const db = await import('./db.js')
 		let fileData = await db.getFile(req.params.filename)
 		// console.log("returned fileData:")
 		// console.log(fileData)
@@ -498,7 +498,7 @@ app.get('/:board/:pagenumber.html', async (req, res, next) => {
 		if (req.params.pagenumber == 'index') {
 			whichPage = 1
 		}
-		const db = await import('./dbm/dist/db.js')
+		const db = await import('./db.js')
 
 		let indexPosts = await addFileStatuses(makeRenderSafe(await db.getThreadsWithReplies(req.params.board, cfg.threadsPerPage, cfg.previewReplies, whichPage)))
 		// let allPosts = makeRenderSafe(db.getThreadsWithReplies(req.params.board, cfg.threadsPerPage, cfg.previewReplies))
@@ -561,7 +561,7 @@ const boardPagesCache = {}; //todo: reconsider
 app.get('/:board/thread/:thread.html', async (req, res, next) => {
 
 	try {
-		const db = await import('./dbm/dist/db.js')
+		const db = await import('./db.js')
 		
 		// let allPosts = makeRenderSafe(await db.getPosts(req.params.board))
 		let threadPost = await await db.getSpecificPost(req.params.board, req.params.thread)
@@ -630,8 +630,8 @@ app.post('/submit', upload.any(), async (req, res, next) => {
 		// console.log(req.files)
 		// console.log(req.body.message)
 		// let lastbumps = new Array(threads.length)
-		const db = await import('./dbm/dist/db.js');
-		const dbPosts = await import('./dbm/dist/posts.js')
+		const db = await import('./db.js');
+		const dbPosts = await import('./posts.js')
 		let postFiles = []
 		for (let thisFile of req.files) {
 	  		postFiles.push(
@@ -653,7 +653,7 @@ app.post('/submit', upload.any(), async (req, res, next) => {
 				req.body.message,
 				postFiles
 		  	)
-		  const Validate = await import('./dbm/dist/validation.js')
+		  const Validate = await import('./validation.js')
 		  // console.log(Validate)
 		  Validate.default.post(newPost)
 		  //todo: make pass post document
@@ -687,7 +687,7 @@ app.get('', async (req, res, next) => { //todo: merge with above functionality o
 //todo: fix redundancy with boards
 app.get('/home', async (req, res, next) => { //todo: merge with above functionality or filegateway
 	try {
-		const db = await import('./dbm/dist/db.js')
+		const db = await import('./db.js')
 		const options = {
 			clientId: await db.clientId(),
 			boards: watchedBoards,
@@ -717,7 +717,9 @@ app.listen(cfg.browserPort, cfg.browserHost, () => {
 
 (async () => {
 
-	const db = await import('./dbm/dist/db.js');
+	process.setMaxListeners(0);
+
+	const db = await import('./db.js');
 	// console.log('db:')
 	// console.log(db)
 
@@ -797,8 +799,17 @@ app.listen(cfg.browserPort, cfg.browserHost, () => {
 	// 	console.log(err)
 	// }
 
+	process.on('uncaughtException', (error) => {
+		    console.error('An uncaught exception occurred:', error.message);
+		    console.error('Stack trace:', error.stack);
+	});
+
 
 	try {
+
+
+
+
 		await db.openFilesDb("", {factor: cfg.replicationFactor})
 		console.log("Successfully opened Files Database.")
 		// await db.openFileChunksDb()
