@@ -3,10 +3,9 @@
   "version": "0.0.0",
   "description": "Distributed imageboard browsing.",
   "type": "module",
-  "main": "server.js",
+  "main": "./dist/server.js",
   "scripts": {
-    "build": "cd dbm && yarn install && cd .. && yarn install",
-    "start": "node server.js"
+    "start": "node ./dist/server.js"
   },
   "author": "threshold",
   "license": "AGPL-3.0-only",
@@ -14,6 +13,8 @@
     "express": "^4.18.2",
     "multer": "^1.4.5-lts.1",
     "open": "^10.0.4",
-    "pug": "^3.0.2"
+    "pug": "^3.0.2",
+    "@peerbit/document": "^6.0.7",
+    "peerbit": "^4.0.7"
   }
 }
