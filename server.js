@@ -306,6 +306,7 @@ app.get('/function/addBoard/:boardId',  async (req, res, next) => {
   } catch (err) {
 	    console.error('Error adding watched board:', err);
   }
+  res.send('')
 });
 
 app.get('/function/removeBoard/:boardId', async (req, res, next) => {
@@ -324,6 +325,7 @@ app.get('/function/removeBoard/:boardId', async (req, res, next) => {
   } catch (err) {
     console.error('Error removing watched board:', err);
   }
+  res.send('')
 });
 
 const moderators = loadModerators()
