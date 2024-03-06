@@ -2,7 +2,7 @@ doctype html
 html
   head
     title
-    link(rel="stylesheet", href="/simple.css")
+    link(rel="stylesheet", href=`/${cssTheme}.css`)
     script.
       let deleteMode = '';
 
@@ -113,6 +113,11 @@ html
         }
       }
 
+      function changeTheme() {
+        const themeSelector = document.getElementById('cssThemeSelector');
+        window.location.href = '/function/changeTheme/' + themeSelector.options[themeSelector.selectedIndex].value;
+      }
+
       document.addEventListener("DOMContentLoaded", function() {
         // Add event listener to embedded images
         const embeddedImages = document.querySelectorAll('.embedded-file');
@@ -154,6 +159,14 @@ html
           button(onclick="deleteFile()", class="sidebarbutton") Block File
 
           h2 Control Panel
+          label(for="cssThemeSelector") Theme: 
+          select(id="cssThemeSelector", onchange="changeTheme()")
+            each theme in themes
+              option(value=theme, selected=(theme === cssTheme ? 'selected' : null)) #{theme.charAt(0).toUpperCase() + theme.slice(1)}
+          br
+          br
+          .clientid Client id: #{clientId}
+          br
           label(for="myMultiAddrTextbox") My MultiAddr
           input(type="text", id="myMultiAddrTextbox", readonly, value=myMultiAddr)
           form(action="/connectToPeer" method="POST" enctype="multipart/form-data")
@@ -161,5 +174,3 @@ html
             input(type="text", id="peerMultiAddr", name="peerMultiAddr")
             br
             button(type="connecttopeer", class="sidebarbutton") Connect to Peer MultiAddr
-          br
-          .clientid Client id: #{clientId}

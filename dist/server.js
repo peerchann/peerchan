@@ -39,7 +39,8 @@ function loadConfig() {
                 threadsPerPage: 5,
                 previewReplies: 3,
                 defaultName: "Anonymous",
-                openHomeOnStartup: true
+                openHomeOnStartup: true,
+                defaultTheme: "chalk"
             };
 			fs.writeFileSync(configFile, JSON.stringify(defaultConfig, null, '\t'), 'utf8');
             return defaultConfig;
@@ -47,6 +48,16 @@ function loadConfig() {
     } catch (err) {
         console.error('Error loading or creating config file:', err);
         return null;
+    }
+}
+
+function saveConfig() {
+    const configFile = configDir+'/config.json';
+    try {
+        fs.writeFileSync(configFile, JSON.stringify(cfg, null, '\t'), 'utf8');
+        console.log('Configuration saved successfully.');
+    } catch (err) {
+        console.error('Error saving configuration:', err);
     }
 }
 
@@ -163,7 +174,7 @@ function applyMarkup(inputObj = {}) {
 	return inputObj
 }
 
-app.use(express.static('./themes'));
+app.use(express.static('./themes')); //todo: revist to allow static icons and such, also change in home.pug
 
 let bufferSize = 128 * 1024 //todo: find an ideal value for this, for now we do 128 kb at a time //todo: revisit this?
 
@@ -180,6 +191,38 @@ function formatFileSize(size) {
 	  return (size / (1024 * 1024 * 1024 * 1024)).toFixed(2) + ' TB';
 	}
 }
+
+var cssThemes = []
+
+function loadCssThemes() {
+	cssThemes = fs.readdirSync('./themes') //todo: make this configurable, and try-catch?
+	.filter(file => file.endsWith('.css'))
+	.map(file => file.slice(0, -4));
+
+}
+
+var currentCssTheme = null; 
+
+app.get('/function/changeTheme/:themeName', async (req, res, next) => {
+  try {
+  	loadCssThemes() //todo: possible update this somewhere else or check every time?
+  	var lowercaseTheme = req.params.themeName.toLowerCase()
+  	if (cssThemes.includes(lowercaseTheme)) {
+  		currentCssTheme = lowercaseTheme
+  		cfg.defaultTheme = lowercaseTheme
+  		saveConfig()
+  	} else {
+  		throw new Error(`Theme ${lowercaseTheme}.css not found.`)
+  	}
+
+  } catch (err) {
+  	console.log(`Failed to change theme to: ${req.params.themeName}.`)
+  	lastError = err //todo: get this working
+  }
+  	res.redirect(req.headers.referer)
+});
+
+
 
 //todo: make this into a post req.
 app.get('/:board/deletepost=:posthash', async (req, res, next) => {
@@ -529,6 +572,8 @@ app.get('/:board/:pagenumber.html', async (req, res, next) => {
 			posts: indexPosts.threads,
 			alert: lastError,
 			formatFileSize: formatFileSize,
+			cssTheme: currentCssTheme,
+			themes: cssThemes,
 			defaultName: cfg.defaultName,
 			moderators: moderators,
 			numPages: boardPagesCache[req.params.board],
@@ -589,6 +634,8 @@ app.get('/:board/thread/:thread.html', async (req, res, next) => {
 			watchedBoards: watchedBoards,
 			alert: lastError,
 			numPages: boardPagesCache[req.params.board],
+			themes: cssThemes,
+			cssTheme: currentCssTheme,
 			defaultName: cfg.defaultName,
 			moderators: moderators,
 			formatFileSize: formatFileSize,
@@ -693,6 +740,8 @@ app.get('/home', async (req, res, next) => { //todo: merge with above functional
 			boards: watchedBoards,
 			alert: lastError,
 			watchedBoards: watchedBoards,
+			themes: cssThemes,
+			cssTheme: currentCssTheme,
 			moderators: moderators,
 			myMultiAddr: db.client.libp2p.getMultiaddrs()[0],
 			posts: []} //todo: make dynamic
@@ -724,6 +773,9 @@ app.listen(cfg.browserPort, cfg.browserHost, () => {
 	// console.log(db)
 
 	try {
+
+		loadCssThemes()
+		currentCssTheme = cfg.defaultTheme
 
 		await db.pbInitClient(cfg.peerbitPort)
 		console.log("Successfully initialized Peerbit node.")
@@ -799,11 +851,10 @@ app.listen(cfg.browserPort, cfg.browserHost, () => {
 	// 	console.log(err)
 	// }
 
-	process.on('uncaughtException', (error) => {
-		    console.error('An uncaught exception occurred:', error.message);
-		    console.error('Stack trace:', error.stack);
-	});
-
+	// process.on('uncaughtException', (error) => {
+	// 	    console.error('An uncaught exception occurred:', error.message);
+	// 	    console.error('Stack trace:', error.stack);
+	// });
 
 	try {
 
