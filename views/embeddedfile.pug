@@ -17,15 +17,7 @@ if file.fileStatus
   // JavaScript function to toggle image size
   script.
     function expandImage(img) {
-      if (img.classList.contains('expanded')) {
-        img.style.maxWidth = '250px';
-        img.style.maxHeight = '250px' ;
-        img.classList.remove('expanded');
-      } else {
-        img.style.maxWidth = '100%';
-        img.style.maxHeight = '100%';
-        img.classList.add('expanded');
-      }
+      img.classList.toggle('expanded');
     }
 else
   span.file-not-found-icon ❌

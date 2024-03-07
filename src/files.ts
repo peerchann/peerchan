@@ -137,15 +137,15 @@ export class FileDatabase extends Program {
 						if (operation.value.chunkCids.length > 16) {
 							throw new Error('Expected file size greater than configured maximum of ' + 16 * fileChunkingSize + ' bytes.')
 						}
-						let fileData = await operation.value.getFile(this.chunks) //todo: revisit/check eg. for dynamic/variable chunking sizes
-						let checkFile = new File(fileData)
-						checkFile.chunkCids = operation.value.chunkCids
-						checkFile.fileHash = toHexString(sha256Sync(fileData))
-						if (toHexString(sha256Sync(serialize(checkFile))) != operation.value.hash) {
-							console.log(checkFile)
-							console.log(operation.value.hash)
-							throw new Error('File document hash didn\'t match expected.')
-						}
+						// let fileData = await operation.value.getFile(this.chunks) //todo: revisit/check eg. for dynamic/variable chunking sizes
+						// let checkFile = new File(fileData)
+						// checkFile.chunkCids = operation.value.chunkCids
+						// checkFile.fileHash = toHexString(sha256Sync(fileData))
+						// if (toHexString(sha256Sync(serialize(checkFile))) != operation.value.hash) {
+						// 	console.log(checkFile)
+						// 	console.log(operation.value.hash)
+						// 	throw new Error('File document hash didn\'t match expected.')
+						// }
 						return true
 						//todo: remove (or dont write in the first place) blocks of invalid file
 

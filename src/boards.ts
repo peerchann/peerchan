@@ -3,7 +3,7 @@ import { Peerbit } from "peerbit"
 import { field, variant, vec, option, serialize, deserialize } from "@dao-xyz/borsh"
 import { Program } from "@peerbit/program"
 import { Documents, DocumentIndex, 	SearchRequest, StringMatch, IntegerCompare, Compare, Results, PutOperation, DeleteOperation } from "@peerbit/document" //todo: remove address redundancy
-import { nanoid } from 'nanoid'
+// import { nanoid } from 'nanoid'
 
 import { sha256Sync, toHexString, PublicSignKey } from "@peerbit/crypto"
 ;

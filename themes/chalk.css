@@ -196,8 +196,14 @@ p {
 
 .embedded-image {
   max-width: 250px;
+  max-height: 250px;
   margin-top: -5px;
   cursor: pointer;
+}
+
+.embedded-image.expanded {
+  max-width: 100%;
+  max-height: 100%;
 }
 
 .post.deletion-mode:hover::after, .post_reply.deletion-mode:hover::after, .embedded-file.deletion-mode:hover::after {

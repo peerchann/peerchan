@@ -8,6 +8,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 import { field, variant, vec, serialize } from "@dao-xyz/borsh";
 import { Program } from "@peerbit/program";
 import { Documents, PutOperation, DeleteOperation } from "@peerbit/document"; //todo: remove address redundancy
+// import { nanoid } from 'nanoid'
 import { sha256Sync, toHexString } from "@peerbit/crypto";
 // import {
 // 	updateOne,
