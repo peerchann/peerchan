@@ -861,7 +861,7 @@ app.listen(cfg.browserPort, cfg.browserHost, () => {
 
 
 
-		await db.openFilesDb("", {factor: cfg.replicationFactor})
+		await db.openFilesDb("", {replicationFactor: cfg.replicationFactor})
 		console.log("Successfully opened Files Database.")
 		// await db.openFileChunksDb()
 		// console.log("Successfully opened FileChunks Database.")	
