@@ -119,21 +119,6 @@ const rt={};//object to hold render templates
 rt['home'] = compileFile('./views/boardmanage.pug');
 rt['board'] = compileFile('./views/board.pug');
 
-
-//const query = require(__dirname+'/db/query.js') //todo: rename?/reorg?
-
-// // Function to generate a random substring of length 16
-// function generateRandomSubstring() {
-//   const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-//   let randomString = '';
-//   for (let i = 0; i < 16; i++) {
-//     randomString += characters.charAt(Math.floor(Math.random() * characters.length));
-//   }
-//   return randomString;
-// }
-
-// Call db.makeNewPost() with random strings
-
 function makeRenderSafe(inputObj = {}) {
     for (let thisKey of Object.keys(inputObj)) {
         if (typeof inputObj[thisKey] === 'bigint') { // Check if the value is a BigInt
@@ -472,33 +457,12 @@ app.get('/function/removeModerator/:moderatorId', async (req, res, next) => {
 });
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 //todo: test without filename
 app.get('/download/file/:filename.:fileext', async (req, res, next) => {
 	// console.log('debug 1: GET filename with extension')
 	// console.log(req.params.filename)
 	// console.log(req.params.fileext)
+	let fileStream
 	try {
 		const db = await import('./db.js')
 		let fileData = await db.getFile(req.params.filename)
@@ -506,8 +470,9 @@ app.get('/download/file/:filename.:fileext', async (req, res, next) => {
 		// console.log(fileData)
 		if (fileData) {
 			// return fileData
-			let fileStream = new Stream.Readable()
+			fileStream = new Stream.Readable()
 			let i = 0
+
 			fileStream._read = function (size) {
 				let pushed = true
 				while (pushed && i < fileData.length) {
@@ -519,7 +484,9 @@ app.get('/download/file/:filename.:fileext', async (req, res, next) => {
 					this.push(null)
 				}
 			}
-			fileStream.pipe(res)		
+			fileStream.pipe(res)
+
+
 		} else {
 			res.send(null)
 		}
@@ -527,6 +494,10 @@ app.get('/download/file/:filename.:fileext', async (req, res, next) => {
 	} catch (error) {
 		console.log('Failed to get file '+req.params.filename)
 		console.log(error)
+        if (fileStream) {
+            fileStream.destroy(); // Close the file stream if it's initialized
+        }
+        res.send(null);
 	}
 	// return res.json(req.params)
 });
@@ -548,13 +519,6 @@ app.get('/:board/:pagenumber.html', async (req, res, next) => {
 
 		boardPagesCache[req.params.board] = indexPosts.totalpages
 
-		// for (let thisPostIndex in indexPosts) {
-		// 	indexPosts[thisPostIndex] = applyMarkup(indexPosts[thisPostIndex])
-		// 	for (let thisReplyIndex in indexPosts.replies) {
-		// 		indexPosts.replies[thisReplyIndex] = applyMarkup(indexPosts.replies[thisReplyIndex])
-		// 	}
-		// }
-
     	console.time('buildIndex');
 		for(let threadPost in indexPosts.threads) {
 			indexPosts.threads[threadPost].replies = indexPosts.replies[threadPost]
@@ -562,8 +526,6 @@ app.get('/:board/:pagenumber.html', async (req, res, next) => {
 		}
     	console.timeEnd('buildIndex');
 
-//		console.log(indexPosts)
-//		console.log(indexPosts.replies)
 		const options = {
 			clientId: await db.clientId(),
 			board: req.params.board,
@@ -625,8 +587,6 @@ app.get('/:board/thread/:thread.html', async (req, res, next) => {
 		// 	}
 		// }
 
-		// console.log('Replies:')
-		// console.log(replyPosts)
 		const options = {
 			clientId: await db.clientId(),
 			threadId: req.params.thread,

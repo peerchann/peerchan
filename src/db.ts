@@ -45,6 +45,7 @@ export let openedBoards: any = {}
 // export let PostSubmissionService: PeerchanPostSubmissionService
 
 let directory = './storage'; //todo: change path/address this etc.
+const remoteQuery = true 
 
 export async function pbInitClient (listenPort = 8500) {
 
@@ -177,7 +178,7 @@ export async function delPost (whichPost: string, whichBoard: string) {
     if (!whichBoard) {
         throw new Error('No board specified.');
     }
-	let theseReplies = await openedBoards[whichBoard].documents.index.search(new SearchRequest({query: [new StringMatch({ key: 'replyto', value: whichPost })]}), { local: true, remote: true })
+	let theseReplies = await openedBoards[whichBoard].documents.index.search(new SearchRequest({query: [new StringMatch({ key: 'replyto', value: whichPost })]}), { local: true, remote: remoteQuery })
 	//delete post itself
 	await openedBoards[whichBoard].documents.del(whichPost); //todo: need to return id?
 	//then delete replies
@@ -194,14 +195,14 @@ export async function getAllPosts (query: any = {}) {
 	//todo: add query?
 	let results: any = []
 	for (let thisBoard of Object.keys(openedBoards)) {
-		results = results.concat(await openedBoards[thisBoard].documents.index.search(new SearchRequest, { local: true, remote: true }))
+		results = results.concat(await openedBoards[thisBoard].documents.index.search(new SearchRequest, { local: true, remote: remoteQuery }))
 	}
 
     // Sort the results by the 'date' property in descending order
     results.sort((a: any, b: any) => (a.date < b.date) ? -1 : ((a.date > b.date) ? 1 : 0)) //newest on top
 
 	return results
-	//return await Posts.documents.index.search(new SearchRequest, { local: true, remote: true });
+	//return await Posts.documents.index.search(new SearchRequest, { local: true, remote: remoteQuery });
 }
 
 //todo: revisit remote
@@ -213,13 +214,13 @@ export async function getPosts (whichBoard: string) {
     }
 
 	//todo: add query?
-	let	results = await openedBoards[whichBoard].documents.index.search(new SearchRequest, { local: true, remote: true })
+	let	results = await openedBoards[whichBoard].documents.index.search(new SearchRequest, { local: true, remote: remoteQuery })
 
     // Sort the results by the 'date' property in descending order
     results.sort((a: any, b: any) => (a.date < b.date) ? -1 : ((a.date > b.date) ? 1 : 0)) //newest on top
 
 	return results
-	//return await Posts.documents.index.search(new SearchRequest, { local: true, remote: true });
+	//return await Posts.documents.index.search(new SearchRequest, { local: true, remote: remoteQuery });
 }
 
 //todo: add sage
@@ -228,7 +229,7 @@ export async function getThreadsWithReplies(whichBoard: string, numThreads: numb
     if (!whichBoard) {
         throw new Error('No board specified.');
     }
-	let	threads = await openedBoards[whichBoard].documents.index.search(new SearchRequest({query: [new MissingField({ key: 'replyto' })]}), { local: true, remote: true })
+	let	threads = await openedBoards[whichBoard].documents.index.search(new SearchRequest({query: [new MissingField({ key: 'replyto' })]}), { local: true, remote: remoteQuery })
 
     const totalpages = Math.max(1,Math.ceil(threads.length / numThreads)); //still have an index page even if its empty
 
@@ -238,7 +239,7 @@ export async function getThreadsWithReplies(whichBoard: string, numThreads: numb
     let omittedreplies = new Array(threads.length)
 
 	for (let i = 0; i < threads.length; i++) {
-		let thesereplies = await openedBoards[whichBoard].documents.index.search(new SearchRequest({query: [new StringMatch({ key: 'replyto', value: threads[i]['hash'] })]}), { local: true, remote: true })
+		let thesereplies = await openedBoards[whichBoard].documents.index.search(new SearchRequest({query: [new StringMatch({ key: 'replyto', value: threads[i]['hash'] })]}), { local: true, remote: remoteQuery })
 		threads[i].lastbumped = thesereplies.reduce((max: bigint, reply: any) => reply.date > max ? reply.date : max, threads[i].date);
 		threads[i].index = i
 		omittedreplies[i] = Math.max(0, thesereplies.length - numPreviewPostsPerThread);
@@ -266,7 +267,7 @@ export async function getThreadsWithReplies_prev(whichBoard: string, numThreads:
     if (!whichBoard) {
         throw new Error('No board specified.');
     }
-	let	threads = await openedBoards[whichBoard].documents.index.search(new SearchRequest({query: [new MissingField({ key: 'replyto' })]}), { local: true, remote: true })
+	let	threads = await openedBoards[whichBoard].documents.index.search(new SearchRequest({query: [new MissingField({ key: 'replyto' })]}), { local: true, remote: remoteQuery })
 	
     // Sort the results by the 'date' property in descending order
     threads.sort((a: any, b: any) => (a.date > b.date) ? -1 : ((a.date < b.date) ? 1 : 0)) //newest on top
@@ -277,7 +278,7 @@ export async function getThreadsWithReplies_prev(whichBoard: string, numThreads:
     let omittedreplies = new Array(threads.length)
 
 	for (let i = 0; i < threads.length; i++) {
-		let thesereplies = await openedBoards[whichBoard].documents.index.search(new SearchRequest({query: [new StringMatch({ key: 'replyto', value: threads[i]['hash'] })]}), { local: true, remote: true })
+		let thesereplies = await openedBoards[whichBoard].documents.index.search(new SearchRequest({query: [new StringMatch({ key: 'replyto', value: threads[i]['hash'] })]}), { local: true, remote: remoteQuery })
 		thesereplies.sort((a: any, b: any) => (a.date < b.date) ? -1 : ((a.date > b.date) ? 1 : 0)) //newest on bottom
 		omittedreplies[i] = Math.max(0, thesereplies.length - numPreviewPostsPerThread);
 		replies[i] = thesereplies.slice(-numPreviewPostsPerThread);
@@ -300,10 +301,10 @@ export async function getSpecificPost (whichBoard: string, whichThread: string) 
 
 
 	//todo: add query?
-	let	results = await openedBoards[whichBoard].documents.index.search(new SearchRequest({query: [new StringMatch({ key: 'hash', value: whichThread })]}), { local: true, remote: true })
+	let	results = await openedBoards[whichBoard].documents.index.search(new SearchRequest({query: [new StringMatch({ key: 'hash', value: whichThread })]}), { local: true, remote: remoteQuery })
 	return results
 	// return results.length ? results[0] : []
-	//return await Posts.documents.index.search(new SearchRequest, { local: true, remote: true });
+	//return await Posts.documents.index.search(new SearchRequest, { local: true, remote: remoteQuery });
 }
 
 //todo: revisit remote
@@ -320,10 +321,10 @@ export async function getRepliesToSpecificPost (whichBoard: string, whichThread:
 
 
 	//todo: add query?
-	let	results = await openedBoards[whichBoard].documents.index.search(new SearchRequest({query: [new StringMatch({ key: 'replyto', value: whichThread })]}), { local: true, remote: true })
+	let	results = await openedBoards[whichBoard].documents.index.search(new SearchRequest({query: [new StringMatch({ key: 'replyto', value: whichThread })]}), { local: true, remote: remoteQuery })
 	results.sort((a: any, b: any) => (a.date < b.date) ? -1 : ((a.date > b.date) ? 1 : 0)) //newest on bottom
 	return results
-	//return await Posts.documents.index.search(new SearchRequest, { local: true, remote: true });
+	//return await Posts.documents.index.search(new SearchRequest, { local: true, remote: remoteQuery });
 }
 
 export async function putFile (fileData: Uint8Array) {
@@ -344,7 +345,7 @@ export async function getFile (fileHash: string) {
 		// let db = Files //todo: revisit this here and elsewhere
 		// console.log("FileChunks.documents.index.size:")
 		// console.log(FileChunks.documents.index.size)
-		let foundResults = await Files.files.index.search(new SearchRequest({ query: [new StringMatch({key: 'hash', value: fileHash })] }), { local: true, remote: true }).then(results => results[0])
+		let foundResults = await Files.files.index.search(new SearchRequest({ query: [new StringMatch({key: 'hash', value: fileHash })] }), { local: true, remote: remoteQuery }).then(results => results[0])
 		// console.log("debug 2 in db.ts getFile():")
 		// console.log(foundResults)
 		if (foundResults) {
@@ -360,7 +361,7 @@ export async function fileExists (fileHash: string) {
 		
 		// console.log('fileExist:')
 		// console.log(fileHash)
-		let foundResults = await Files.files.index.search(new SearchRequest({ query: [new StringMatch({key: 'hash', value: fileHash })] }), { local: true, remote: true })
+		let foundResults = await Files.files.index.search(new SearchRequest({ query: [new StringMatch({key: 'hash', value: fileHash })] }), { local: true, remote: remoteQuery })
 		// console.log('foundResults:')
 		// console.log(foundResults)
 		// console.log(foundResults.length)
@@ -374,7 +375,7 @@ export async function fileExists (fileHash: string) {
 //todo: need to get this also deleting the file chunks whenever anyone deletes, not just us
 export async function delFile (fileHash: string) {
 	//todo:
-	// let foundResults = await Files.files.index.search(new SearchRequest({ query: [new StringMatch({key: 'hash', value: fileHash })] }), { local: true, remote: true }).then(results => results[0])
+	// let foundResults = await Files.files.index.search(new SearchRequest({ query: [new StringMatch({key: 'hash', value: fileHash })] }), { local: true, remote: remoteQuery }).then(results => results[0])
 	//first delete all the chunks of the file we may have
 	// for (let chunkCid in foundResults.chunkCids) {
 	// 	await FileChunks.documents.del(chunkCid)
