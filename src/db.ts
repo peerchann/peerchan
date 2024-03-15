@@ -18,6 +18,7 @@ import { GossipSub } from '@chainsafe/libp2p-gossipsub'
 import { Ed25519Keypair, toBase64, fromBase64, sha256Sync, toHexString, PublicSignKey, Ed25519PublicKey, Secp256k1PublicKey } from "@peerbit/crypto"
 import { field, variant, vec, option, serialize, deserialize } from "@dao-xyz/borsh"
 import { multiaddr } from '@multiformats/multiaddr'
+
 import fs from "fs"
 
 import { Post, PostDatabase, PostFile } from './posts.js'
@@ -91,7 +92,8 @@ export async function openPostsDb (postsDbId = "my_post_db", options: any) {
 					type: "replicator",
 					factor: options.replicationFactor
 				}
-			}})
+			}
+		})
 	} else {
 		openedBoards[postsDbId] = await client.open(new PostDatabase({ id: sha256Sync(Buffer.from(postsDbId)) }))
 	}
@@ -122,25 +124,29 @@ export async function closePostsDb (postsDbId = "my_post_db") {
 
 // }
 
+
 //only one db for now
-export async function openFilesDb (filesDbId = "", options: any) {
+export async function openFilesDb (filesDbId = "", options: any ) {
 
 	Files = new FileDatabase({ id: sha256Sync(Buffer.from(filesDbId)) })
 	if (options.replicationFactor) {
+		console.log(options)
 		await client.open(Files.chunks, {
 			args: {
 				role: {
 					type: "replicator",
-					factor: 1
+					factor: options.replicationFactor
 				}
-			}})
+			}
+		})
 		await client.open(Files, {
 			args: {
 				role: {
 					type: "replicator",
-					factor: 1
+					factor: options.replicationFactor
 				}
-			}})
+			}
+	})
 	} else {
 		await client.open(Files.chunks)
 		await client.open(Files)

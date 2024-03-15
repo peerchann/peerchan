@@ -1,19 +1,22 @@
 import { Program } from "@peerbit/program";
-import { Documents } from "@peerbit/document";
-export declare class FileChunkDatabase extends Program {
+import { Documents, RoleOptions } from "@peerbit/document";
+type OpenArgs = {
+    role?: RoleOptions;
+};
+export declare class FileChunkDatabase extends Program<OpenArgs> {
     documents: Documents<FileChunk>;
     constructor(properties?: {
         id?: Uint8Array;
     });
-    open(): Promise<void>;
+    open(properties?: OpenArgs): Promise<void>;
 }
-export declare class FileDatabase extends Program {
+export declare class FileDatabase extends Program<OpenArgs> {
     files: Documents<File>;
     chunks: FileChunkDatabase;
     constructor(properties?: {
         id?: Uint8Array;
     });
-    open(): Promise<void>;
+    open(properties?: OpenArgs): Promise<void>;
     createFile(data: Uint8Array): Promise<File>;
     getFile(hash: string): Promise<Uint8Array | null>;
     deleteFile(hash: string): Promise<{

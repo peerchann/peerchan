@@ -1,5 +1,5 @@
 import { Program } from "@peerbit/program";
-import { Documents } from "@peerbit/document";
+import { Documents, RoleOptions } from "@peerbit/document";
 export declare class BasePostDocument {
 }
 export declare class PostFile {
@@ -20,10 +20,14 @@ export declare class Post extends BasePostDocument {
     files: PostFile[];
     constructor(date: bigint, replyto: string | undefined, name: string | undefined, subject: string | undefined, email: string | undefined, message: string | undefined, files: PostFile[]);
 }
-export declare class PostDatabase extends Program {
+type OpenArgs = {
+    role?: RoleOptions;
+};
+export declare class PostDatabase extends Program<OpenArgs> {
     documents: Documents<Post>;
     constructor(properties?: {
         id?: Uint8Array;
     });
-    open(): Promise<void>;
+    open(properties?: OpenArgs): Promise<void>;
 }
+export {};

@@ -175,10 +175,11 @@ let PostDatabase = class PostDatabase extends Program {
         this.documents = new Documents({ id: properties?.id }); //
         // this.documents = new Documents({ index: new DocumentIndex({ indexBy: '_id' }) })
     }
-    async open() {
+    async open(properties) {
         await this.documents.open({
             type: Post,
             index: { key: 'hash' },
+            role: properties?.role,
             canPerform: async (operation, { entry }) => {
                 const signers = await entry.getPublicKeys();
                 if (operation instanceof PutOperation) {

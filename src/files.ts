@@ -1,10 +1,9 @@
 import { field, variant, vec, option, serialize, deserialize } from "@dao-xyz/borsh"
 import { Peerbit, createLibp2pExtended } from "peerbit"
-import { Program } from "@peerbit/program"
+import { Program, } from "@peerbit/program"
 //import { createBlock, getBlockValue } from "@peerbit/libp2p-direct-block"
 import { sha256Sync, toBase64, toHexString, PublicSignKey } from "@peerbit/crypto"
-import { Documents, DocumentIndex, SearchRequest, StringMatch, Results, PutOperation, DeleteOperation } from "@peerbit/document" //todo: remove address redundancy
-
+import { Documents, DocumentIndex, SearchRequest, StringMatch, Results, PutOperation, DeleteOperation, RoleOptions } from "@peerbit/document" //todo: remove address redundancy
 import { currentModerators } from './db.js'
 
 //todo: consider removing receivedHash check
@@ -31,8 +30,10 @@ function isModerator(theSigner: PublicSignKey, theIdentity: PublicSignKey, moder
 	return false
 }
 
+type OpenArgs = { role?: RoleOptions };
+
 @variant('FileChunks')
-export class FileChunkDatabase extends Program {
+export class FileChunkDatabase extends Program<OpenArgs>{
 
 	@field({ type: Documents })
 	documents: Documents<FileChunk>
@@ -45,10 +46,11 @@ export class FileChunkDatabase extends Program {
 		// this.documents = new Documents({ index: new DocumentIndex({ indexBy: '_id' }) })
 	}
 
-	async open() {
+	async open(properties?: OpenArgs) {
 		await this.documents.open({
 			type: FileChunk,
 			index: { key: 'hash' },
+			role: properties?.role,
 			canPerform: async (operation, { entry }) => {
 				const signers = await entry.getPublicKeys();
 				if (operation instanceof PutOperation) {
@@ -102,7 +104,7 @@ export class FileChunkDatabase extends Program {
 }
 
 @variant('Files')
-export class FileDatabase extends Program {
+export class FileDatabase extends Program<OpenArgs>{
 
 	@field({ type: Documents })
 	files: Documents<File>
@@ -117,13 +119,14 @@ export class FileDatabase extends Program {
 		// this.documents = new Documents({ index: new DocumentIndex({ indexBy: '_id' }) })s
 	}
 
-	async open() {
+	async open(properties?: OpenArgs) {
 
 		//for some reason this proceeds to the next without finishing so it has to be declared elsewhere (in .db .ts) //todo: revisit
 		// 	await this.chunks.open();
 		await this.files.open({
 			type: File,
 			index: { key: 'hash' },
+			role: properties?.role,
 			canPerform: async (operation, { entry }) => {
 				const signers = await entry.getPublicKeys();
 				if (operation instanceof PutOperation) {

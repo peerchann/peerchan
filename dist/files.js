@@ -5,7 +5,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
 import { field, variant, vec, serialize } from "@dao-xyz/borsh";
-import { Program } from "@peerbit/program";
+import { Program, } from "@peerbit/program";
 //import { createBlock, getBlockValue } from "@peerbit/libp2p-direct-block"
 import { sha256Sync, toBase64, toHexString } from "@peerbit/crypto";
 import { Documents, SearchRequest, StringMatch, PutOperation, DeleteOperation } from "@peerbit/document"; //todo: remove address redundancy
@@ -40,10 +40,11 @@ let FileChunkDatabase = class FileChunkDatabase extends Program {
         this.documents = new Documents({ id: properties?.id }); //
         // this.documents = new Documents({ index: new DocumentIndex({ indexBy: '_id' }) })
     }
-    async open() {
+    async open(properties) {
         await this.documents.open({
             type: FileChunk,
             index: { key: 'hash' },
+            role: properties?.role,
             canPerform: async (operation, { entry }) => {
                 const signers = await entry.getPublicKeys();
                 if (operation instanceof PutOperation) {
@@ -108,12 +109,13 @@ let FileDatabase = class FileDatabase extends Program {
         this.files = new Documents({ id: sha256Sync(this.chunks.documents.log.log.id) }); //
         // this.documents = new Documents({ index: new DocumentIndex({ indexBy: '_id' }) })s
     }
-    async open() {
+    async open(properties) {
         //for some reason this proceeds to the next without finishing so it has to be declared elsewhere (in .db .ts) //todo: revisit
         // 	await this.chunks.open();
         await this.files.open({
             type: File,
             index: { key: 'hash' },
+            role: properties?.role,
             canPerform: async (operation, { entry }) => {
                 const signers = await entry.getPublicKeys();
                 if (operation instanceof PutOperation) {

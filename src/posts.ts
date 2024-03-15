@@ -1,10 +1,9 @@
 'use strict';
 import { Peerbit } from "peerbit"
 import { field, variant, vec, option, serialize, deserialize } from "@dao-xyz/borsh"
-import { Program } from "@peerbit/program"
-import { Documents, DocumentIndex, 	SearchRequest, StringMatch, IntegerCompare, Compare, Results, PutOperation, DeleteOperation } from "@peerbit/document" //todo: remove address redundancy
+import { Program, OpenOptions } from "@peerbit/program"
+import { Documents, DocumentIndex, 	SearchRequest, StringMatch, IntegerCompare, Compare, Results, PutOperation, DeleteOperation, RoleOptions } from "@peerbit/document" //todo: remove address redundancy
 // import { nanoid } from 'nanoid'
-
 import { currentModerators } from './db.js'
 
 
@@ -166,9 +165,11 @@ export class Post extends BasePostDocument {
 
 }
 
+type OpenArgs = { role?: RoleOptions }; //todo: move this to db?
+
 //todo: consistency with the document type 
 @variant("postdatabase") //todo: consider renaming/modifying as appropriate
-export class PostDatabase extends Program {
+export class PostDatabase extends Program<OpenArgs> {
 
 	@field({ type: Documents })
 	documents: Documents<Post>
@@ -180,10 +181,11 @@ export class PostDatabase extends Program {
 		// this.documents = new Documents({ index: new DocumentIndex({ indexBy: '_id' }) })
 	}
 
-	async open() {
+	async open(properties?: OpenArgs) {
 		await this.documents.open({
 			type: Post,
 			index: { key: 'hash' },
+			role: properties?.role,
 			canPerform: async (operation, { entry }) => {
 				const signers = await entry.getPublicKeys();
 				if (operation instanceof PutOperation) {

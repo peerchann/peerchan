@@ -92,11 +92,12 @@ export async function closePostsDb(postsDbId = "my_post_db") {
 export async function openFilesDb(filesDbId = "", options) {
     Files = new FileDatabase({ id: sha256Sync(Buffer.from(filesDbId)) });
     if (options.replicationFactor) {
+        console.log(options);
         await client.open(Files.chunks, {
             args: {
                 role: {
                     type: "replicator",
-                    factor: 1
+                    factor: options.replicationFactor
                 }
             }
         });
@@ -104,7 +105,7 @@ export async function openFilesDb(filesDbId = "", options) {
             args: {
                 role: {
                     type: "replicator",
-                    factor: 1
+                    factor: options.replicationFactor
                 }
             }
         });
