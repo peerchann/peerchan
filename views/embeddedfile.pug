@@ -1,20 +1,13 @@
-// Display filename, size, and hash
 p.embedded-info
-
   a(href=`/download/file/${file.hash}.${file.extension}`, download=file.filename) #{file.filename}
   | , Size: #{formatFileSize(file.size)} 
-
 if file.fileStatus
-  // Display image if file is an image
   if ['png', 'gif', 'jpg'].includes(file.extension.toLowerCase())
-    // Add a container div to hold the image
     div.embedded-image-container
       img(src=`/download/file/${file.hash}.${file.extension}`, alt=file.filename, class="embedded-image", onclick="expandImage(this)")
   else
     a(href=`/download/file/${file.hash}.${file.extension}`, download=file.filename)
       span.file-icon 🗎
-
-  // JavaScript function to toggle image size
   script.
     function expandImage(img) {
       img.classList.toggle('expanded');

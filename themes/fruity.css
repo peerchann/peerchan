@@ -1,25 +1,41 @@
 body {
   font-family: Arial, sans-serif;
-  background-color: #f0b3b3; /* Slightly darker pastel pink background */
+  background-color: #f0b3b3; 
   margin: 0;
   padding: 0;
   display: flex;
 }
 
 .container {
-  text-align: center; /* Center align content */
+  text-align: center; 
 }
 
+a {
+  color: #1976D2;
+  text-decoration: none;
+}
+
+a:visited {
+  color: #6a1b9a;
+  text-decoration: none;
+}
+
+a:hover {
+  color: #cddc39;
+  text-decoration: underline;
+}
+
+
 h1 {
-  color: #2b4868; /* Darker blue */
+  color: #2b4868; 
 }
 
 p {
-  color: #667051; /* Darker pastel green */
+  color: #667051; 
 }
 
 .sidebarbutton {
-  background-color: #ff827a; /* Slightly darker pastel pink */
+  background-color: #ff827a; 
   border: none;
   color: #333;
   padding: 15px 32px;
@@ -33,27 +49,27 @@ p {
 }
 
 .sidebarbutton:hover {
-  background-color: #ff5f55; /* Darker pastel pink on hover */
+  background-color: #ff5f55; 
 }
 
 .post {
-  background-color: #b3b3ff; /* Slightly darker pastel blue */
-  display: inline-block; /* Set display to inline-block */
-  padding: 10px; /* Add padding for spacing */
-  margin-bottom: 5px; /* Add margin between posts */
-  margin-top: 5px; /* Add margin between posts */
-  box-shadow: 0px 0px 0px 2px rgba(0, 0, 0, 0.2); /* Add clean offset drop shadow */
-  max-width: calc(100vw - 300px);  Limit to viewport width */
+  background-color: #b3b3ff; 
+  display: inline-block; 
+  padding: 10px; 
+  margin-bottom: 5px; 
+  margin-top: 5px; 
+  box-shadow: 0px 0px 0px 2px rgba(0, 0, 0, 0.2); 
+  max-width: calc(100vw - 300px);
 }
 
 .post_reply {
-  background-color: #ff9999; /* Less garish red */
-  display: inline-block; /* Set display to block to make replies appear on new lines */
-  padding: 10px; /* Add padding for spacing */
-  margin-bottom: 5px; /* Add margin between posts */
-  margin-top: 5px; /* Add margin between posts */
-  box-shadow: 0px 0px 0px 2px rgba(0, 0, 0, 0.2); /* Add clean offset drop shadow */
-  max-width: calc(100vw - 300px); /* Limit to viewport width */
+  background-color: #ff9999; 
+  display: inline-block; 
+  padding: 10px; 
+  margin-bottom: 5px; 
+  margin-top: 5px; 
+  box-shadow: 0px 0px 0px 2px rgba(0, 0, 0, 0.2); 
+  max-width: calc(100vw - 300px); 
 }
 
 .wrapper {
@@ -62,78 +78,90 @@ p {
 }
 
 .content {
-  flex: 1; /* Take up remaining space */
-  padding: 20px; /* Add padding for spacing */
-  max-width: calc(100vw - 300px); /* Adjust 300px according to the width of your sidebar */
+  flex: 1; 
+  padding: 20px; 
+  max-width: calc(100vw - 300px); 
 }
 
 .sidebar {
-  width: 200px; /* Set width of the sidebar */
-  padding: 20px; /* Add padding for spacing */
-  background-color: #9985b9; /* Slightly darker pastel purple for sidebar */
-  position: fixed; /* Position the sidebar relative to the viewport */
-  top: 0; /* Align the top of the sidebar with the top of the viewport */
-  right: 0; /* Align the left edge of the sidebar with the left edge of the viewport */
-  bottom: 0; /* Make the sidebar extend to the bottom of the viewport */
+  width: 200px; 
+  padding: 20px; 
+  background-color: #9985b9; 
+  position: fixed; 
+  top: 0; 
+  right: 0; 
+  bottom: 0; 
 }
 
+.post-header {
+  margin-top: 0px;
+  margin-bottom: 5px;
+
+}
 
 .subject {
-  color: #0a224e; /* Saturated blue for subject */
+  color: #0a224e; 
+  margin-right: 5px;
 }
 
 .name {
-  color: #c5392d; /* Saturated red for name */
+  color: #c5392d; 
+  margin-right: 5px;
 }
 
 .namewithlink {
-  color: #8a2bc2; /* Darker shade of purple */
+  color: #8a2bc2; 
+  margin-right: 5px;
 }
 
 .date {
-  color: #396432; /* Saturated green for date */
+  color: #396432; 
+}
+
+.reply-link {
+  margin-left: 5px;
 }
 
 .message {
-  color: #191970; /* Dark indigo for message */
+  color: #191970; 
   white-space: pre-wrap;
-  word-wrap: break-word; /* Wrap long words to the next line */
+  word-wrap: break-word; 
 }
 
 .message-quote {
-  color: blue; /* Greentext for lines starting with '>' */
+  color: blue; 
 }
 
 .email {
-  color: #6a4585; /* Saturated purple for email */
+  color: #6a4585; 
 }
 
 .replyingsonoinput {
-  background-color: #FFC0CB; /* Fruity background color */
-  color: #999; /* Lower contrast text color */
-  cursor: not-allowed; /* Cursor style to indicate non-interactive */
+  background-color: #FFC0CB; 
+  color: #999; 
+  cursor: not-allowed; 
 }
 
 .omittedreplies {
-  /*background-color: #d5392d;*/
+  
   display: inline-block;
   margin-top: 5px;
   margin-bottom: 5px;
 }
 
 .alert {
-  background-color: #ffcc00; /* Fruity yellow background */
-  color: #7a2315; /* Dark red text color */
-  border: 2px solid #ff3300; /* Bright orange border */
+  background-color: #ffcc00; 
+  color: #7a2315; 
+  border: 2px solid #ff3300; 
   margin-top: 20px;
-  border-radius: 10px; /* Rounded corners */
-  padding: 10px; /* Padding around the text */
-  font-size: 1.2em; /* Larger font size */
-  font-family: 'Comic Sans MS', cursive, sans-serif; /* Fun and casual font */
-  text-align: left; /* Left align text */     
-  display: inline-block; /* Only as wide as the text */
-  box-shadow: 0 0 10px rgba(122, 35, 21, 0.5); /* Shadow effect */
-  animation: shake 0.3s infinite alternate; /* Faster shake animation */
+  border-radius: 10px; 
+  padding: 10px; 
+  font-size: 1.2em; 
+  font-family: 'Comic Sans MS', cursive, sans-serif; 
+  text-align: left;      
+  display: inline-block; 
+  box-shadow: 0 0 10px rgba(122, 35, 21, 0.5); 
+  animation: shake 0.3s infinite alternate; 
 }
 
 @keyframes shake {
@@ -143,18 +171,18 @@ p {
 
 
 .dividing-line {
-  border: 0; /* Remove default border */
-  height: 2px; /* Set height of the line */
-  background-color: #b65ecf; /* Cool pinky purple color */
-  margin-bottom: 5px; /* Add margin between posts */
+  border: 0; 
+  height: 2px; 
+  background-color: #b65ecf; 
+  margin-bottom: 5px; 
   margin-top: 5px;
 }
 
-.embedded-files {
+.embedded-files, .embedded-nothing {
   display: flex;
   flex-wrap: wrap;
   margin-bottom: 0px;
-  margin-top: -10px
+  margin-top: 0px;
 }
 
 .embedded-file {
@@ -164,23 +192,23 @@ p {
 }
 
 .embedded-nothing {
-  display: flex;
-  flex-wrap: wrap;
   margin-bottom: 0px;
-  margin-top: 10px
+  margin-top: 0px
 }
 
 
 .embedded-info {
-  word-wrap: break-word; /* Allows long words to break and wrap onto the next line */
-  max-width: 250px; /* Match the max-width of the image */
+  word-wrap: break-word;
+  max-width: 250px;
+  margin-bottom: 5px;
+  margin-top: 0px
 }
 
 .embedded-image {
   max-width: 250px;
   max-height: 250px;
-  margin-top: -5px;
-  cursor: pointer; /* Change cursor to pointer on hover */
+  margin-top: 0px;
+  cursor: pointer; 
 }
 
 .embedded-image.expanded {
@@ -189,71 +217,71 @@ p {
 }
 
 .post.deletion-mode:hover::after {
-  content: ""; /* Create a pseudo-element */
-  position: absolute; /* Position the overlay */
+  content: ""; 
+  position: absolute; 
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(255, 0, 0, 0.5); /* Red overlay */
-  border: 2px solid red; /* Solid red border */
+  background-color: rgba(255, 0, 0, 0.5); 
+  border: 2px solid red; 
   box-sizing: border-box;
-  pointer-events: none; /* This ensures that the overlay does not block mouse events */
+  pointer-events: none; 
 }
 
 .post.deletion-mode:hover {
-  position: relative; /* Ensure proper positioning */
+  position: relative; 
 }
 
 .post.deletion-mode * {
-  pointer-events: none; /* Disable click actions on all sub-elements */
+  pointer-events: none; 
 }
 
 .post_reply.deletion-mode:hover::after {
-  content: ""; /* Create a pseudo-element */
-  position: absolute; /* Position the overlay */
+  content: ""; 
+  position: absolute; 
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(255, 0, 0, 0.5); /* Red overlay */
-  border: 2px solid red; /* Solid red border */
+  background-color: rgba(255, 0, 0, 0.5); 
+  border: 2px solid red; 
   box-sizing: border-box;
-  pointer-events: none; /* This ensures that the overlay does not block mouse events */
+  pointer-events: none; 
 }
 
 .post_reply.deletion-mode:hover {
-  position: relative; /* Ensure proper positioning */
+  position: relative; 
 }
 
 .post_reply.deletion-mode * {
-  pointer-events: none; /* Disable click actions on all sub-elements */
+  pointer-events: none; 
 }
 
 
 .embedded-file.deletion-mode:hover::after {
-  content: ""; /* Create a pseudo-element */
-  position: absolute; /* Position the overlay */
+  content: ""; 
+  position: absolute; 
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(255, 0, 0, 0.5); /* Red overlay */
-  border: 2px solid red; /* Solid red border */
+  background-color: rgba(255, 0, 0, 0.5); 
+  border: 2px solid red; 
   box-sizing: border-box;
-  pointer-events: none; /* This ensures that the overlay does not block mouse events */
+  pointer-events: none; 
 }
 
 .embedded-file.deletion-mode:hover {
-  position: relative; /* Ensure proper positioning */
+  position: relative; 
 }
 
 .embedded-file.deletion-mode * {
-  pointer-events: none; /* Disable click actions on all sub-elements */
+  pointer-events: none; 
 }
 
 .watched-board {
-  margin-left: 5px; /* Add margin between link and button */
+  margin-left: 5px; 
 }
 
 .delete-link {
@@ -263,8 +291,8 @@ p {
   background: none;
   cursor: pointer;
   padding: none;
-  color: #8B0000; /* Ruddy, deep red color */
-  font-weight: bold; /* Emphasize the button */
+  color: #8B0000; 
+  font-weight: bold; 
 }
 
 .clientid {
@@ -274,11 +302,11 @@ p {
 
 
 .file-icon {
-  font-size: 50px; /* Adjust the size as needed */
+  font-size: 50px; 
 }
 
 .file-not-found-icon {
-  font-size: 50px; /* Adjust the size as needed */
+  font-size: 50px; 
 }
 
 .green {

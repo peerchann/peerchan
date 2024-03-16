@@ -1,23 +1,16 @@
 div(class=item.replyto ? 'post_reply' : 'post', hash=item.hash)
   div
-    if item.subject
-      span.subject #{item.subject} &nbsp; &nbsp;
-    // Wrap the name and date within a span
-    span
-      // Check if email exists
+    div.post-header
+      if item.subject
+        span.subject #{item.subject}
       if item.email
-        // If email exists, create a mailto link for the name
         a(href=`mailto:${item.email}`, class="namewithlink") #{item.name ? item.name : defaultName}
       else
-        // If email doesn't exist, display the name as normal text
         span.name #{item.name ? item.name : defaultName}
-      | &nbsp;&nbsp;&nbsp;&nbsp;
       span.date #{new Date(parseInt(item.date)).toLocaleString()}
-    if indexMode && !item.replyto
-      span &nbsp;&nbsp;
-      a(href=`/${currentBoard}/thread/${item.hash}.html`) Reply
-
-    // Display embedded files side by side
+      if indexMode && !item.replyto
+        span.reply-link
+          a(href=`/${currentBoard}/thread/${item.hash}.html`) [Reply]
     if item.files && item.files.length > 0
       div.embedded-files
         each file in item.files
@@ -25,7 +18,6 @@ div(class=item.replyto ? 'post_reply' : 'post', hash=item.hash)
             include embeddedfile.pug
     else
       div.embedded-nothing
-
     if item.message
       div.message
         each line in item.message.split('\n')

@@ -17,22 +17,19 @@ body {
   display: flex;
 }
 
-/* Style for normal links */
 a {
-  color: #64a5a6; /* Sky blue */
-  text-decoration: none; /* Remove underline */
+  color: #64a5a6;
+  text-decoration: none;
 }
 
-/* Style for visited links */
 a:visited {
-  color: #9575cd; /* Darker purple */
-  text-decoration: none; /* Remove underline */
+  color: #9575cd;
+  text-decoration: none;
 }
 
-/* Style for hovered links */
 a:hover {
-  color: #81c784; /* Light green */
-  text-decoration: underline; /* Underline on hover */
+  color: #81c784;
+  text-decoration: underline;
 }
 
 h1 {
@@ -102,20 +99,33 @@ p {
   bottom: 0;
 }
 
+.post-header {
+  margin-top: 0px;
+  margin-bottom: 5px;
+
+}
+
 .subject {
   color: #4fc3f7;
+  margin-right: 5px;
 }
 
 .name {
   color: #f06292;
+  margin-right: 5px;
 }
 
 .namewithlink {
   color: #ba68c8;
+  margin-right: 5px;
 }
 
 .date {
   color: #81c784;
+}
+
+.reply-link {
+  margin-left: 5px;
 }
 
 .message {
@@ -173,7 +183,7 @@ p {
   display: flex;
   flex-wrap: wrap;
   margin-bottom: 0px;
-  margin-top: -10px;
+  margin-top: 0px;
 }
 
 .embedded-file {
@@ -183,21 +193,22 @@ p {
 }
 
 .embedded-nothing {
-  display: flex;
-  flex-wrap: wrap;
   margin-bottom: 0px;
-  margin-top: 10px
+  margin-top: 0px
 }
 
 .embedded-info {
   word-wrap: break-word;
   max-width: 250px;
+  margin-bottom: 5px;
+  margin-top: 0px
 }
+
 
 .embedded-image {
   max-width: 250px;
   max-height: 250px;
-  margin-top: -5px;
+  margin-top: 0px;
   cursor: pointer;
 }
 
