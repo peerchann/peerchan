@@ -28,6 +28,8 @@ yarn start
  ```
 
 ## Configuration
+You can install css themes by placing them in the themes folder.
+
 You can customize the ports used and other settings by modifying config/config.json.
 
 If you'd like to daemonize the process so it starts on boot, make sure pm2 is installed globally and then:
