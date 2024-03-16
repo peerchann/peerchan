@@ -186,7 +186,6 @@ function loadCssThemes() {
 
 var currentCssTheme = null; 
 
-
 app.get('/function/changeTheme/:themeName', async (req, res, next) => {
   try {
   	loadCssThemes() //todo: possible update this somewhere else or check every time?
@@ -205,8 +204,6 @@ app.get('/function/changeTheme/:themeName', async (req, res, next) => {
   }
   	res.redirect(req.headers.referer)
 });
-
-
 
 //todo: make this into a post req.
 app.get('/:board/deletepost=:posthash', async (req, res, next) => {
@@ -472,53 +469,44 @@ app.get('/function/removeModerator/:moderatorId', async (req, res, next) => {
     res.redirect(req.headers.referer);
 });
 
+//todo: check extensionless files, nameless files, etc.
+const downloadFileHandler = async (req, res, next) => {
+    let fileStream
+    try {
+        const db = await import('./db.js')
+        let fileData = await db.getFile(req.params.filehash)
+        if (fileData) {
+            fileStream = new Stream.Readable()
+            let i = 0
 
-//todo: test without filename
-app.get('/download/file/:filename.:fileext', async (req, res, next) => {
-	// console.log('debug 1: GET filename with extension')
-	// console.log(req.params.filename)
-	// console.log(req.params.fileext)
-	let fileStream
-	try {
-		const db = await import('./db.js')
-		let fileData = await db.getFile(req.params.filename)
-		// console.log("returned fileData:")
-		// console.log(fileData)
-		if (fileData) {
-			// return fileData
-			fileStream = new Stream.Readable()
-			let i = 0
+            fileStream._read = function (size) {
+                let pushed = true
+                while (pushed && i < fileData.length) {
+                    pushed = this.push(fileData.subarray(i, i + bufferSize))
+                    i += bufferSize
+                }
+                if (i >= fileData.length) {
+                    this.push(null)
+                }
+            }
+            fileStream.pipe(res)
 
-			fileStream._read = function (size) {
-				let pushed = true
-				while (pushed && i < fileData.length) {
-					pushed = this.push(fileData.subarray(i, i + bufferSize))
-					i += bufferSize
-					// pushed = this.push(fileData.subarray(i, ++i))
-				}
-				if (i >= fileData.length) {
-					this.push(null)
-				}
-			}
-			fileStream.pipe(res)
+        } else {
+            res.send(null)
+        }
 
-
-		} else {
-			res.send(null)
-		}
-
-	} catch (error) {
-		console.log('Failed to get file '+req.params.filename)
-		console.log(error)
+    } catch (error) {
+        console.log('Failed to get file ' + req.params.filehash)
+        console.log(error)
         if (fileStream) {
             fileStream.destroy(); // Close the file stream if it's initialized
         }
         res.send(null);
-	}
-	// return res.json(req.params)
-});
+    }
+}
 
-
+app.get('/download/file/:filehash/:filename.:fileext', downloadFileHandler);
+app.get('/download/file/:filehash.:fileext', downloadFileHandler);
 
 app.get('/:board/:pagenumber.html', async (req, res, next) => {
 

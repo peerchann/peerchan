@@ -1,5 +1,5 @@
 p.embedded-info
-  a(href=`/download/file/${file.hash}.${file.extension}`, download=file.filename) #{file.filename}
+  a(href=`/download/file/${file.hash}/${file.filename}`, download=file.filename) #{file.filename}
   | , Size: #{formatFileSize(file.size)} 
 if file.fileStatus
   if ['png', 'gif', 'jpg'].includes(file.extension.toLowerCase())
