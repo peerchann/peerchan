@@ -13,8 +13,6 @@ import Stream from 'stream';
 
 const app = express();
 
-
-
 //todo: change from debug values
 
 const storageDir = 'storage' //todo: make this storage later
@@ -188,6 +186,7 @@ function loadCssThemes() {
 
 var currentCssTheme = null; 
 
+
 app.get('/function/changeTheme/:themeName', async (req, res, next) => {
   try {
   	loadCssThemes() //todo: possible update this somewhere else or check every time?
@@ -202,7 +201,7 @@ app.get('/function/changeTheme/:themeName', async (req, res, next) => {
 
   } catch (err) {
   	console.log(`Failed to change theme to: ${req.params.themeName}.`)
-  	lastError = err //todo: get this working
+  	lastError = err
   }
   	res.redirect(req.headers.referer)
 });
@@ -218,10 +217,25 @@ app.get('/:board/deletepost=:posthash', async (req, res, next) => {
 
   } catch (err) {
   	console.log(`Failed to delete post: ${req.params.posthash}.`)
-  	lastError = err //todo: get this working
+  	lastError = err
   }
 
 	res.redirect(req.headers.referer); //todo: check propriety
+});
+
+
+app.get('/myreplicationfactors', async (req, res, next) => {
+  try {
+	const db = await import('./db.js')
+	res.send(makeRenderSafe([db.Files.files.log.role.segments[0].factor, db.Files.chunks.documents.log.role.segments[0].factor]))
+  } catch (err) {
+  	console.log('Failed to get replication factor.')
+  	console.log(err)
+  	lastError = err
+  	res.redirect('/home')
+  }
+
+	// res.redirect(req.headers.referer); //todo: check propriety
 });
 
 app.get('/mymultiaddr', async (req, res, next) => {
@@ -229,8 +243,9 @@ app.get('/mymultiaddr', async (req, res, next) => {
 	const db = await import('./db.js')
 	res.send(db.client.libp2p.getMultiaddrs()[0])
   } catch (err) {
-  	console.log(`Failed to delete file: ${params.params.fileHash}.`)
-  	lastError = err //todo: get this working
+  	console.log('Failed to get multiAddr.')
+  	console.log(err)
+  	lastError = err
   	res.redirect('/home')
   }
 
@@ -247,7 +262,7 @@ app.get('/deletefile=:filehash', async (req, res, next) => {
 
   } catch (err) {
   	console.log(`Failed to delete file: ${params.params.fileHash}.`)
-  	lastError = err //todo: get this working
+  	lastError = err
   }
 
 	res.redirect(req.headers.referer); //todo: check propriety
@@ -265,7 +280,7 @@ app.post('/connectToPeer', upload.any(), async (req, res, next) => {
 
   } catch (err) {
   	console.log(`Failed to connect to peer.`)
-  	lastError = err //todo: get this working
+  	lastError = err
   }
 
 	res.redirect(req.headers.referer); //todo: check propriety
@@ -290,7 +305,7 @@ app.post('/addWatchedBoard', upload.any(), async (req, res, next) => {
     // Redirect back to the previous page
   } catch (err) {
 	    console.error('Error adding watched board:', err);
-	    // Handle the error appropriately
+	    lastError = err
   }
     res.redirect(req.headers.referer);
 });
@@ -314,8 +329,9 @@ app.post('/removeWatchedBoard', upload.any(), async (req, res, next) => {
     // Redirect back to the previous page
   } catch (err) {
     console.error('Error removing watched board:', err);
-    res.redirect(req.headers.referer);
+    lastError = err
   }
+  res.redirect(req.headers.referer);
 });
 
 app.get('/function/addBoard/:boardId',  async (req, res, next) => {
@@ -331,7 +347,7 @@ app.get('/function/addBoard/:boardId',  async (req, res, next) => {
   } catch (err) {
 	    console.error('Error adding watched board:', err);
   }
-  res.send('')
+  res.send('') //todo: change this?
 });
 
 app.get('/function/removeBoard/:boardId', async (req, res, next) => {
@@ -350,7 +366,7 @@ app.get('/function/removeBoard/:boardId', async (req, res, next) => {
   } catch (err) {
     console.error('Error removing watched board:', err);
   }
-  res.send('')
+  res.send('') //todo: change this?
 });
 
 const moderators = loadModerators()
@@ -507,11 +523,17 @@ app.get('/download/file/:filename.:fileext', async (req, res, next) => {
 app.get('/:board/:pagenumber.html', async (req, res, next) => {
 
 	try {
-		//todo: change this
+		
+	    if (watchedBoards.indexOf(req.params.board) === -1) {
+	    	throw new Error(`Board /${req.params.board}/ not in watched board list.`)
+	    }
+
+		//todo: consider changing this/eschewing ".html"
 		var whichPage = parseInt(req.params.pagenumber)
 		if (req.params.pagenumber == 'index') {
 			whichPage = 1
 		}
+
 		const db = await import('./db.js')
 
 		let indexPosts = await addFileStatuses(makeRenderSafe(await db.getThreadsWithReplies(req.params.board, cfg.threadsPerPage, cfg.previewReplies, whichPage)))
@@ -556,6 +578,7 @@ app.get('/:board/:pagenumber.html', async (req, res, next) => {
 		console.log('Failed to get posts for board \"'+req.params.board+'\".')
 		console.log(err)
 		lastError = err
+		res.redirect('/home')
 	}
 
 })
@@ -568,6 +591,11 @@ const boardPagesCache = {}; //todo: reconsider
 app.get('/:board/thread/:thread.html', async (req, res, next) => {
 
 	try {
+
+	    if (watchedBoards.indexOf(req.params.board) === -1) {
+	    	throw new Error(`Board /${req.params.board}/ not in watched board list.`)
+	    }
+
 		const db = await import('./db.js')
 		
 		// let allPosts = makeRenderSafe(await db.getPosts(req.params.board))
@@ -616,6 +644,7 @@ app.get('/:board/thread/:thread.html', async (req, res, next) => {
 		console.log('Failed to get posts for board \"'+req.params.board+'\".')
 		console.log(err)
 		lastError = err
+		res.redirect('/home')
 	}
 
 })
