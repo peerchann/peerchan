@@ -8,5 +8,5 @@
 	"defaultName": "Anonymous",
 	"openHomeOnStartup": true,
 	"defaultTheme": "chalk",
-	"postHashLength": 16
+	"postHashLength": 8
 }

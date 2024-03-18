@@ -45,7 +45,7 @@ function loadConfig() {
                 defaultName: "Anonymous",
                 openHomeOnStartup: true,
                 defaultTheme: "chalk",
-                postHashLength: 16
+                postHashLength: 8
             };
 			fs.writeFileSync(configFile, JSON.stringify(defaultConfig, null, '\t'), 'utf8');
             return defaultConfig;
