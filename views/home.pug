@@ -131,16 +131,39 @@ html
             handlePostClick(hash);
           });
         });
+        const messageTextarea = document.getElementById('postForm').querySelector('#message');
+        const allPostHashes = document.querySelectorAll('.post-hash');
+        allPostHashes.forEach(thisOne => {
+          thisOne.classList.add('post-hash-clickable');
+          thisOne.addEventListener('click', function() {
+            messageTextarea.value += '>>' + thisOne.getAttribute('hash')+'\n';
+          })
+        })
+        const allPostQuotes = document.querySelectorAll('.post-quote');
+        allPostQuotes.forEach(thisOne => {
+          thisOne.classList.add('post-quote-clickable');
+          thisOne.addEventListener('click', function() {
+            const quoteHash = thisOne.getAttribute('hash');
+            for (thisPost of allPosts) {
+              if (thisPost.getAttribute('hash') === quoteHash) {
+                thisPost.scrollIntoView()
+                return
+              }
+              window.location.href = '/function/findThreadContainingPost/'+'#{currentBoard}'+'/'+quoteHash
+
+            }
+          })
+        })
       });
 
     body
       .wrapper
         .content
-          div
+          div.watched-boards
             | [ 
-            each boardName, index in watchedBoards
+            each boardId, index in watchedBoards
               | #{index === 0 ? '' : ' / '}
-              a(href=`/${boardName}/index.html`) #{boardName}
+              a(href=`/${boardId}/index.html`) #{boardId}
             |  ] [ 
             a(href="/home") home
             |  ]
@@ -155,19 +178,22 @@ html
           button(onclick="deletePost()", class="sidebarbutton") Delete Post
           button(onclick="deleteFile()", class="sidebarbutton") Block File
 
-          h2 Control Panel
-          label(for="cssThemeSelector") Theme: 
-          select(id="cssThemeSelector", onchange="changeTheme()")
-            each theme in themes
-              option(value=theme, selected=(theme === cssTheme ? 'selected' : null)) #{theme.charAt(0).toUpperCase() + theme.slice(1)}
-          br
-          br
-          .clientid Client id: #{clientId}
-          br
-          label(for="myMultiAddrTextbox") My MultiAddr
-          input(type="text", id="myMultiAddrTextbox", readonly, value=myMultiAddr)
-          form(action="/connectToPeer" method="POST" enctype="multipart/form-data")
-            label(for="peerMultiAddr") Peer MultiAddr:
-            input(type="text", id="peerMultiAddr", name="peerMultiAddr")
+          .control-panel
+            h2 Control Panel
+            label(for="cssThemeSelector") Theme: 
+            select(id="cssThemeSelector", onchange="changeTheme()")
+              each theme in themes
+                option(value=theme, selected=(theme === cssTheme ? 'selected' : null)) #{theme.charAt(0).toUpperCase() + theme.slice(1)}
             br
-            button(type="connecttopeer", class="sidebarbutton") Connect to Peer MultiAddr
+            br
+            .clientid Client id: #{clientId}
+            br
+            label(for="myMultiAddrTextbox") My MultiAddr:
+            br
+            input(type="text", id="myMultiAddrTextbox", readonly, value=myMultiAddr)
+            form(action="/connectToPeer" method="POST" enctype="multipart/form-data")
+              label(for="peerMultiAddr") Peer MultiAddr:
+              br
+              input(type="text", id="peerMultiAddr", name="peerMultiAddr")
+              br
+              button(type="connecttopeer", class="sidebarbutton") Connect to Peer MultiAddr

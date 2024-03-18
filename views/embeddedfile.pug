@@ -2,7 +2,7 @@ p.embedded-info
   a(href=`/download/file/${file.hash}/${file.filename}`, download=file.filename) #{file.filename}
   | , Size: #{formatFileSize(file.size)} 
 if file.fileStatus
-  if ['png', 'gif', 'jpg'].includes(file.extension.toLowerCase())
+  if ['png', 'gif', 'jpg', 'jpeg'].includes(file.extension.toLowerCase())
     div.embedded-image-container
       img(src=`/download/file/${file.hash}.${file.extension}`, alt=file.filename, class="embedded-image", onclick="expandImage(this)")
   else

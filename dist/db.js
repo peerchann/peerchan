@@ -225,15 +225,15 @@ export async function getThreadsWithReplies_prev(whichBoard, numThreads = 10, nu
 }
 //todo: revisit remote
 //todo: revisit async
-export async function getSpecificPost(whichBoard, whichThread) {
+export async function getSpecificPost(whichBoard, whichPost) {
     if (!whichBoard) {
         throw new Error('No board specified.');
     }
-    if (!whichThread) {
-        throw new Error('No thread specified.');
+    if (!whichPost) {
+        throw new Error('No post specified.');
     }
     //todo: add query?
-    let results = await openedBoards[whichBoard].documents.index.search(new SearchRequest({ query: [new StringMatch({ key: 'hash', value: whichThread })] }), { local: true, remote: remoteQuery });
+    let results = await openedBoards[whichBoard].documents.index.search(new SearchRequest({ query: [new StringMatch({ key: 'hash', value: whichPost })] }), { local: true, remote: remoteQuery });
     return results;
     // return results.length ? results[0] : []
     //return await Posts.documents.index.search(new SearchRequest, { local: true, remote: remoteQuery });

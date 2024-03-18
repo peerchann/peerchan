@@ -27,7 +27,13 @@ function loadConfig() {
     
     try {
         if (fs.existsSync(configFile)) {
-            return JSON.parse(fs.readFileSync(configFile, 'utf8'));
+            const configObject = JSON.parse(fs.readFileSync(configFile, 'utf8'));
+            //todo: make this into a migration or something
+            if (!configObject.postHashLength) {
+                configObject.postHashLength = 16
+                fs.writeFileSync(configFile, JSON.stringify(configObject, null, '\t'), 'utf8');
+            }
+            return configObject
         } else {
             const defaultConfig = {
                 browserPort: 8000,
@@ -38,7 +44,8 @@ function loadConfig() {
                 previewReplies: 3,
                 defaultName: "Anonymous",
                 openHomeOnStartup: true,
-                defaultTheme: "chalk"
+                defaultTheme: "chalk",
+                postHashLength: 16
             };
 			fs.writeFileSync(configFile, JSON.stringify(defaultConfig, null, '\t'), 'utf8');
             return defaultConfig;
@@ -144,6 +151,21 @@ async function addFileStatuses (inputObj = {}) {
     return inputObj;
 }
 
+//todo: use enums
+function convertStringFormat(inputHex, format) {
+  let result = '';
+  switch (format) {
+    case 'hex': // Hex (no change)
+      return inputHex;
+    case 'base64': // Base64
+      return Buffer.from(inputHex, 'hex').toString('base64')
+    case 'utf-16':
+        return Buffer.from(inputHex, 'hex').toString('utf16le');
+    default:
+        throw new Error('Invalid conversion type.');
+  }
+}
+
 //todo: make this configurable
 //todo: get this working
 //todo: quotes, backlinks etc.
@@ -156,6 +178,23 @@ function applyMarkup(inputObj = {}) {
 	console.log(inputObj)
 	return inputObj
 }
+
+//todo: make more efficient/combine with above?
+function applyStyle (inputObj = {}) {
+    console.log('ping 0000')
+    console.log(inputObj)
+    console.log(Object.keys(inputObj))
+    for (let thisKey of Object.keys(inputObj)) {
+        console.log(thisKey)
+        if (thisKey == 'hash') {
+            inputObj[thisKey] = convertStringFormat(inputObj[thisKey], cfg.hashStyle)
+        } else if (typeof inputObj[thisKey] === 'object') {
+            inputObj[thisKey] = applyStyle(inputObj[thisKey])
+        } 
+    }
+    return inputObj;
+}
+
 
 app.use(express.static('./themes')); //todo: revist to allow static icons and such, also change in home.pug
 
@@ -281,6 +320,23 @@ app.post('/connectToPeer', upload.any(), async (req, res, next) => {
   }
 
 	res.redirect(req.headers.referer); //todo: check propriety
+});
+
+//todo: maybe have all settings go through a single form
+app.post('/updateHashStyle', (req, res) => {
+  try {
+
+    cfg.hashStyle = req.body.hashStyle;
+    // Invoke saveConfig to save the updated configuration
+    saveConfig();
+
+    // Send a success response
+  } catch (err) {
+    // Handle errors
+    console.error('Error updating hash style:', err);
+    lastError = err
+  }
+    res.redirect(req.headers.referer);
 });
 
 //todo: consolidate duplicated functionality
@@ -547,6 +603,7 @@ app.get('/:board/:pagenumber.html', async (req, res, next) => {
 			cssTheme: currentCssTheme,
 			themes: cssThemes,
 			defaultName: cfg.defaultName,
+            cfg: cfg,
 			moderators: moderators,
 			numPages: boardPagesCache[req.params.board],
 			myMultiAddr: db.client.libp2p.getMultiaddrs()[0],
@@ -612,8 +669,9 @@ app.get('/:board/thread/:thread.html', async (req, res, next) => {
 			numPages: boardPagesCache[req.params.board],
 			themes: cssThemes,
 			cssTheme: currentCssTheme,
-			defaultName: cfg.defaultName,
+			defaultName: cfg.defaultName, //todo: consolidate cfg where possible
 			moderators: moderators,
+            cfg: cfg,
 			formatFileSize: formatFileSize,
 			alert: lastError,
 			currentBoard: req.params.board,
@@ -708,6 +766,27 @@ app.get('', async (req, res, next) => { //todo: merge with above functionality o
 	res.redirect('/home')
 });
 
+
+app.get('/function/findThreadContainingPost/:boardId/:postHash', async (req, res, next) => {
+    try {
+        const db = await import('./db.js')
+        const specificPost = await db.getSpecificPost(req.params.boardId, req.params.postHash)
+        if (specificPost.length) { //post was found
+            if (specificPost[0].replyto) { //post is a reply
+                res.redirect(`/${req.params.boardId}/thread/${specificPost[0].replyto}.html`)
+            } else { //post is a thread OP
+                res.redirect(`/${req.params.boardId}/thread/${req.params.postHash}.html`)
+            }
+        } else { //post not found
+            throw new Error(`Thread containing post with hash '${req.params.postHash}' not found.`) //todo: maybe don't make this an error or something, or pre-check the links?
+        }
+    } catch (err) {
+        console.log(err)
+        lastError = err
+        res.redirect(req.headers.referer) //todo: check if this is working properly
+    }
+})
+
 //todo: fix redundancy with boards
 app.get('/home', async (req, res, next) => { //todo: merge with above functionality or filegateway
 	try {
@@ -720,6 +799,7 @@ app.get('/home', async (req, res, next) => { //todo: merge with above functional
 			themes: cssThemes,
 			cssTheme: currentCssTheme,
 			moderators: moderators,
+            cfg: cfg,
 			myMultiAddr: db.client.libp2p.getMultiaddrs()[0],
 			posts: []} //todo: make dynamic
 		const html = await rt['home'](options)

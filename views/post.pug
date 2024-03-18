@@ -8,6 +8,8 @@ div(class=item.replyto ? 'post_reply' : 'post', hash=item.hash)
       else
         span.name #{item.name ? item.name : defaultName}
       span.date #{new Date(parseInt(item.date)).toLocaleString()}
+      span.post-hash(class="post-hash", hash=item.hash) #{item.hash.slice(0, cfg.postHashLength)}
+
       if indexMode && !item.replyto
         span.reply-link
           a(href=`/${currentBoard}/thread/${item.hash}.html`) [Reply]
@@ -19,9 +21,16 @@ div(class=item.replyto ? 'post_reply' : 'post', hash=item.hash)
     else
       div.embedded-nothing
     if item.message
-      div.message
+      div
         each line in item.message.split('\n')
-          if line.startsWith('>')
-            span.message-quote #{line}
+          - const hexQuoteMatch = line.match(/^>>([0-9a-fA-F]{64})/)
+          - const quoteMatch = line.match(/^(>)(.*)/)
+          if hexQuoteMatch
+            p.message
+              span.post-quote(hash = hexQuoteMatch[0].slice(2)) #{hexQuoteMatch[0].slice(0,cfg.postHashLength+2)}
+              span.message #{line.substring(hexQuoteMatch[0].length)}
+          else if quoteMatch
+            p.message
+              span.message-quote #{quoteMatch[0]}
           else
-            span #{line}
+            p.message #{line}

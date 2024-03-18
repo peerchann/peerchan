@@ -70,7 +70,7 @@ p {
   margin-bottom: 5px;
   margin-top: 5px;
   box-shadow: 0px 0px 0px 2px rgba(255, 255, 255, 0.2);
-  max-width: calc(100vw - 300px);
+  max-width: calc(100vw - 620px);
 }
 
 .post_reply {
@@ -85,18 +85,62 @@ p {
 .content {
   flex: 1;
   padding: 20px;
-  max-width: calc(100vw - 300px);
+  max-width: calc(100vw - 600px);
   color: #ddd;
 }
 
 .sidebar {
-  width: 200px;
+  width: 500px;
   padding: 20px;
   background-color: #444;
   position: fixed;
   top: 0;
   right: 0;
   bottom: 0;
+}
+
+.post-form {
+  width: 100%;
+}
+
+.post-form input {
+  width: 100%;
+  display: inline-block;
+  background-color: #444;
+  color: #ddd;
+  margin-top: 5px;
+  margin-bottom: 5px;
+  border: none;
+  box-shadow: 0px 0px 0px 2px rgba(255, 255, 255, 0.2);
+}
+
+.post-form textarea {
+  width: 100%;
+  display: inline-block;
+  background-color: #444;
+  color: #ddd;
+  margin-top: 5px;
+  margin-bottom: 5px;
+  border: none;
+  box-shadow: 0px 0px 0px 2px rgba(255, 255, 255, 0.2);
+  height: 150px;
+}
+
+.control-panel input {
+  width: 100%;
+  display: inline-block;
+  background-color: #444;
+  color: #ddd;
+  margin-top: 5px;
+  margin-bottom: 5px;
+  border: none;
+  box-shadow: 0px 0px 0px 2px rgba(255, 255, 255, 0.2);
+}
+
+.post-form span,
+.post-form button {
+  width: 100%;
+  display: inline-block;
 }
 
 .post-header {
@@ -108,6 +152,7 @@ p {
 .subject {
   color: #4fc3f7;
   margin-right: 5px;
+  word-wrap: break-word;
 }
 
 .name {
@@ -122,6 +167,17 @@ p {
 
 .date {
   color: #81c784;
+  margin-right: 5px;
+}
+
+.post-hash {
+  color: #bda0c1;
+}
+
+.post-hash-clickable:hover {
+  color: #81c784;
+  text-decoration: underline;
+  cursor: pointer;
 }
 
 .reply-link {
@@ -131,11 +187,26 @@ p {
 .message {
   white-space: pre-wrap;
   word-wrap: break-word;
+  margin-top: 0px;
+  margin-bottom: 0px;
+  color: #ddd;
 }
+
+.post-quote {
+  color: #ff0000;
+}
+
+.post-quote-clickable:hover {
+  color: #ff00ff;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 
 .message-quote {
   color: #4dd0e1;
 }
+
 
 .email {
   color: #9575cd;
@@ -177,6 +248,8 @@ p {
   background-color: #666;
   margin-bottom: 5px;
   margin-top: 5px;
+  max-width: calc(100vw - 600px);
+  margin-left: 0;
 }
 
 .embedded-files, .embedded-nothing {
@@ -236,6 +309,10 @@ p {
 
 .post.deletion-mode *, .post_reply.deletion-mode *, .embedded-file.deletion-mode * {
   pointer-events: none;
+}
+
+.watched-boards {
+  word-wrap: : break-word;
 }
 
 .watched-board {

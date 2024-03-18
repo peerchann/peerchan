@@ -1,23 +1,28 @@
-form(action="/submit" method="POST" enctype="multipart/form-data")
-  label(for="name") Name:
-  input(type="text" id="name" name="name")
-  br
-  label(for="subject") Subject:
-  if threadId
-    input(type="text" id="subject" name="subject" readonly class="replyingsonoinput" value=`replying to ${threadId}`)
-  else
-    input(type="text" id="subject" name="subject")
-  br
-  label(for="message") Message:
-  textarea(id="message" name="message" rows="4")
-  br
-  label(for="email") Email:
-  input(type="text" id="email" name="email")
-  br
-  if threadId
-    input(type="hidden" id="replyto" name="replyto" value=threadId)
-  input(type="hidden" id="whichBoard" name="whichBoard" value=currentBoard)
-  label(for="files") Upload Files:
-  input(type="file" id="files" name="files" multiple)
-  br
-  button(type="submit", class="sidebarbutton") Submit
+form(action="/submit" method="POST" enctype="multipart/form-data" id="postForm" class="post-form")
+    span Subject:
+    br
+    if threadId
+      input(type="text" id="subject" name="subject" readonly class="replyingsonoinput" value=`replying to ${threadId}`)
+    else
+      input(type="text" id="subject" name="subject")
+    br
+    span Name:
+    br
+    input(type="text" id="name" name="name")
+    br
+    span Message:
+    br
+    textarea(id="message" name="message" rows="4")
+    br
+    span Email:
+    br
+    input(type="text" id="email" name="email")
+    br
+    if threadId
+      input(type="hidden" id="replyto" name="replyto" value=threadId)
+    input(type="hidden" id="whichBoard" name="whichBoard" value=currentBoard)
+    span Upload Files:
+    br
+    input(type="file" id="files" name="files" multiple)
+    br
+    button(type="submit", class="sidebarbutton") Submit

@@ -17,7 +17,6 @@ block content
         input(type="hidden" name="boardId" value=board)
         button(type="submit", class="delete-link") X
 
-
   h2 Add Moderator
   form(action="/addModerator" method="POST")
     label(for="moderatorId") Moderator Client ID: &nbsp;
@@ -32,3 +31,15 @@ block content
       form(action="/removeModerator" method="POST", style="display:inline-block; margin-left: 5px;")
         input(type="hidden" name="moderatorId" value=moderator)
         button(type="submit", class="delete-link") X
+
+  script.
+    document.addEventListener('DOMContentLoaded', function() {
+      const form = document.getElementById('hashStyleForm');
+      const radios = form.elements['hashStyle'];
+      
+      for (let i = 0; i < radios.length; i++) {
+        radios[i].addEventListener('change', function() {
+          form.submit();
+        });
+      }
+    });

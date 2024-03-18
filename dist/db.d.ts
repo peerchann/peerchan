@@ -33,7 +33,7 @@ export declare function getThreadsWithReplies_prev(whichBoard: string, numThread
     replies: any[];
     omittedreplies: any[];
 }>;
-export declare function getSpecificPost(whichBoard: string, whichThread: string): Promise<any>;
+export declare function getSpecificPost(whichBoard: string, whichPost: string): Promise<any>;
 export declare function getRepliesToSpecificPost(whichBoard: string, whichThread: string): Promise<any>;
 export declare function putFile(fileData: Uint8Array): Promise<string>;
 export declare function getFile(fileHash: string): Promise<false | Uint8Array | null>;

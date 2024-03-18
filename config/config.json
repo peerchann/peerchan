@@ -7,5 +7,6 @@
 	"previewReplies": 3,
 	"defaultName": "Anonymous",
 	"openHomeOnStartup": true,
-	"defaultTheme": "chalk"
+	"defaultTheme": "chalk",
+	"postHashLength": 16
 }
