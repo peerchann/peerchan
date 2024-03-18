@@ -1,4 +1,5 @@
 form(action="/submit" method="POST" enctype="multipart/form-data" id="postForm" class="post-form")
+    h3.sidebar-header #{'New '+(threadId ? 'Reply' : 'Thread')}
     span Subject:
     br
     if threadId
@@ -25,4 +26,4 @@ form(action="/submit" method="POST" enctype="multipart/form-data" id="postForm" 
     br
     input(type="file" id="files" name="files" multiple)
     br
-    button(type="submit", class="sidebarbutton") Submit
+    button(type="submit", class="sidebarbutton") #{'Submit '+(threadId ? 'Reply' : 'Thread')}

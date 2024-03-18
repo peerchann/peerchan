@@ -8,7 +8,7 @@ div(class=item.replyto ? 'post_reply' : 'post', hash=item.hash)
       else
         span.name #{item.name ? item.name : defaultName}
       span.date #{new Date(parseInt(item.date)).toLocaleString()}
-      span.post-hash(class="post-hash", hash=item.hash) #{item.hash.slice(0, cfg.postHashLength)}
+      span.post-hash(class="post-hash", hash=item.hash) #{'#'+item.hash.slice(0, cfg.postHashLength)}
 
       if indexMode && !item.replyto
         span.reply-link
