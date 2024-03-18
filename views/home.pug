@@ -171,15 +171,15 @@ html
             .alert #{alert}
           block content
         .sidebar
-          h2 Post Form
+          h3.sidebar-header Post Form
           include postform.pug
 
-          h2 Moderation
+          h3.sidebar-header Moderation
           button(onclick="deletePost()", class="sidebarbutton") Delete Post
           button(onclick="deleteFile()", class="sidebarbutton") Block File
 
           .control-panel
-            h2 Control Panel
+            h3.sidebar-header Control Panel
             label(for="cssThemeSelector") Theme: 
             select(id="cssThemeSelector", onchange="changeTheme()")
               each theme in themes
