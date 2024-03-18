@@ -32,6 +32,18 @@ block content
         input(type="hidden" name="moderatorId" value=moderator)
         button(type="submit", class="delete-link") X
 
+  h2 Peer Dialing
+  label(for="myMultiAddrTextbox") My MultiAddr:
+  br
+  input(type="text", id="myMultiAddrTextbox", readonly, value=myMultiAddr)
+  form(action="/connectToPeer" method="POST" enctype="multipart/form-data")
+    label(for="peerMultiAddr") Peer MultiAddr:
+    br
+    input(type="text", id="peerMultiAddr", name="peerMultiAddr")
+    br
+    br
+    button(type="connecttopeer", class="sidebarbutton") Connect to Peer MultiAddr
+
   script.
     document.addEventListener('DOMContentLoaded', function() {
       const form = document.getElementById('hashStyleForm');
