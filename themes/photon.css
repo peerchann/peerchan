@@ -143,6 +143,12 @@ p {
 
 .date {
   color: #333;
+  margin-right: 5px;
+}
+
+.post-hash-clickable:hover {
+  text-decoration: underline;
+  cursor: pointer;
 }
 
 .reply-link {
@@ -154,6 +160,15 @@ p {
   word-wrap: break-word;
   margin-top: 0px;
   margin-bottom: 0px;
+}
+
+.post-quote {
+  color: #FF6600;
+}
+
+.post-quote-clickable:hover {
+  text-decoration: underline;
+  cursor: pointer;
 }
 
 .message-quote {

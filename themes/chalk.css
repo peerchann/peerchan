@@ -175,7 +175,6 @@ p {
 }
 
 .post-hash-clickable:hover {
-  color: #81c784;
   text-decoration: underline;
   cursor: pointer;
 }
@@ -193,11 +192,10 @@ p {
 }
 
 .post-quote {
-  color: #ff0000;
+  color: #a095f1;
 }
 
 .post-quote-clickable:hover {
-  color: #ff00ff;
   text-decoration: underline;
   cursor: pointer;
 }
