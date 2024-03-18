@@ -17,6 +17,9 @@ block content
         input(type="hidden" name="boardId" value=board)
         button(type="submit", class="delete-link") X
 
+  h2 Client ID
+  span #{clientId}
+
   h2 Add Moderator
   form(action="/addModerator" method="POST")
     label(for="moderatorId") Moderator Client ID: &nbsp;
