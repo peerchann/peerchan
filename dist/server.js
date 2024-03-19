@@ -561,8 +561,11 @@ const downloadFileHandler = async (req, res, next) => {
     }
 }
 
+//todo: check for redundancy
 app.get('/download/file/:filehash/:filename.:fileext', downloadFileHandler);
 app.get('/download/file/:filehash.:fileext', downloadFileHandler);
+app.get('/download/file/:filehash/:filename', downloadFileHandler);
+app.get('/download/file/:filehash', downloadFileHandler);
 
 app.get('/:board/:pagenumber.html', async (req, res, next) => {
 
@@ -720,7 +723,7 @@ app.post('/submit', upload.any(), async (req, res, next) => {
 	  			new dbPosts.PostFile ( //todo: consider what needs to be included in this
 		  			await db.putFile(thisFile.buffer), //puts the file and returns the hash
 		  			thisFile.originalname, //original filename
-		  			thisFile.originalname.split('.').pop(),
+                    thisFile.originalname.includes('.') ? thisFile.originalname.split('.').pop() : '',
 		  			thisFile.size,
 	  			)
 	  		)

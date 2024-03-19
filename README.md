@@ -39,7 +39,9 @@ pm2 start dist/server.js --name gladden
 pm2 startup
 <copy-paste the command displayed>
 pm2 save
- ```
+```
+
+Make sure your system clock is set properly; by default other nodes may consider posts invalid if they are timestamped too far into the future.
 
 ## Troubleshooting
 By default, the program should open the homepage in the default browser on startup. If that doesn't happen, try navigating to http://localhost:8000/.

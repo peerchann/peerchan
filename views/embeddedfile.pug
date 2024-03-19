@@ -6,7 +6,7 @@ if file.fileStatus
     div.embedded-image-container
       img(src=`/download/file/${file.hash}.${file.extension}`, alt=file.filename, class="embedded-image", onclick="expandImage(this)")
   else
-    a(href=`/download/file/${file.hash}.${file.extension}`, download=file.filename)
+    a(href=`/download/file/${file.hash}${file.extension ? '.'+file.extension : ''}`, download=file.filename)
       span.file-icon 🗎
   script.
     function expandImage(img) {
