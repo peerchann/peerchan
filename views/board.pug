@@ -1,5 +1,23 @@
 extends home.pug
 
+block title
+  - var titleText = ''
+  if indexMode
+    - titleText = `/${currentBoard}/ - Index`
+  else
+    if posts && posts[0]
+      - const titlePost = posts[0]
+      if titlePost.subject
+        - titleText = `/${currentBoard}/ - ${titlePost.subject}`
+      else if titlePost.message
+        - titleText = `/${currentBoard}/ - ${titlePost.message}`
+      else
+        - titleText = `/${currentBoard}/ - ${titlePost.hash.slice(0,cfg.postHashLength)}`
+    else
+      - titleText = `/${currentBoard}/`
+    
+  title #{titleText}
+
 block content
   h2 /#{currentBoard}/ 
   include pagelinks.pug
