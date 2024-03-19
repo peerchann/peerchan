@@ -3,6 +3,7 @@
 import fs from 'fs';
 
 import { Post } from './posts.js'
+import { File } from './files.js'
 
 const validationConfigDir = 'config' //todo: make this dynamic/more easily configurable?
 const vConf = JSON.parse(fs.readFileSync(validationConfigDir + '/validation.json', 'utf8'));
@@ -66,12 +67,17 @@ const Validate = {
 		}
 	},
 
-	file: () => {
+	file: (inp: File) => {
+		if (inp.fileSize > vConf["file"].maxSize) {
+			throw new Error (`File size exceeded max size of ${vConf["file"].maxSize}.`)
+		}
+		//todo: maybe use the nice file size formats here and throughout
+		//todo: more?, also maybe go off chunk cids count (if that wouldnt be redundant by the hash checking)
 
 	},
 
 	filechunk: () => {
-
+		//todo:
 	},
 
 };

@@ -19,6 +19,8 @@ import { Ed25519Keypair, toBase64, fromBase64, sha256Sync, toHexString, PublicSi
 import { field, variant, vec, option, serialize, deserialize } from "@dao-xyz/borsh"
 import { multiaddr } from '@multiformats/multiaddr'
 
+import Validate from "./validation.js"
+
 import fs from "fs"
 
 import { Post, PostDatabase, PostFile } from './posts.js'
@@ -340,7 +342,9 @@ export async function getAllFileDocuments () {
 }
 
 export async function putFile (fileData: Uint8Array) {
+		//todo: maybe validate size in advance here or in writeChunks to avoid putting chunks and then exiting 
 		let fileDocument = await new File(fileData)
+		Validate.file(fileDocument) //check the file isn't too big before starting to write the chunks
 		await fileDocument.writeChunks(Files.chunks, fileData)
 		await Files.files.put(fileDocument)
 		// await Promise.all([ //todo: can move out of await
@@ -371,12 +375,7 @@ export async function getFile (fileHash: string) {
 //todo: consider making more efficient with above
 export async function fileExists (fileHash: string) {
 		
-		// console.log('fileExist:')
-		// console.log(fileHash)
 		let foundResults = await Files.files.index.search(new SearchRequest({ query: [new StringMatch({key: 'hash', value: fileHash })] }), { local: true, remote: remoteQuery })
-		// console.log('foundResults:')
-		// console.log(foundResults)
-		// console.log(foundResults.length)
 		if (foundResults.length) {
 			return true
 		} else {

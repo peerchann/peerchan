@@ -11,6 +11,7 @@ import { yamux } from "@chainsafe/libp2p-yamux";
 import { noise } from '@dao-xyz/libp2p-noise';
 import { sha256Sync } from "@peerbit/crypto";
 import { multiaddr } from '@multiformats/multiaddr';
+import Validate from "./validation.js";
 import fs from "fs";
 import { PostDatabase } from './posts.js';
 import { File, FileDatabase } from './files.js';
@@ -257,7 +258,9 @@ export async function getAllFileDocuments() {
     return await Files.files.index.search(new SearchRequest({ query: [] }), { local: true, remote: remoteQuery });
 }
 export async function putFile(fileData) {
+    //todo: maybe validate size in advance here or in writeChunks to avoid putting chunks and then exiting 
     let fileDocument = await new File(fileData);
+    Validate.file(fileDocument); //check the file isn't too big before starting to write the chunks
     await fileDocument.writeChunks(Files.chunks, fileData);
     await Files.files.put(fileDocument);
     // await Promise.all([ //todo: can move out of await
@@ -285,12 +288,7 @@ export async function getFile(fileHash) {
 }
 //todo: consider making more efficient with above
 export async function fileExists(fileHash) {
-    // console.log('fileExist:')
-    // console.log(fileHash)
     let foundResults = await Files.files.index.search(new SearchRequest({ query: [new StringMatch({ key: 'hash', value: fileHash })] }), { local: true, remote: remoteQuery });
-    // console.log('foundResults:')
-    // console.log(foundResults)
-    // console.log(foundResults.length)
     if (foundResults.length) {
         return true;
     }

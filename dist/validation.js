@@ -58,9 +58,15 @@ const Validate = {
             }
         }
     },
-    file: () => {
+    file: (inp) => {
+        if (inp.fileSize > vConf["file"].maxSize) {
+            throw new Error(`File size exceeded max size of ${vConf["file"].maxSize}.`);
+        }
+        //todo: maybe use the nice file size formats here and throughout
+        //todo: more?, also maybe go off chunk cids count (if that wouldnt be redundant by the hash checking)
     },
     filechunk: () => {
+        //todo:
     },
 };
 export default Validate;

@@ -10,6 +10,7 @@ import { Program, } from "@peerbit/program";
 import { sha256Sync, toBase64, toHexString } from "@peerbit/crypto";
 import { Documents, SearchRequest, StringMatch, PutOperation, DeleteOperation } from "@peerbit/document"; //todo: remove address redundancy
 import { currentModerators } from './db.js';
+import Validate from "./validation.js";
 //todo: consider removing receivedHash check
 //todo: reconsider how to handle when number of chunks doesn't match
 //todo: consider chunk size being dynamic? and also a field in the File data
@@ -126,9 +127,8 @@ let FileDatabase = class FileDatabase extends Program {
                         if (!operation.value) {
                             throw new Error('Put operation value undefined.'); //todo: revisit this
                         }
-                        if (operation.value.chunkCids.length > 16) {
-                            throw new Error('Expected file size greater than configured maximum of ' + 16 * fileChunkingSize + ' bytes.');
-                        }
+                        Validate.file(operation.value); //todo: consider necessity
+                        //todo: validate file hash as with posts?
                         // let fileData = await operation.value.getFile(this.chunks) //todo: revisit/check eg. for dynamic/variable chunking sizes
                         // let checkFile = new File(fileData)
                         // checkFile.chunkCids = operation.value.chunkCids
