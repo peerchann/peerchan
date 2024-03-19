@@ -3,7 +3,7 @@ import { Libp2p } from 'libp2p';
 import { Ed25519Keypair } from "@peerbit/crypto";
 import { Post, PostDatabase } from './posts.js';
 import { BoardDatabase } from './boards.js';
-import { FileDatabase } from './files.js';
+import { File, FileDatabase } from './files.js';
 export declare let node: Libp2p;
 export declare let keypair: Ed25519Keypair;
 export declare let client: Peerbit;
@@ -35,6 +35,7 @@ export declare function getThreadsWithReplies_prev(whichBoard: string, numThread
 }>;
 export declare function getSpecificPost(whichBoard: string, whichPost: string): Promise<any>;
 export declare function getRepliesToSpecificPost(whichBoard: string, whichThread: string): Promise<any>;
+export declare function getAllFileDocuments(): Promise<File[]>;
 export declare function putFile(fileData: Uint8Array): Promise<string>;
 export declare function getFile(fileHash: string): Promise<false | Uint8Array | null>;
 export declare function fileExists(fileHash: string): Promise<boolean>;

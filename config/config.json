@@ -8,5 +8,7 @@
 	"defaultName": "Anonymous",
 	"openHomeOnStartup": true,
 	"defaultTheme": "chalk",
+	"embedImageFileExtensions": ["jpg","jpeg","png","gif","webp"],
+	"embedVideoFileExtensions": ["webm","mp4"],
 	"postHashLength": 8
 }

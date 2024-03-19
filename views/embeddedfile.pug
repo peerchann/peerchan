@@ -2,9 +2,14 @@ p.embedded-info
   a(href=`/download/file/${file.hash}/${file.filename}`, download=file.filename) #{file.filename}
   | , Size: #{formatFileSize(file.size)} 
 if file.fileStatus
-  if ['png', 'gif', 'jpg', 'jpeg'].includes(file.extension.toLowerCase())
-    div.embedded-image-container
+  if cfg.embedImageFileExtensions.includes(file.extension.toLowerCase())
+    div
       img(src=`/download/file/${file.hash}.${file.extension}`, alt=file.filename, class="embedded-image", onclick="expandImage(this)")
+  else if cfg.embedVideoFileExtensions.includes(file.extension.toLowerCase())
+    div
+      video(controls="", loop="", class="embedded-image", onclick="expandImage(this)")
+        source(src=`/download/file/${file.hash}.${file.extension}`, type=`video/${file.extension}`)
+
   else
     a(href=`/download/file/${file.hash}${file.extension ? '.'+file.extension : ''}`, download=file.filename)
       span.file-icon 🗎

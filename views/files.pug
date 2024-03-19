@@ -1,0 +1,7 @@
+extends home.pug
+
+block content
+  h2 Files
+  each file in files
+    div.embedded-file(filehash=file.hash)
+      include file.pug

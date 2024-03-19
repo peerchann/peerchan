@@ -333,6 +333,12 @@ export async function getRepliesToSpecificPost (whichBoard: string, whichThread:
 	//return await Posts.documents.index.search(new SearchRequest, { local: true, remote: remoteQuery });
 }
 
+export async function getAllFileDocuments () {
+
+		return await Files.files.index.search(new SearchRequest({ query: [] }), { local: true, remote: remoteQuery })
+
+}
+
 export async function putFile (fileData: Uint8Array) {
 		let fileDocument = await new File(fileData)
 		await fileDocument.writeChunks(Files.chunks, fileData)

@@ -123,6 +123,7 @@ const upload = multer({ storage: storage });
 const rt={};//object to hold render templates
 rt['home'] = compileFile('./views/boardmanage.pug');
 rt['board'] = compileFile('./views/board.pug');
+rt['files'] = compileFile('./views/files.pug');
 
 function makeRenderSafe(inputObj = {}) {
     for (let thisKey of Object.keys(inputObj)) {
@@ -791,7 +792,7 @@ app.get('/function/findThreadContainingPost/:boardId/:postHash', async (req, res
 })
 
 //todo: fix redundancy with boards
-app.get('/home', async (req, res, next) => { //todo: merge with above functionality or filegateway
+app.get('/home', async (req, res, next) => {
 	try {
 		const db = await import('./db.js')
 		const options = {
@@ -809,15 +810,43 @@ app.get('/home', async (req, res, next) => { //todo: merge with above functional
 		resetError()
 		res.send(html)
 
-//		res.send('Welcome.<br>Client id: '+(await pb.clientId()))
-
 	} catch (error) {
 		console.log('Failed to open homepage')
 		console.log(error)
-	} finally {
+        lastError = error
+        //todo: redirect somewhere?
 	}
 });
 
+app.get('/files', async (req, res, next) => {
+    try {
+        const db = await import('./db.js')
+        const options = {
+            clientId: await db.clientId(),
+            boards: watchedBoards,
+            alert: lastError,
+            watchedBoards: watchedBoards,
+            themes: cssThemes,
+            cssTheme: currentCssTheme,
+            formatFileSize: formatFileSize,
+            moderators: moderators,
+            cfg: cfg,
+            myMultiAddr: db.client.libp2p.getMultiaddrs()[0],
+            posts: [],
+            files: await db.getAllFileDocuments()
+        }
+        console.log(options.files)
+        const html = await rt['files'](options)
+        resetError()
+        res.send(html)
+
+    } catch (error) {
+        console.log('Failed to open files page')
+        console.log(error)
+        lastError = error
+        res.redirect('home')
+    }
+});
 
 // Start the Server
 app.listen(cfg.browserPort, cfg.browserHost, () => {
