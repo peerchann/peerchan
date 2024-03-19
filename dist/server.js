@@ -8,14 +8,11 @@ import bodyParser from 'body-parser';
 
 import Stream from 'stream';
 
-// import Validate from './validation/validation.js';
-
+import { DeliveryError } from '@peerbit/stream-interface';
 
 const app = express();
 
-//todo: change from debug values
-
-const storageDir = 'storage' //todo: make this storage later
+const storageDir = 'storage'
 const configDir = 'config'
 
 if (!fs.existsSync(configDir)) {
@@ -858,10 +855,23 @@ app.listen(cfg.browserPort, cfg.browserHost, () => {
 	process.setMaxListeners(0);
 
 	const db = await import('./db.js');
+
+    process.on('uncaughtException', (error) => {
+        if (error instanceof DeliveryError) {
+            console.error('A DeliveryError occurred:', error.message);
+        } else {
+            console.error('An uncaught exception occurred:', error.message);
+            console.error('Stack trace:', error.stack);
+            process.exit(1);
+        }
+    });
+
+
 	// console.log('db:')
 	// console.log(db)
 
 	try {
+
 
 		loadCssThemes()
 		currentCssTheme = cfg.defaultTheme
