@@ -35,7 +35,7 @@ div(class=item.replyto ? 'post_reply' : 'post', id=item.hash)
               if quoteMatch
                 | >
               each word in splitIntoSpaces
-                if cfg.hyperlinkSchemes.some(scheme => word.startsWith(scheme+'://'))
+                if cfg.hyperlinkSchemes.some(scheme => word.startsWith(scheme))
                   a(href=word) #{word}
                 else
                   | #{word}

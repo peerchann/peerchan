@@ -87,7 +87,7 @@ export async function clientId () {
 //todo: move the config to a different spot
 export async function openPostsDb (postsDbId = "my_post_db", options: any) {
 	if (options?.replicationFactor) {
-		console.log(options)
+		console.log(`Opening posts database for /${postsDbId}/...`, options)
 		openedBoards[postsDbId] = await client.open(new PostDatabase({ id: sha256Sync(Buffer.from(postsDbId)) }), {
 			args: {
 				role: {
@@ -132,7 +132,7 @@ export async function openFilesDb (filesDbId = "", options: any ) {
 
 	Files = new FileDatabase({ id: sha256Sync(Buffer.from(filesDbId)) })
 	if (options.replicationFactor) {
-		console.log(options)
+		console.log(`Opening files database...`, options)
 		await client.open(Files.chunks, {
 			args: {
 				role: {

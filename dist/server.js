@@ -54,8 +54,8 @@ function loadConfig() {
                     "mp4"
                 ],
                 "hyperlinkSchemes": [
-                    "http",
-                    "https"
+                    "http://",
+                    "https://"
                 ],
                 "postHashLength": 8
             }
@@ -979,20 +979,16 @@ app.listen(cfg.browserPort, cfg.browserHost, () => {
 	try {
 
 
+        let dbOpens = [db.openFilesDb("", {replicationFactor: cfg.replicationFactor}).then(r => console.log("Successfully opened files database."))]
 
+        for (let thisBoard of watchedBoards) {
+            dbOpens.push(db.openPostsDb(thisBoard, {replicationFactor: cfg.replicationFactor}).then(r => console.log("Successfully opened posts database for \/"+thisBoard+"\/.")))
+        }
 
-		await db.openFilesDb("", {replicationFactor: cfg.replicationFactor})
-		console.log("Successfully opened Files Database.")
-		// await db.openFileChunksDb()
-		// console.log("Successfully opened FileChunks Database.")	
-		// await db.openBoardsDb()
-		// console.log("Successfully opened Boards Database.")
-		for (let thisBoard of watchedBoards) {
-			await db.openPostsDb(thisBoard, {replicationFactor: cfg.replicationFactor})
-			console.log("Successfully open Posts Database for \""+thisBoard+"\".")
+        db.setModerators(moderators)
 
-		}
-		db.setModerators(moderators)
+        await Promise.all(dbOpens)
+
 
 	} catch (err) {
 		console.log("Failed to open Databases.")

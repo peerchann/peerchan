@@ -20,8 +20,8 @@
 		"mp4"
 	],
 	"hyperlinkSchemes": [
-		"http",
-		"https"
+		"http://",
+		"https://"
 	],
 	"postHashLength": 8
 }
