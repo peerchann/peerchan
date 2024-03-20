@@ -152,7 +152,7 @@ p {
 }
 
 .namewithlink {
-  color: #007a99;
+  color: #34345c;
   margin-right: 5px;
   font-weight: bold;
 }
@@ -182,9 +182,12 @@ p {
   color: #FF6600;
 }
 
-.post-quote-clickable:hover {
-  text-decoration: underline;
-  cursor: pointer;
+.post-quote:visited {
+  color: #FF6600;
+}
+
+.post-quote:hover {
+  color: #FF6600;
 }
 
 .message-quote {

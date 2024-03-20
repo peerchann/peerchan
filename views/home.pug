@@ -139,21 +139,6 @@ html
             messageTextarea.value += '>>' + thisOne.getAttribute('hash')+'\n';
           })
         })
-        const allPostQuotes = document.querySelectorAll('.post-quote');
-        allPostQuotes.forEach(thisOne => {
-          thisOne.classList.add('post-quote-clickable');
-          thisOne.addEventListener('click', function() {
-            const quoteHash = thisOne.getAttribute('hash');
-            for (thisPost of allPosts) {
-              if (thisPost.getAttribute('id') === quoteHash) {
-                thisPost.scrollIntoView()
-                return
-              }
-              window.location.href = '/function/findThreadContainingPost/'+'#{currentBoard}'+'/'+quoteHash
-
-            }
-          })
-        })
       });
 
     body

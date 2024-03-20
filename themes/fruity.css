@@ -182,13 +182,17 @@ p {
   margin-bottom: 0px;
 }
 
+
 .post-quote {
   color: #1976D2;
 }
 
-.post-quote-clickable:hover {
-  text-decoration: underline;
-  cursor: pointer;
+.post-quote:visited {
+  color: #1976D2;
+}
+
+.post-quote:hover {
+  color: #1976D2;
 }
 
 .message-quote {

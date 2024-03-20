@@ -793,11 +793,12 @@ app.get('/function/findThreadContainingPost/:boardId/:postHash', async (req, res
     try {
         const db = await import('./db.js')
         const specificPost = await db.getSpecificPost(req.params.boardId, req.params.postHash)
+        const hashRefIndex = req.params.postHash.indexOf('#');
         if (specificPost.length) { //post was found
             if (specificPost[0].replyto) { //post is a reply
-                res.redirect(`/${req.params.boardId}/thread/${specificPost[0].replyto}.html`)
+                res.redirect(`/${req.params.boardId}/thread/${specificPost[0].replyto}.html${hashRefIndex === -1 ? '' : req.params.postHash.substring(hashRefIndex)}`)
             } else { //post is a thread OP
-                res.redirect(`/${req.params.boardId}/thread/${req.params.postHash}.html`)
+                res.redirect(`/${req.params.boardId}/thread/${req.params.postHash}.html`) //todo: do we need hash reference here?
             }
         } else { //post not found
             throw new Error(`Thread containing post with hash '${req.params.postHash}' not found.`) //todo: maybe don't make this an error or something, or pre-check the links?
