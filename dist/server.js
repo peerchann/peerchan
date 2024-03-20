@@ -33,17 +33,32 @@ function loadConfig() {
             return configObject
         } else {
             const defaultConfig = {
-                browserPort: 8000,
-                peerbitPort: 8500,
-                browserHost: "127.0.0.1",
-				replicationFactor: 0,
-                threadsPerPage: 5,
-                previewReplies: 3,
-                defaultName: "Anonymous",
-                openHomeOnStartup: true,
-                defaultTheme: "chalk",
-                postHashLength: 8
-            };
+                "browserPort": 8000,
+                "peerbitPort": 8500,
+                "browserHost": "127.0.0.1",
+                "replicationFactor": 1,
+                "threadsPerPage": 5,
+                "previewReplies": 3,
+                "defaultName": "Anonymous",
+                "openHomeOnStartup": true,
+                "defaultTheme": "chalk",
+                "embedImageFileExtensions": [
+                    "jpg",
+                    "jpeg",
+                    "png",
+                    "gif",
+                    "webp"
+                ],
+                "embedVideoFileExtensions": [
+                    "webm",
+                    "mp4"
+                ],
+                "hyperlinkSchemes": [
+                    "http",
+                    "https"
+                ],
+                "postHashLength": 8
+            }
 			fs.writeFileSync(configFile, JSON.stringify(defaultConfig, null, '\t'), 'utf8');
             return defaultConfig;
         }
