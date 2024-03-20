@@ -565,6 +565,12 @@ app.get('/download/file/:filehash.:fileext', downloadFileHandler);
 app.get('/download/file/:filehash/:filename', downloadFileHandler);
 app.get('/download/file/:filehash', downloadFileHandler);
 
+const renderFunctions = {
+    formatFileSize,
+    // addLinksToText
+}
+
+
 app.get('/:board/:pagenumber.html', async (req, res, next) => {
 
 	try {
@@ -600,7 +606,7 @@ app.get('/:board/:pagenumber.html', async (req, res, next) => {
 			currentBoard: req.params.board,
 			posts: indexPosts.threads,
 			alert: lastError,
-			formatFileSize: formatFileSize,
+			renderFunctions: renderFunctions,
 			cssTheme: currentCssTheme,
 			themes: cssThemes,
 			defaultName: cfg.defaultName,
@@ -673,7 +679,7 @@ app.get('/:board/thread/:thread.html', async (req, res, next) => {
 			defaultName: cfg.defaultName, //todo: consolidate cfg where possible
 			moderators: moderators,
             cfg: cfg,
-			formatFileSize: formatFileSize,
+			renderFunctions: renderFunctions,
 			alert: lastError,
 			currentBoard: req.params.board,
 			myMultiAddr: db.client.libp2p.getMultiaddrs()[0],
@@ -825,7 +831,7 @@ app.get('/files', async (req, res, next) => {
             watchedBoards: watchedBoards,
             themes: cssThemes,
             cssTheme: currentCssTheme,
-            formatFileSize: formatFileSize,
+            renderFunctions: renderFunctions,
             moderators: moderators,
             cfg: cfg,
             myMultiAddr: db.client.libp2p.getMultiaddrs()[0],

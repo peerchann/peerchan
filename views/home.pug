@@ -128,8 +128,7 @@ html
         const allPosts = document.querySelectorAll('.post, .post_reply');
         allPosts.forEach(thisOne => {
           thisOne.addEventListener('click', function() {
-            const hash = thisOne.getAttribute('hash');
-            handlePostClick(hash);
+            handlePostClick(thisOne.getAttribute('id'));
           });
         });
         const messageTextarea = document.getElementById('postForm').querySelector('#message');
@@ -146,7 +145,7 @@ html
           thisOne.addEventListener('click', function() {
             const quoteHash = thisOne.getAttribute('hash');
             for (thisPost of allPosts) {
-              if (thisPost.getAttribute('hash') === quoteHash) {
+              if (thisPost.getAttribute('id') === quoteHash) {
                 thisPost.scrollIntoView()
                 return
               }

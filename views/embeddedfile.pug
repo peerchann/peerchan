@@ -1,6 +1,6 @@
 p.embedded-info
   a(href=`/download/file/${file.hash}/${file.filename}`, download=file.filename) #{file.filename}
-  | , Size: #{formatFileSize(file.size)} 
+  | , Size: #{renderFunctions.formatFileSize(file.size)} 
 if file.fileStatus
   if cfg.embedImageFileExtensions.includes(file.extension.toLowerCase())
     div

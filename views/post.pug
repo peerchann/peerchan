@@ -1,4 +1,4 @@
-div(class=item.replyto ? 'post_reply' : 'post', hash=item.hash)
+div(class=item.replyto ? 'post_reply' : 'post', id=item.hash)
   div
     div.post-header
       if item.subject
@@ -24,13 +24,18 @@ div(class=item.replyto ? 'post_reply' : 'post', hash=item.hash)
       div
         each line in item.message.split('\n')
           - const hexQuoteMatch = line.match(/^>>([0-9a-fA-F]{64})/)
-          - const quoteMatch = line.match(/^(>)(.*)/)
+          - const quoteMatch = line.match(/^>/) !== null
+          - const splitIntoSpaces = quoteMatch ? line.slice(1).split(/(\s+)/) : line.split(/(\s+)/)
           if hexQuoteMatch
             p.message
               span.post-quote(hash = hexQuoteMatch[0].slice(2)) #{hexQuoteMatch[0].slice(0,cfg.postHashLength+2)}
               span.message #{line.substring(hexQuoteMatch[0].length)}
-          else if quoteMatch
-            p.message
-              span.message-quote #{quoteMatch[0]}
           else
-            p.message #{line}
+            p(class = quoteMatch ? 'message-quote' : 'message')
+              if quoteMatch
+                | >
+              each word in splitIntoSpaces
+                if cfg.hyperlinkSchemes.some(scheme => word.startsWith(scheme+'://'))
+                  a(href=word) #{word}
+                else
+                  | #{word}
