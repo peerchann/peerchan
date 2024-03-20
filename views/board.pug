@@ -21,7 +21,7 @@ block title
 block content
   h2 /#{currentBoard}/ 
   include pagelinks.pug
-  -var postsOnPage = (indexMode && posts.length) ? [] : [posts[0].hash].concat(posts[0].replies.map(r => r.hash))
+  -var postsOnPage = (indexMode) ? [] : (posts.length ? [posts[0].hash].concat(posts[0].replies.map(r => r.hash)) : [])
   each post in posts
     -var item = post
     hr.dividing-line
