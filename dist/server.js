@@ -613,7 +613,7 @@ app.get('/download/file/:filehash', downloadFileHandler);
 
 const renderFunctions = {
     formatFileSize,
-    // addLinksToText
+    gatewayCanDo
 }
 
 
@@ -645,32 +645,15 @@ app.get('/:board/:pagenumber.html', async (req, res, next) => {
 		}
     	console.timeEnd('buildIndex');
 
-		const options = {
-			clientId: await db.clientId(),
-			board: req.params.board,
-			watchedBoards: watchedBoards,
-			currentBoard: req.params.board,
-			posts: indexPosts.threads,
-			alert: lastError,
-			renderFunctions: renderFunctions,
-			cssTheme: currentCssTheme,
-			themes: cssThemes,
-			defaultName: cfg.defaultName,
-            cfg: cfg,
-			moderators: moderators,
-			numPages: boardPagesCache[req.params.board],
-			myMultiAddr: db.client.libp2p.getMultiaddrs()[0],
-			indexMode: true,
-			// replies: indexPosts.replies,
-			// omittedcounts: indexPosts.omittedreplies //todo: implement
-			} //todo: make dynamic
+        const options = await standardRenderOptions(req)
+		options.currentBoard = req.params.board
+        options.posts = indexPosts.threads
+		options.numPages = boardPagesCache[req.params.board]
+		options.indexMode = true
 		console.log(indexPosts.totalpages + " pages total")
 		const html = await rt['board'](options)
 		resetError()
 		res.send(html)
-		//res.json(allPosts)
-
-//		res.send('Welcome.<br>Client id: '+(await pb.clientId()))
 
 	} catch (err) {
 		console.log('Failed to get posts for board \"'+req.params.board+'\".')
@@ -712,32 +695,15 @@ app.get('/:board/thread/:thread.html', async (req, res, next) => {
 		// 		threadPost.replies[thisReplyIndex] = applyMarkup(threadPost.replies[thisReplyIndex])
 		// 	}
 		// }
-
-		const options = {
-			clientId: await db.clientId(),
-			threadId: req.params.thread,
-			board: req.params.board,
-			watchedBoards: watchedBoards,
-			alert: lastError,
-			numPages: boardPagesCache[req.params.board],
-			themes: cssThemes,
-			cssTheme: currentCssTheme,
-			defaultName: cfg.defaultName, //todo: consolidate cfg where possible
-			moderators: moderators,
-            cfg: cfg,
-			renderFunctions: renderFunctions,
-			alert: lastError,
-			currentBoard: req.params.board,
-			myMultiAddr: db.client.libp2p.getMultiaddrs()[0],
-			posts: threadPost,
-
-			} //todo: make dynamic
+        const options = await standardRenderOptions(req)
+        options.board = req.params.board
+        options.threadId = req.params.thread
+        options.numPages = boardPagesCache[req.params.board]
+        options.posts = threadPost
+        options.currentBoard = req.params.board
 		const html = await rt['board'](options)
 		resetError()
 		res.send(html)
-		//res.json(allPosts)
-
-//		res.send('Welcome.<br>Client id: '+(await pb.clientId()))
 
 	} catch (err) {
 		console.log('Failed to get posts for board \"'+req.params.board+'\".')
@@ -757,7 +723,6 @@ var lastError
 //todo: different dependng on new thread/reply
 //todo: files
 //todo: validation
-//todo: hook up
 //todo: projected post etc
 app.post('/submit', upload.any(), async (req, res, next) => {
 	try {
@@ -851,17 +816,7 @@ app.get('/home', async (req, res, next) => {
             return
         } 
 		const db = await import('./db.js')
-		const options = {
-			clientId: await db.clientId(),
-			boards: watchedBoards,
-			alert: lastError,
-			watchedBoards: watchedBoards,
-			themes: cssThemes,
-			cssTheme: currentCssTheme,
-			moderators: moderators,
-            cfg: cfg,
-			myMultiAddr: db.client.libp2p.getMultiaddrs()[0],
-			posts: []} //todo: make dynamic
+        const options = await standardRenderOptions(req)
 		const html = await rt['home'](options)
 		resetError()
 		res.send(html)
@@ -878,20 +833,8 @@ app.get('/files', async (req, res, next) => {
     try {
         gatewayCanDo(req)
         const db = await import('./db.js')
-        const options = {
-            clientId: await db.clientId(),
-            boards: watchedBoards,
-            alert: lastError,
-            watchedBoards: watchedBoards,
-            themes: cssThemes,
-            cssTheme: currentCssTheme,
-            renderFunctions: renderFunctions,
-            moderators: moderators,
-            cfg: cfg,
-            myMultiAddr: db.client.libp2p.getMultiaddrs()[0],
-            posts: [],
-            files: await db.getAllFileDocuments()
-        }
+        const options = await standardRenderOptions(req)
+        options.files = await db.getAllFileDocuments()
         console.log(options.files)
         const html = await rt['files'](options)
         resetError()
@@ -906,15 +849,39 @@ app.get('/files', async (req, res, next) => {
 });
 
 //todo: consider making this a route
-function gatewayCanDo(req, whichPerm) { //todo: revisit the name of this?
+function gatewayCanDo(req, whichPerm, throwErr = true) { //todo: revisit the name of this?
     if (localhostIps.includes(req.ip)) { //if we're not in gateway mode, allow anything.
         return true;
     } else if (gatewayCfg.gatewayMode) {
         if (gatewayCfg.can[whichPerm]) {
             return true
         } else {
-            throw new Error (`Not permitted to "${whichPerm}".`)
+            if (throwErr) {
+                throw new Error (`Not permitted to "${whichPerm}".`)
+            } else {
+                return false
+            }
         }
+    }
+}
+
+async function standardRenderOptions (req) { //todo: make this into a route?
+    const db = await import('./db.js')
+    return {
+        clientId: await db.clientId(),
+        req: req,
+        boards: watchedBoards,
+        alert: lastError,
+        watchedBoards: watchedBoards,
+        themes: cssThemes,
+        cssTheme: currentCssTheme,
+        defaultName: cfg.defaultName, //todo: consolidate cfg where possible
+        moderators: moderators,
+        renderFunctions: renderFunctions,
+        cfg: cfg,
+        gatewayCfg: gatewayCfg,            
+        myMultiAddr: db.client.libp2p.getMultiaddrs()[0],
+        posts: []
     }
 }
 
@@ -922,18 +889,7 @@ function gatewayCanDo(req, whichPerm) { //todo: revisit the name of this?
 app.get('/gateway', async (req, res, next) => {
     try {
         const db = await import('./db.js')
-        const options = {
-            clientId: await db.clientId(),
-            boards: watchedBoards,
-            alert: lastError,
-            watchedBoards: watchedBoards,
-            themes: cssThemes,
-            gatewayCfg: gatewayCfg,
-            cssTheme: currentCssTheme,
-            moderators: moderators,
-            cfg: cfg,
-            myMultiAddr: db.client.libp2p.getMultiaddrs()[0],
-            posts: []} //todo: make dynamic
+        const options = await standardRenderOptions(req)
         console.log('options', options)
         const html = await rt['gatewayHome'](options)
         resetError()

@@ -13,14 +13,15 @@ block content
       |  
       button(type="submit", class="sidebarbutton") Add
 
-  h2 Currently Watched Boards
-  each board, index in watchedBoards
-    div.watched-board
-      a(href=`/${board}/index.html`, style="display:inline-block;") #{board}
-      if gatewayCfg.can.remBoard
-        form(action="/removeWatchedBoard" method="POST", style="display:inline-block; margin-left: 5px;")
-          input(type="hidden" name="boardId" value=board)
-          button(type="submit", class="delete-link") X
+  if gatewayCfg.can.addBoard || gatewayCfg.can.remBoard
+    h2 Currently Watched Boards
+    each board, index in watchedBoards
+      div.watched-board
+        a(href=`/${board}/index.html`, style="display:inline-block;") #{board}
+        if gatewayCfg.can.remBoard
+          form(action="/removeWatchedBoard" method="POST", style="display:inline-block; margin-left: 5px;")
+            input(type="hidden" name="boardId" value=board)
+            button(type="submit", class="delete-link") X
 
   if gatewayCfg.can.seeClientId
     h2 Client ID
