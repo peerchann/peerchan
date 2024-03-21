@@ -28,7 +28,7 @@ yarn start
  ```
 
 ## Configuration
-You can install css themes by placing them in the themes folder.
+You can install css themes by placing them in the res/themes folder.
 
 You can customize the ports used and other settings by modifying config/config.json.
 
@@ -40,6 +40,8 @@ pm2 startup
 <copy-paste the command displayed>
 pm2 save
 ```
+
+You can configure gateway mode in config/gatewayConfig.json to disable or enable certain features.
 
 Make sure your system clock is set properly; by default other nodes may consider posts invalid if they are timestamped too far into the future.
 

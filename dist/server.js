@@ -227,7 +227,7 @@ function applyStyle (inputObj = {}) {
 }
 
 
-app.use(express.static('./themes')); //todo: revist to allow static icons and such, also change in home.pug
+app.use(express.static('./res')); //todo: revist to allow static icons and such, also change in home.pug
 
 let bufferSize = 128 * 1024 //todo: find an ideal value for this, for now we do 128 kb at a time //todo: revisit this?
 
@@ -248,10 +248,9 @@ function formatFileSize(size) {
 var cssThemes = []
 
 function loadCssThemes() {
-	cssThemes = fs.readdirSync('./themes') //todo: make this configurable, and try-catch?
+	cssThemes = fs.readdirSync('./res/themes') //todo: make this configurable, and try-catch?
 	.filter(file => file.endsWith('.css'))
 	.map(file => file.slice(0, -4));
-
 }
 
 var currentCssTheme = null; 

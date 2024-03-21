@@ -5,7 +5,3 @@ div.embedded-image-container
   img(src=`/download/file/${file.hash}.${file.extension}`, alt=file.filename, class="embedded-image", onclick="expandImage(this)")
 a(href=`/download/file/${file.hash}${file.extension ? '.'+file.extension : ''}`, download=file.filename)
   span.file-icon 🗎
-script.
-  function expandImage(img) {
-    img.classList.toggle('expanded');
-  }
