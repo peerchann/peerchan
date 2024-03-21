@@ -1,0 +1,18 @@
+{
+	"gatewayMode": false,
+	"can": {
+		"post": false,
+		"postFile": false,
+		"delFile": false,
+		"delPost": false,
+		"seeFile": true,
+		"addBoard": false,
+		"remBoard": false,
+		"addMod": false,
+		"seeMod": false,
+		"remMod": false,
+		"dialPeer": false,
+		"seeClientId": false,
+		"changeTheme": false
+	}
+}

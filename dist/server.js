@@ -19,6 +19,8 @@ if (!fs.existsSync(configDir)) {
 	fs.mkdirSync(configDir, { recursive: true });
 }
 
+const localhostIps = ['127.0.0.1', '::1']
+
 function loadConfig() {
     const configFile = configDir+'/config.json';
     
@@ -80,6 +82,19 @@ function saveConfig() {
 
 const cfg = loadConfig();
 
+function loadGatewayConfig() {
+    const configFile = configDir+'/gatewayConfig.json';
+    
+    try {
+        return JSON.parse(fs.readFileSync(configFile, 'utf8'));
+    } catch (err) {
+        console.error('Error loading gateway config file:', err);
+        return null;
+    }
+}
+
+const gatewayCfg = loadGatewayConfig();
+
 function loadWatchedBoards() {
     const configFile = configDir+'/watchedBoards.json';
     
@@ -136,6 +151,7 @@ const rt={};//object to hold render templates
 rt['home'] = compileFile('./views/boardmanage.pug');
 rt['board'] = compileFile('./views/board.pug');
 rt['files'] = compileFile('./views/files.pug');
+rt['gatewayHome'] = compileFile('./views/gatewayhome.pug');
 
 function makeRenderSafe(inputObj = {}) {
     for (let thisKey of Object.keys(inputObj)) {
@@ -240,6 +256,7 @@ var currentCssTheme = null;
 
 app.get('/function/changeTheme/:themeName', async (req, res, next) => {
   try {
+    gatewayCanDo(req, 'changeTheme') //todo: revisit this if there can be themes in the session cookies
   	loadCssThemes() //todo: possible update this somewhere else or check every time?
   	var lowercaseTheme = req.params.themeName.toLowerCase()
   	if (cssThemes.includes(lowercaseTheme)) {
@@ -260,6 +277,7 @@ app.get('/function/changeTheme/:themeName', async (req, res, next) => {
 //todo: make this into a post req.
 app.get('/:board/deletepost=:posthash', async (req, res, next) => {
   try {
+    gatewayCanDo(req, 'delPost')
   	console.log(`Deleting post: ${req.params.posthash}.`);
 	const db = await import('./db.js')
 	await db.delPost(req.params.posthash, req.params.board)
@@ -275,6 +293,7 @@ app.get('/:board/deletepost=:posthash', async (req, res, next) => {
 
 app.get('/myreplicationfactors', async (req, res, next) => {
   try {
+    gatewayCanDo(req, 'seeClientId') //todo: rename maybe throughout
 	const db = await import('./db.js')
 	res.send(makeRenderSafe([db.Files.files.log.role.segments[0].factor, db.Files.chunks.documents.log.role.segments[0].factor]))
   } catch (err) {
@@ -289,6 +308,7 @@ app.get('/myreplicationfactors', async (req, res, next) => {
 
 app.get('/mymultiaddr', async (req, res, next) => {
   try {
+    gatewayCanDo(req, 'seeClientId')
 	const db = await import('./db.js')
 	res.send(db.client.libp2p.getMultiaddrs()[0])
   } catch (err) {
@@ -304,6 +324,7 @@ app.get('/mymultiaddr', async (req, res, next) => {
 //todo: make this into a post req.
 app.get('/deletefile=:filehash', async (req, res, next) => {
   try {
+    gatewayCanDo(req, 'delFile')
   	const fileHash = req.params.filehash
   	console.log(`Deleting file: ${fileHash}.`);
 	const db = await import('./db.js')
@@ -320,6 +341,7 @@ app.get('/deletefile=:filehash', async (req, res, next) => {
 app.post('/connectToPeer', upload.any(), async (req, res, next) => {
   // Here you can write the logic to delete the file corresponding to the imageUrl
   try {
+    gatewayCanDo(req, 'dialPeer')
   	const peerMultiAddr = req.body.peerMultiAddr
   	// console.log(req)
   	console.log(req.body)
@@ -355,6 +377,7 @@ app.post('/updateHashStyle', (req, res) => {
 //todo: consolidate duplicated functionality
 app.post('/addWatchedBoard', upload.any(), async (req, res, next) => {
   try {
+    gatewayCanDo(req, 'addBoard')
     // Extract the board ID from the request body
     const boardId = req.body.boardId;
 
@@ -378,6 +401,7 @@ app.post('/addWatchedBoard', upload.any(), async (req, res, next) => {
 
 app.post('/removeWatchedBoard', upload.any(), async (req, res, next) => {
   try {
+    gatewayCanDo(req, 'remBoard')
     // Extract the board ID from the request body
     const boardId = req.body.boardId;
 
@@ -403,6 +427,7 @@ app.post('/removeWatchedBoard', upload.any(), async (req, res, next) => {
 app.get('/function/addBoard/:boardId',  async (req, res, next) => {
 	console.log('ping')
   try {
+    gatewayCanDo(req, 'addBoard')
     const boardId = req.params.boardId;
     if (watchedBoards.indexOf(boardId) === -1) {
     	watchedBoards.push(boardId);
@@ -418,6 +443,7 @@ app.get('/function/addBoard/:boardId',  async (req, res, next) => {
 
 app.get('/function/removeBoard/:boardId', async (req, res, next) => {
   try {
+    gatewayCanDo(req, 'remBoard')
     const boardId = req.params.boardId;
     const index = watchedBoards.indexOf(boardId);
     if (index !== -1) {
@@ -498,6 +524,7 @@ function saveModerators() {
 
 app.post('/addModerator', upload.any(), async (req, res, next) => {
   try {
+    gatewayCanDo(req, 'addMod')
     await addModerator(req.body.moderatorId)
   } catch (err) {
 	    console.error('Error adding moderator:', err);
@@ -510,6 +537,7 @@ app.post('/removeModerator', upload.any(), async (req, res, next) => {
 	console.log('removeModerator called')
 	console.log(req.body.moderatorId)
   try {
+    gatewayCanDo(req, 'remMod')
     await removeModerator(req.body.moderatorId)
   } catch (err) {
 		console.error('Error adding moderator:', err);
@@ -520,6 +548,7 @@ app.post('/removeModerator', upload.any(), async (req, res, next) => {
 
 app.get('/function/addModerator/:moderatorId'),  async (req, res, next) => {
   try {
+    gatewayCanDo(req, 'addMod')
     await addModerator(req.params.moderatorId)
   } catch (err) {
 	    console.error('Error adding moderator:', err);
@@ -530,6 +559,7 @@ app.get('/function/addModerator/:moderatorId'),  async (req, res, next) => {
 
 app.get('/function/removeModerator/:moderatorId', async (req, res, next) => {
   try {
+    gatewayCanDo(req, 'remMod')
     await removeModerator(req.params.moderatorId)
   } catch (err) {
 		console.error('Error adding moderator:', err);
@@ -542,6 +572,7 @@ app.get('/function/removeModerator/:moderatorId', async (req, res, next) => {
 const downloadFileHandler = async (req, res, next) => {
     let fileStream
     try {
+        gatewayCanDo(req, 'seeFile')
         const db = await import('./db.js')
         let fileData = await db.getFile(req.params.filehash)
         if (fileData) {
@@ -730,6 +761,7 @@ var lastError
 //todo: projected post etc
 app.post('/submit', upload.any(), async (req, res, next) => {
 	try {
+        gatewayCanDo(req, 'post')
 		// console.log('req.files:') //todo: remove debug
 		// console.log(req.files)
 		// console.log(req.body.message)
@@ -738,6 +770,7 @@ app.post('/submit', upload.any(), async (req, res, next) => {
 		const dbPosts = await import('./posts.js')
 		let postFiles = []
 		for (let thisFile of req.files) {
+            gatewayCanDo(req, 'postFile')
 	  		postFiles.push(
 	  			new dbPosts.PostFile ( //todo: consider what needs to be included in this
 		  			await db.putFile(thisFile.buffer), //puts the file and returns the hash
@@ -813,6 +846,10 @@ app.get('/function/findThreadContainingPost/:boardId/:postHash', async (req, res
 //todo: fix redundancy with boards
 app.get('/home', async (req, res, next) => {
 	try {
+        if (!localhostIps.includes(req.ip) && gatewayCfg.gatewayMode) { //todo: make this go through gatewayCanDo function?
+            res.redirect('/gateway')
+            return
+        } 
 		const db = await import('./db.js')
 		const options = {
 			clientId: await db.clientId(),
@@ -839,6 +876,7 @@ app.get('/home', async (req, res, next) => {
 
 app.get('/files', async (req, res, next) => {
     try {
+        gatewayCanDo(req)
         const db = await import('./db.js')
         const options = {
             clientId: await db.clientId(),
@@ -864,6 +902,46 @@ app.get('/files', async (req, res, next) => {
         console.log(error)
         lastError = error
         res.redirect('home')
+    }
+});
+
+//todo: consider making this a route
+function gatewayCanDo(req, whichPerm) { //todo: revisit the name of this?
+    if (localhostIps.includes(req.ip)) { //if we're not in gateway mode, allow anything.
+        return true;
+    } else if (gatewayCfg.gatewayMode) {
+        if (gatewayCfg.can[whichPerm]) {
+            return true
+        } else {
+            throw new Error (`Not permitted to "${whichPerm}".`)
+        }
+    }
+}
+
+//gateway stuff
+app.get('/gateway', async (req, res, next) => {
+    try {
+        const db = await import('./db.js')
+        const options = {
+            clientId: await db.clientId(),
+            boards: watchedBoards,
+            alert: lastError,
+            watchedBoards: watchedBoards,
+            themes: cssThemes,
+            gatewayCfg: gatewayCfg,
+            cssTheme: currentCssTheme,
+            moderators: moderators,
+            cfg: cfg,
+            myMultiAddr: db.client.libp2p.getMultiaddrs()[0],
+            posts: []} //todo: make dynamic
+        console.log('options', options)
+        const html = await rt['gatewayHome'](options)
+        resetError()
+        res.send(html)
+    } catch (err) {
+        console.log('Failed to open gateway homepage')
+        console.log(err)
+        lastError = err
     }
 });
 

@@ -1,0 +1,58 @@
+extends home.pug
+
+block title
+  title Gladden - Gateway
+
+block content
+  h2 Welcome
+  if gatewayCfg.can.addBoard
+    h2 Add Watched Board
+    form(action="/addWatchedBoard" method="POST")
+      label(for="boardId") Board ID: &nbsp;
+      input(type="text" id="boardId" name="boardId")
+      |  
+      button(type="submit", class="sidebarbutton") Add
+
+  h2 Currently Watched Boards
+  each board, index in watchedBoards
+    div.watched-board
+      a(href=`/${board}/index.html`, style="display:inline-block;") #{board}
+      if gatewayCfg.can.remBoard
+        form(action="/removeWatchedBoard" method="POST", style="display:inline-block; margin-left: 5px;")
+          input(type="hidden" name="boardId" value=board)
+          button(type="submit", class="delete-link") X
+
+  if gatewayCfg.can.seeClientId
+    h2 Client ID
+    span #{clientId}
+
+  if gatewayCfg.can.addMod
+    h2 Add Moderator
+    form(action="/addModerator" method="POST")
+      label(for="moderatorId") Moderator Client ID: &nbsp;
+      input(type="text" id="moderatorId" name="moderatorId")
+      |  
+      button(type="submit", class="sidebarbutton") Add
+
+  if gatewayCfg.can.seeMod
+    h2 Current Moderators
+    each moderator, index in moderators
+      div.moderator
+        span #{moderator}
+        if gatewayCfg.can.remMod
+          form(action="/removeModerator" method="POST", style="display:inline-block; margin-left: 5px;")
+            input(type="hidden" name="moderatorId" value=moderator)
+            button(type="submit", class="delete-link") X
+
+  if gatewayCfg.can.dialPeer
+    h2 Peer Dialing
+    label(for="myMultiAddrTextbox") My MultiAddr:
+    br
+    input(type="text", id="myMultiAddrTextbox", readonly, value=myMultiAddr)
+    form(action="/connectToPeer" method="POST" enctype="multipart/form-data")
+      label(for="peerMultiAddr") Peer MultiAddr:
+      br
+      input(type="text", id="peerMultiAddr", name="peerMultiAddr")
+      br
+      br
+      button(type="connecttopeer", class="sidebarbutton") Connect to Peer MultiAddr

@@ -49,15 +49,3 @@ block content
     br
     br
     button(type="connecttopeer", class="sidebarbutton") Connect to Peer MultiAddr
-
-  script.
-    document.addEventListener('DOMContentLoaded', function() {
-      const form = document.getElementById('hashStyleForm');
-      const radios = form.elements['hashStyle'];
-      
-      for (let i = 0; i < radios.length; i++) {
-        radios[i].addEventListener('change', function() {
-          form.submit();
-        });
-      }
-    });
