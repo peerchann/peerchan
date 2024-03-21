@@ -9,6 +9,7 @@ import bodyParser from 'body-parser';
 import Stream from 'stream';
 
 import { DeliveryError } from '@peerbit/stream-interface';
+import { randomBytes } from '@peerbit/crypto';
 
 const app = express();
 
@@ -139,9 +140,20 @@ const watchedBoards = loadWatchedBoards()
 // Middleware to parse JSON bodies
 app.use(express.json());
 
-
 // Middleware to parse incoming request bodies
 app.use(bodyParser.urlencoded({ extended: true }));
+
+app.use(express.static('./res')); //todo: revist to allow static icons and such, also change in home.pug
+
+// Middleware to generate a nonce for each request to make inline script execution comply with CSP.
+app.use((req, res, next) => {
+  // Generate a random nonce value
+  const nonce = randomBytes(16).toString('base64');
+  res.setHeader('Content-Security-Policy', `script-src 'nonce-${nonce}' 'self'`);
+  res.locals.nonce = nonce;
+  next();
+});
+
 
 // Multer storage configuration
 const storage = multer.memoryStorage();
@@ -225,9 +237,6 @@ function applyStyle (inputObj = {}) {
     }
     return inputObj;
 }
-
-
-app.use(express.static('./res')); //todo: revist to allow static icons and such, also change in home.pug
 
 let bufferSize = 128 * 1024 //todo: find an ideal value for this, for now we do 128 kb at a time //todo: revisit this?
 
@@ -646,7 +655,7 @@ app.get('/:board/:pagenumber.html', async (req, res, next) => {
 		}
     	console.timeEnd('buildIndex');
 
-        const options = await standardRenderOptions(req)
+        const options = await standardRenderOptions(req,res)
 		options.currentBoard = req.params.board
         options.posts = indexPosts.threads
 		options.numPages = boardPagesCache[req.params.board]
@@ -696,7 +705,7 @@ app.get('/:board/thread/:thread.html', async (req, res, next) => {
 		// 		threadPost.replies[thisReplyIndex] = applyMarkup(threadPost.replies[thisReplyIndex])
 		// 	}
 		// }
-        const options = await standardRenderOptions(req)
+        const options = await standardRenderOptions(req,res)
         options.board = req.params.board
         options.threadId = req.params.thread
         options.numPages = boardPagesCache[req.params.board]
@@ -815,9 +824,10 @@ app.get('/home', async (req, res, next) => {
         if (!localhostIps.includes(req.ip) && gatewayCfg.gatewayMode) { //todo: make this go through gatewayCanDo function?
             res.redirect('/gateway')
             return
-        } 
+        }
+
 		const db = await import('./db.js')
-        const options = await standardRenderOptions(req)
+        const options = await standardRenderOptions(req,res)
 		const html = await rt['home'](options)
 		resetError()
 		res.send(html)
@@ -849,7 +859,7 @@ app.get('/files', async (req, res, next) => {
     try {
         gatewayCanDo(req)
         const db = await import('./db.js')
-        const options = await standardRenderOptions(req)
+        const options = await standardRenderOptions(req,res)
         options.files = await db.getAllFileDocuments()
         console.log(options.files)
         const html = await rt['files'](options)
@@ -883,11 +893,12 @@ function gatewayCanDo(req, whichPerm, throwErr = true) { //todo: revisit the nam
     }
 }
 
-async function standardRenderOptions (req) { //todo: make this into a route?
+async function standardRenderOptions (req,res) { //todo: make this into a middleware?
     const db = await import('./db.js')
     return {
         clientId: await db.clientId(),
         req: req,
+        nonce: res.locals.nonce,
         boards: watchedBoards,
         alert: lastError,
         watchedBoards: watchedBoards,
@@ -907,7 +918,7 @@ async function standardRenderOptions (req) { //todo: make this into a route?
 app.get('/gateway', async (req, res, next) => {
     try {
         const db = await import('./db.js')
-        const options = await standardRenderOptions(req)
+        const options = await standardRenderOptions(req,res)
         console.log('options', options)
         const html = await rt['gatewayHome'](options)
         resetError()

@@ -37,4 +37,4 @@ html
                 select(id="cssThemeSelector", onchange="changeTheme()")
                   each theme in themes
                     option(value=theme, selected=(theme === cssTheme ? 'selected' : null)) #{theme.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
-      script(src='/scripts/main.js')
+      script(src='/scripts/main.js', nonce=nonce)
