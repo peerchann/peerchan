@@ -879,6 +879,8 @@ function gatewayCanDo(req, whichPerm, throwErr = true) { //todo: revisit the nam
                 return false
             }
         }
+    } else {
+        return true
     }
 }
 
