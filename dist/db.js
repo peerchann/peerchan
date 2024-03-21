@@ -132,6 +132,12 @@ export async function makeNewPost(postDocument, whichBoard) {
     await openedBoards[whichBoard].documents.put(postDocument); //todo: need to return id?
     //	await Posts.documents.put(newPostDocument); //todo: need to return id?
 }
+export async function listPeers() {
+    let peerMultiAddrs = client.libp2p.getMultiaddrs();
+    //todo: fix this to actually list peers
+    console.log(peerMultiAddrs);
+    return peerMultiAddrs;
+}
 //todo: allow arbitrary post dbs to be posted to
 export async function delPost(whichPost, whichBoard) {
     if (!whichPost) {

@@ -19,6 +19,7 @@ export declare function bootstrap(): Promise<void>;
 export declare function closePostsDb(postsDbId?: string): Promise<void>;
 export declare function openFilesDb(filesDbId: string | undefined, options: any): Promise<void>;
 export declare function makeNewPost(postDocument: Post, whichBoard: string): Promise<void>;
+export declare function listPeers(): Promise<import("@multiformats/multiaddr").Multiaddr[]>;
 export declare function delPost(whichPost: string, whichBoard: string): Promise<void>;
 export declare function getAllPosts(query?: any): Promise<any>;
 export declare function getPosts(whichBoard: string): Promise<any>;

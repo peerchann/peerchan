@@ -177,6 +177,13 @@ export async function makeNewPost (postDocument: Post, whichBoard: string) {
 
 }
 
+export async function listPeers () {
+	let peerMultiAddrs = client.libp2p.getMultiaddrs()
+	//todo: fix this to actually list peers
+	console.log(peerMultiAddrs)
+	return peerMultiAddrs
+}
+
 //todo: allow arbitrary post dbs to be posted to
 export async function delPost (whichPost: string, whichBoard: string) {
 	

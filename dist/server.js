@@ -19,7 +19,9 @@ if (!fs.existsSync(configDir)) {
 	fs.mkdirSync(configDir, { recursive: true });
 }
 
-const localhostIps = ['127.0.0.1', '::1']
+const localhostIps = []
+//todo: another form of authentication (for bypassing gateway mode permissions)
+// const localhostIps = ['127.0.0.1', '::1']
 
 function loadConfig() {
     const configFile = configDir+'/config.json';
@@ -828,6 +830,21 @@ app.get('/home', async (req, res, next) => {
         //todo: redirect somewhere?
 	}
 });
+
+app.get('/listPeers', async (req, res, next) => {
+    try {
+        gatewayCanDo(req)
+        const db = await import('./db.js')
+        res.json(await db.listPeers())
+
+    } catch (error) {
+        console.log('Failed to list peers')
+        console.log(error)
+        lastError = error
+        res.redirect('home')
+    }
+});
+
 
 app.get('/files', async (req, res, next) => {
     try {
