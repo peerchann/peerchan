@@ -83,7 +83,7 @@ function exitDeletionModeOnce(event) {
       post.classList.remove('deletion-mode');
     });
 
-    // Remove the click event listener from the document body after a brief delay
+    // Remove the click event listener from the document body after a brief delayg
     setTimeout(() => {
       document.body.removeEventListener('click', exitDeletionModeOnce);
     }, 100);
@@ -111,7 +111,45 @@ function changeTheme() {
   const themeSelector = document.getElementById('cssThemeSelector');
   window.location.href = '/function/changeTheme/' + themeSelector.options[themeSelector.selectedIndex].value;
 }
-document.querySelectorAll('.post-hash').forEach(thisOne => {
-  thisOne.classList.add('post-hash-clickable');
-})
+document.addEventListener("DOMContentLoaded", function() {
+  const embeddedFiles = document.querySelectorAll('.embedded-file');
+  embeddedFiles.forEach(thisOne => {
+    thisOne.addEventListener('click', function() {
+      handleFileClick(thisOne.getAttribute('filehash'));
+    });
+  });
+  const embeddedImages = document.querySelectorAll('.embedded-image');
+  embeddedImages.forEach(thisOne => {
+    thisOne.addEventListener('click', function() {
+      expandImage(thisOne)
+    });
+  });
+  const allPosts = document.querySelectorAll('.post, .post_reply');
+  allPosts.forEach(thisOne => {
+    thisOne.addEventListener('click', function() {
+      handlePostClick(thisOne.getAttribute('board'),thisOne.getAttribute('id'));
+    });
+  });
+  const messageTextarea = document.getElementById('postForm')?.querySelector('#message');
+  const allPostHashes = document.querySelectorAll('.post-hash');
+  allPostHashes.forEach(thisOne => {
+    thisOne.classList.add('post-hash-clickable');
+    if (messageTextarea) {
+      thisOne.addEventListener('click', function() {
+        messageTextarea.value += '>>' + thisOne.getAttribute('hash')+'\n';
+      })
+    }
+  })
+  const deletePostButton = document.getElementById('delete-post-button');
+  if (deletePostButton) {
+      deletePostButton.addEventListener('click', deletePost);
+  }
+  const deleteFileButton = document.getElementById('delete-file-button');
+  if (deleteFileButton) {
+      deleteFileButton.addEventListener('click', deleteFile);
+  }
+});
+
+
+
 

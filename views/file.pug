@@ -2,6 +2,6 @@ p.embedded-info
   a(href=`/download/file/${file.fileHash}`, download=file.fileHash) #{file.fileHash}
   | , Size: #{renderFunctions.formatFileSize(file.fileSize)} 
 div.embedded-image-container
-  img(src=`/download/file/${file.hash}.${file.extension}`, alt=file.filename, class="embedded-image", onclick="expandImage(this)")
+  img(src=`/download/file/${file.hash}.${file.extension}`, alt=file.filename, class="embedded-image")
 a(href=`/download/file/${file.hash}${file.extension ? '.'+file.extension : ''}`, download=file.filename)
   span.file-icon 🗎
