@@ -1,4 +1,4 @@
-div(class=item.replyto ? 'post_reply' : 'post', id=item.hash)
+div(class=item.replyto ? 'post_reply' : 'post', id=item.hash, onclick=`handlePostClick('${currentBoard}','${item.hash}')`)
   div
     div.post-header
       if item.subject
@@ -8,7 +8,7 @@ div(class=item.replyto ? 'post_reply' : 'post', id=item.hash)
       else
         span.name #{item.name ? item.name : defaultName}
       span.date #{new Date(parseInt(item.date)).toLocaleString()}
-      span.post-hash(class="post-hash", hash=item.hash) #{'#'+item.hash.slice(0, cfg.postHashLength)}
+      span.post-hash(class="post-hash", hash=item.hash, onclick=`handleHashClick('${item.hash}')`) #{'#'+item.hash.slice(0, cfg.postHashLength)}
 
       if indexMode && !item.replyto
         span.reply-link
@@ -16,8 +16,7 @@ div(class=item.replyto ? 'post_reply' : 'post', id=item.hash)
     if item.files && item.files.length > 0
       div.embedded-files
         each file in item.files
-          div.embedded-file(filehash=file.hash)
-            include embeddedfile.pug
+          include embeddedfile.pug
     else
       div.embedded-nothing
     if item.message
