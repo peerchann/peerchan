@@ -13,9 +13,5 @@ if file.fileStatus
   else
     a(href=`/download/file/${file.hash}${file.extension ? '.'+file.extension : ''}`, download=file.filename)
       span.file-icon 🗎
-  script.
-    function expandImage(img) {
-      img.classList.toggle('expanded');
-    }
 else
   span.file-not-found-icon ❌

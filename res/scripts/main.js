@@ -92,45 +92,47 @@ function expandImage(img) {
   img.classList.toggle('expanded');
 }
 
-      function handleFileClick(hash) {
-        if (deleteMode === 'file') {
-          window.location.href = `/deletefile=${hash}`;
-        }
-      }
+function handleFileClick(hash) {
+  if (deleteMode === 'file') {
+    window.location.href = `/deletefile=${hash}`;
+  }
+}
 
-      function handlePostClick(hash) {
-        if (deleteMode === 'post') {
-          window.location.href = `/#{currentBoard}/deletepost=${hash}`;
-        }
-      }
+function handlePostClick(hash) {
+  if (deleteMode === 'post') {
+    window.location.href = `/#{currentBoard}/deletepost=${hash}`;
+  }
+}
 
-      function changeTheme() {
-        const themeSelector = document.getElementById('cssThemeSelector');
-        window.location.href = '/function/changeTheme/' + themeSelector.options[themeSelector.selectedIndex].value;
-      }
+function changeTheme() {
+  const themeSelector = document.getElementById('cssThemeSelector');
+  window.location.href = '/function/changeTheme/' + themeSelector.options[themeSelector.selectedIndex].value;
+}
 
-      document.addEventListener("DOMContentLoaded", function() {
-        const embeddedImages = document.querySelectorAll('.embedded-file');
-        embeddedImages.forEach(thisOne => {
-          thisOne.addEventListener('click', function() {
-            const fileHash = thisOne.getAttribute('filehash');
-            handleFileClick(fileHash);
-          });
-        });
-        const allPosts = document.querySelectorAll('.post, .post_reply');
-        allPosts.forEach(thisOne => {
-          thisOne.addEventListener('click', function() {
-            handlePostClick(thisOne.getAttribute('id'));
-          });
-        });
-        const messageTextarea = document.getElementById('postForm').querySelector('#message');
-        const allPostHashes = document.querySelectorAll('.post-hash');
-        allPostHashes.forEach(thisOne => {
-          thisOne.classList.add('post-hash-clickable');
-          thisOne.addEventListener('click', function() {
-            messageTextarea.value += '>>' + thisOne.getAttribute('hash')+'\n';
-          })
-        })
-      });
+document.addEventListener("DOMContentLoaded", function() {
+  const embeddedImages = document.querySelectorAll('.embedded-file');
+  embeddedImages.forEach(thisOne => {
+    thisOne.addEventListener('click', function() {
+      const fileHash = thisOne.getAttribute('filehash');
+      handleFileClick(fileHash);
+    });
+  });
+  const allPosts = document.querySelectorAll('.post, .post_reply');
+  allPosts.forEach(thisOne => {
+    thisOne.addEventListener('click', function() {
+      handlePostClick(thisOne.getAttribute('id'));
+    });
+  });
+  const messageTextarea = document.getElementById('postForm')?.querySelector('#message');
+  const allPostHashes = document.querySelectorAll('.post-hash');
+  allPostHashes.forEach(thisOne => {
+    thisOne.classList.add('post-hash-clickable');
+    if (messageTextarea) {
+      thisOne.addEventListener('click', function() {
+        messageTextarea.value += '>>' + thisOne.getAttribute('hash')+'\n';
+      })
+    }
+  })
+});
 
 
