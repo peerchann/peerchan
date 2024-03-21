@@ -13,6 +13,11 @@
 		"remMod": false,
 		"dialPeer": false,
 		"seeClientId": false,
-		"changeTheme": false
-	}
+		"changeTheme": false,
+		"seeAllBoards": false
+	},
+	"canSeeBoards": [
+		"landing",
+		"help"
+	]
 }

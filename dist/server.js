@@ -630,7 +630,7 @@ const renderFunctions = {
 app.get('/:board/:pagenumber.html', async (req, res, next) => {
 
 	try {
-		
+		gatewayCanSeeBoard(req.params.board)
 	    if (watchedBoards.indexOf(req.params.board) === -1) {
 	    	throw new Error(`Board /${req.params.board}/ not in watched board list.`)
 	    }
@@ -682,7 +682,7 @@ const boardPagesCache = {}; //todo: reconsider
 app.get('/:board/thread/:thread.html', async (req, res, next) => {
 
 	try {
-
+        gatewayCanSeeBoard(req.params.board)
 	    if (watchedBoards.indexOf(req.params.board) === -1) {
 	    	throw new Error(`Board /${req.params.board}/ not in watched board list.`)
 	    }
@@ -737,6 +737,7 @@ var lastError
 app.post('/submit', upload.any(), async (req, res, next) => {
 	try {
         gatewayCanDo(req, 'post')
+        gatewayCanSeeBoard(req.body.whichBoard)
 		// console.log('req.files:') //todo: remove debug
 		// console.log(req.files)
 		// console.log(req.body.message)
@@ -799,6 +800,7 @@ app.get('', async (req, res, next) => { //todo: merge with above functionality o
 
 app.get('/function/findThreadContainingPost/:boardId/:postHash', async (req, res, next) => {
     try {
+        gatewayCanSeeBoard(req.params.boardId)
         const db = await import('./db.js')
         const specificPost = await db.getSpecificPost(req.params.boardId, req.params.postHash)
         const hashRefIndex = req.params.postHash.indexOf('#');
@@ -893,6 +895,22 @@ function gatewayCanDo(req, whichPerm, throwErr = true) { //todo: revisit the nam
     }
 }
 
+function gatewayCanSeeBoard(whichBoard) { //todo: add req processing for eg. localhost bypass (if implemented)
+    if (gatewayCfg.gatewayMode && !gatewayCfg.can.seeAllBoards && !gatewayCfg.canSeeBoards.includes(whichBoard)) {
+        throw new Error (`Not permitted to browse /${whichBoard}/.`)
+    } else {
+        return true
+    }
+}
+
+function canSeeBoards() { //todo: add req processing for eg. localhost bypass (if implemented)
+    if (gatewayCfg.gatewayMode && !gatewayCfg.can.seeAllBoards) {
+        return gatewayCfg.canSeeBoards.filter(b => watchedBoards.includes(b))
+    } else {
+        return watchedBoards
+    }
+}
+
 async function standardRenderOptions (req,res) { //todo: make this into a middleware?
     const db = await import('./db.js')
     return {
@@ -901,7 +919,7 @@ async function standardRenderOptions (req,res) { //todo: make this into a middle
         nonce: res.locals.nonce,
         boards: watchedBoards,
         alert: lastError,
-        watchedBoards: watchedBoards,
+        watchedBoards: canSeeBoards(),
         themes: cssThemes,
         cssTheme: currentCssTheme,
         defaultName: cfg.defaultName, //todo: consolidate cfg where possible
