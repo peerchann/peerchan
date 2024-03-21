@@ -148,6 +148,10 @@ document.addEventListener("DOMContentLoaded", function() {
   if (deleteFileButton) {
       deleteFileButton.addEventListener('click', deleteFile);
   }
+  const cssThemeSelector = document.getElementById('cssThemeSelector');
+  if (cssThemeSelector) {
+      cssThemeSelector.addEventListener('change', changeTheme);
+  }
 });
 
 
