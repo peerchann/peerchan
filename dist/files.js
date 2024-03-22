@@ -7,7 +7,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 import { field, variant, vec, serialize } from "@dao-xyz/borsh";
 import { Program, } from "@peerbit/program";
 //import { createBlock, getBlockValue } from "@peerbit/libp2p-direct-block"
-import { sha256Sync, toBase64, toHexString } from "@peerbit/crypto";
+import { Ed25519Keypair, sha256Sync, toBase64, toHexString } from "@peerbit/crypto";
 import { Documents, SearchRequest, StringMatch, PutOperation, DeleteOperation } from "@peerbit/document"; //todo: remove address redundancy
 import { currentModerators } from './db.js';
 import Validate from "./validation.js";
@@ -164,12 +164,12 @@ let FileDatabase = class FileDatabase extends Program {
             }
         });
     }
-    async createFile(data) {
-        let file = new File(data);
-        await file.writeChunks(this.chunks, data);
-        await this.files.put(file);
-        return file;
-    }
+    // async createFile(data: Uint8Array) {
+    // 	let file = new File(data)
+    // 	await file.writeChunks(this.chunks, data)
+    // 	await this.files.put(file)
+    // 	return file
+    // }
     async getFile(hash) {
         let file = await this.files.index.get(hash);
         if (file) {
@@ -177,13 +177,23 @@ let FileDatabase = class FileDatabase extends Program {
         }
         return null;
     }
-    async deleteFile(hash) {
+    async deleteFile(hash, randomKey) {
         let file = await this.files.index.get(hash);
         if (file) {
-            for (let chunkHash of file.chunkCids) {
-                await this.chunks.documents.del(chunkHash);
+            if (randomKey) {
+                var newKeyPair = await Ed25519Keypair.create();
+                for (let chunkHash of file.chunkCids) {
+                    await this.chunks.documents.del(chunkHash, { signers: [newKeyPair.sign.bind(newKeyPair)] });
+                    newKeyPair = await Ed25519Keypair.create();
+                }
+                return await this.files.del(hash, { signers: [newKeyPair.sign.bind(newKeyPair)] });
             }
-            return await this.files.del(hash);
+            else {
+                for (let chunkHash of file.chunkCids) {
+                    await this.chunks.documents.del(chunkHash);
+                }
+                return await this.files.del(hash);
+            }
         }
         return null;
     }
@@ -251,21 +261,38 @@ let File = class File extends BaseFileDocument {
         await Promise.all(chunkReads);
         return fileArray;
     }
-    async writeChunks(fileChunks, fileContents) {
+    async writeChunks(fileChunks, fileContents, randomKey) {
         // let chunkWrites = Array(Math.ceil(fileContents.length / this.chunkSize))
         let chunkStartIndex = 0;
         let newFileHash = toHexString(sha256Sync(fileContents));
         let chunkIndex = 0;
-        while (chunkStartIndex < fileContents.length) { //todo: double check <= or <
-            // constructor(fileHash: string, chunkIndex: number, chunkSize: number, chunkData: Uint8Array)
-            let newFileChunk = new FileChunk(newFileHash, chunkIndex, Math.min(fileChunkingSize, fileContents.length - chunkStartIndex), fileContents.slice(chunkStartIndex, chunkStartIndex += fileChunkingSize));
-            await fileChunks.documents.put(newFileChunk);
-            // console.log("newFileChunk added")
-            // console.log(newFileChunk)
-            this.chunkCids.push(newFileChunk.hash);
-            // await client.services.blocks.put(fileContents.slice(chunkStartIndex, chunkStartIndex += this.chunkSize))
-            // .then(resultHash => this.chunkCids.push(newFileChunk.hash))
-            chunkIndex += 1;
+        if (randomKey) {
+            var newKeyPair;
+            while (chunkStartIndex < fileContents.length) { //todo: double check <= or <
+                // constructor(fileHash: string, chunkIndex: number, chunkSize: number, chunkData: Uint8Array)
+                let newFileChunk = new FileChunk(newFileHash, chunkIndex, Math.min(fileChunkingSize, fileContents.length - chunkStartIndex), fileContents.slice(chunkStartIndex, chunkStartIndex += fileChunkingSize));
+                newKeyPair = await Ed25519Keypair.create();
+                await fileChunks.documents.put(newFileChunk, { signers: [newKeyPair.sign.bind(newKeyPair)] });
+                // console.log("newFileChunk added")
+                // console.log(newFileChunk)
+                this.chunkCids.push(newFileChunk.hash);
+                // await client.services.blocks.put(fileContents.slice(chunkStartIndex, chunkStartIndex += this.chunkSize))
+                // .then(resultHash => this.chunkCids.push(newFileChunk.hash))
+                chunkIndex += 1;
+            }
+        }
+        else {
+            while (chunkStartIndex < fileContents.length) { //todo: double check <= or <
+                // constructor(fileHash: string, chunkIndex: number, chunkSize: number, chunkData: Uint8Array)
+                let newFileChunk = new FileChunk(newFileHash, chunkIndex, Math.min(fileChunkingSize, fileContents.length - chunkStartIndex), fileContents.slice(chunkStartIndex, chunkStartIndex += fileChunkingSize));
+                await fileChunks.documents.put(newFileChunk);
+                // console.log("newFileChunk added")
+                // console.log(newFileChunk)
+                this.chunkCids.push(newFileChunk.hash);
+                // await client.services.blocks.put(fileContents.slice(chunkStartIndex, chunkStartIndex += this.chunkSize))
+                // .then(resultHash => this.chunkCids.push(newFileChunk.hash))
+                chunkIndex += 1;
+            }
         }
         // this.chunkCids = await Promise.all(chunkWrites)
         this.hash = toHexString(sha256Sync(serialize(this)));

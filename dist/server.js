@@ -24,6 +24,7 @@ const localhostIps = []
 //todo: another form of authentication (for bypassing gateway mode permissions)
 // const localhostIps = ['127.0.0.1', '::1']
 
+//todo: automatically fix configs with missing fields
 function loadConfig() {
     const configFile = configDir+'/config.json';
     
@@ -62,6 +63,10 @@ function loadConfig() {
                     "http://",
                     "https://"
                 ],
+                "postPostRandomKey": true,
+                "deletePostRandomKey": false,
+                "postFileRandomKey": true,
+                "deleteFileRandomKey": false,
                 "postHashLength": 8
             }
 			fs.writeFileSync(configFile, JSON.stringify(defaultConfig, null, '\t'), 'utf8');
@@ -290,7 +295,7 @@ app.get('/:board/deletepost=:posthash', async (req, res, next) => {
     gatewayCanDo(req, 'delPost')
   	console.log(`Deleting post: ${req.params.posthash}.`);
 	const db = await import('./db.js')
-	await db.delPost(req.params.posthash, req.params.board)
+	await db.delPost(req.params.posthash, req.params.board, cfg.deletePostRandomKey)
 
   } catch (err) {
   	console.log(`Failed to delete post: ${req.params.posthash}.`)
@@ -338,7 +343,7 @@ app.get('/deletefile=:filehash', async (req, res, next) => {
   	const fileHash = req.params.filehash
   	console.log(`Deleting file: ${fileHash}.`);
 	const db = await import('./db.js')
-	await db.delFile(fileHash)
+	await db.delFile(fileHash, cfg.deleteFileRandomKey)
 
   } catch (err) {
   	console.log(`Failed to delete file: ${params.params.fileHash}.`)
@@ -749,7 +754,7 @@ app.post('/submit', upload.any(), async (req, res, next) => {
             gatewayCanDo(req, 'postFile')
 	  		postFiles.push(
 	  			new dbPosts.PostFile ( //todo: consider what needs to be included in this
-		  			await db.putFile(thisFile.buffer), //puts the file and returns the hash
+		  			await db.putFile(thisFile.buffer, cfg.postFileRandomKey), //puts the file and returns the hash
 		  			thisFile.originalname, //original filename
                     thisFile.originalname.includes('.') ? thisFile.originalname.split('.').pop() : '',
 		  			thisFile.size,
@@ -770,7 +775,7 @@ app.post('/submit', upload.any(), async (req, res, next) => {
 		  // console.log(Validate)
 		  Validate.default.post(newPost)
 		  //todo: make pass post document
-		  await db.makeNewPost(newPost, req.body.whichBoard)
+		  await db.makeNewPost(newPost, req.body.whichBoard, cfg.postPostRandomKey)
 		  // await db.makeNewPost({
 		  //   date:  BigInt(Date.now()),
 		  //   replyto: req.body.replyto,

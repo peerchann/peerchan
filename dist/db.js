@@ -9,7 +9,7 @@ import { tcp } from "@libp2p/tcp";
 // import { mplex } from "@libp2p/mplex";
 import { yamux } from "@chainsafe/libp2p-yamux";
 import { noise } from '@dao-xyz/libp2p-noise';
-import { sha256Sync } from "@peerbit/crypto";
+import { Ed25519Keypair, sha256Sync } from "@peerbit/crypto";
 import { multiaddr } from '@multiformats/multiaddr';
 import Validate from "./validation.js";
 import fs from "fs";
@@ -122,15 +122,22 @@ export async function openFilesDb(filesDbId = "", options) {
 // 	FileChunks = await client.open(new FileChunkDatabase({ id: sha256Sync(Buffer.from(fileChunksDbId)) }))
 // }
 //todo: allow arbitrary post dbs to be posted to
-export async function makeNewPost(postDocument, whichBoard) {
+//todo: store the signing keys locally and make them selectable for posting post, deleting post, putting file, deleting file, etc.
+export async function makeNewPost(postDocument, whichBoard, randomKey) {
     if (!whichBoard) {
         throw new Error('No board specified.');
     }
     if (!postDocument) {
         throw new Error('No post document provided.');
     }
-    await openedBoards[whichBoard].documents.put(postDocument); //todo: need to return id?
-    //	await Posts.documents.put(newPostDocument); //todo: need to return id?
+    if (randomKey) {
+        const newKeyPair = await Ed25519Keypair.create();
+        await openedBoards[whichBoard].documents.put(postDocument, { signers: [newKeyPair.sign.bind(newKeyPair)] });
+    }
+    else {
+        await openedBoards[whichBoard].documents.put(postDocument);
+    }
+    //todo: need to return id?
 }
 export async function listPeers() {
     let peerMultiAddrs = client.libp2p.getMultiaddrs();
@@ -139,7 +146,7 @@ export async function listPeers() {
     return peerMultiAddrs;
 }
 //todo: allow arbitrary post dbs to be posted to
-export async function delPost(whichPost, whichBoard) {
+export async function delPost(whichPost, whichBoard, randomKey) {
     if (!whichPost) {
         throw new Error('No post specified.');
     }
@@ -148,11 +155,23 @@ export async function delPost(whichPost, whichBoard) {
     }
     let theseReplies = await openedBoards[whichBoard].documents.index.search(new SearchRequest({ query: [new StringMatch({ key: 'replyto', value: whichPost })] }), { local: true, remote: remoteQuery });
     //delete post itself
-    await openedBoards[whichBoard].documents.del(whichPost); //todo: need to return id?
-    //then delete replies
-    for (let thisReply of theseReplies) {
-        await openedBoards[whichBoard].documents.del(thisReply.hash);
+    if (randomKey) {
+        var newKeyPair = await Ed25519Keypair.create();
+        await openedBoards[whichBoard].documents.del(whichPost, { signers: [newKeyPair.sign.bind(newKeyPair)] });
+        //then delete replies
+        for (let thisReply of theseReplies) {
+            newKeyPair = await Ed25519Keypair.create();
+            await openedBoards[whichBoard].documents.del(thisReply.hash, { signers: [newKeyPair.sign.bind(newKeyPair)] });
+        }
     }
+    else {
+        await openedBoards[whichBoard].documents.del(whichPost);
+        //then delete replies
+        for (let thisReply of theseReplies) {
+            await openedBoards[whichBoard].documents.del(thisReply.hash);
+        }
+    }
+    //todo: need to return ids of what was deleted?
 }
 //todo: allow arbitrary post dbs to be posted to
 //todo: revisit remote
@@ -263,11 +282,18 @@ export async function getRepliesToSpecificPost(whichBoard, whichThread) {
 export async function getAllFileDocuments() {
     return await Files.files.index.search(new SearchRequest({ query: [] }), { local: true, remote: remoteQuery });
 }
-export async function putFile(fileData) {
+export async function putFile(fileData, randomKey) {
     //todo: maybe validate size in advance here or in writeChunks to avoid putting chunks and then exiting 
     let fileDocument = await new File(fileData);
     Validate.file(fileDocument); //check the file isn't too big before starting to write the chunks
-    await fileDocument.writeChunks(Files.chunks, fileData);
+    await fileDocument.writeChunks(Files.chunks, fileData, randomKey);
+    if (randomKey) {
+        const newKeyPair = await Ed25519Keypair.create();
+        await Files.files.put(fileDocument, { signers: [newKeyPair.sign.bind(newKeyPair)] });
+    }
+    else {
+        await Files.files.put(fileDocument);
+    }
     await Files.files.put(fileDocument);
     // await Promise.all([ //todo: can move out of await
     // 	// fileDocument.writeChunks(fileData, fileDocument.hash),
@@ -303,7 +329,7 @@ export async function fileExists(fileHash) {
     }
 }
 //todo: need to get this also deleting the file chunks whenever anyone deletes, not just us
-export async function delFile(fileHash) {
+export async function delFile(fileHash, randomKey) {
     //todo:
     // let foundResults = await Files.files.index.search(new SearchRequest({ query: [new StringMatch({key: 'hash', value: fileHash })] }), { local: true, remote: remoteQuery }).then(results => results[0])
     //first delete all the chunks of the file we may have
@@ -312,7 +338,7 @@ export async function delFile(fileHash) {
     // }
     //then delete the file document itself
     try {
-        await Files.deleteFile(fileHash);
+        await Files.deleteFile(fileHash, randomKey);
     }
     catch (err) {
         console.log(err);

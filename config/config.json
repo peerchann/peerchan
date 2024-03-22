@@ -23,5 +23,9 @@
 		"http://",
 		"https://"
 	],
+	"postPostRandomKey": true,
+	"deletePostRandomKey": false,
+	"postFileRandomKey": true,
+	"deleteFileRandomKey": false,
 	"postHashLength": 8
 }

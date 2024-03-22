@@ -18,9 +18,9 @@ export declare function openPostsDb(postsDbId: string | undefined, options: any)
 export declare function bootstrap(): Promise<void>;
 export declare function closePostsDb(postsDbId?: string): Promise<void>;
 export declare function openFilesDb(filesDbId: string | undefined, options: any): Promise<void>;
-export declare function makeNewPost(postDocument: Post, whichBoard: string): Promise<void>;
+export declare function makeNewPost(postDocument: Post, whichBoard: string, randomKey: true): Promise<void>;
 export declare function listPeers(): Promise<import("@multiformats/multiaddr").Multiaddr[]>;
-export declare function delPost(whichPost: string, whichBoard: string): Promise<void>;
+export declare function delPost(whichPost: string, whichBoard: string, randomKey: true): Promise<void>;
 export declare function getAllPosts(query?: any): Promise<any>;
 export declare function getPosts(whichBoard: string): Promise<any>;
 export declare function getThreadsWithReplies(whichBoard: string, numThreads?: number, numPreviewPostsPerThread?: number, whichPage?: number): Promise<{
@@ -37,10 +37,10 @@ export declare function getThreadsWithReplies_prev(whichBoard: string, numThread
 export declare function getSpecificPost(whichBoard: string, whichPost: string): Promise<any>;
 export declare function getRepliesToSpecificPost(whichBoard: string, whichThread: string): Promise<any>;
 export declare function getAllFileDocuments(): Promise<File[]>;
-export declare function putFile(fileData: Uint8Array): Promise<string>;
+export declare function putFile(fileData: Uint8Array, randomKey: true): Promise<string>;
 export declare function getFile(fileHash: string): Promise<false | Uint8Array | null>;
 export declare function fileExists(fileHash: string): Promise<boolean>;
-export declare function delFile(fileHash: string): Promise<unknown>;
+export declare function delFile(fileHash: string, randomKey: true): Promise<unknown>;
 export declare function setModerators(moderators?: string[]): void;
 export declare function pbStopClient(): Promise<void>;
 export declare function resetDb(): void;
