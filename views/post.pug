@@ -8,8 +8,10 @@ div(class=item.replyto ? 'post_reply' : 'post', id=item.hash, board=currentBoard
       else
         span.name #{item.name ? item.name : defaultName}
       span.date #{new Date(parseInt(item.date)).toLocaleString()}
-      span.post-hash(class="post-hash", hash=item.hash) #{'#'+item.hash.slice(0, cfg.postHashLength)}
-
+      if indexMode
+        a(href=`/${currentBoard}/thread/${item.replyto || item.hash}.html?reply=${item.hash}#${item.hash}`, class='post-hash', hash=item.hash) #{'#'+item.hash.slice(0, cfg.postHashLength)}
+      else
+        span.post-hash(class="post-hash-clickable", hash=item.hash) #{'#'+item.hash.slice(0, cfg.postHashLength)}
       if indexMode && !item.replyto
         span.reply-link
           a(href=`/${currentBoard}/thread/${item.hash}.html`) [Reply]
@@ -42,3 +44,5 @@ div(class=item.replyto ? 'post_reply' : 'post', id=item.hash, board=currentBoard
                   a(href=word) #{word}
                 else
                   | #{word}
+
+

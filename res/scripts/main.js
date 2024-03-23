@@ -131,9 +131,8 @@ document.addEventListener("DOMContentLoaded", function() {
     });
   });
   const messageTextarea = document.getElementById('postForm')?.querySelector('#message');
-  const allPostHashes = document.querySelectorAll('.post-hash');
-  allPostHashes.forEach(thisOne => {
-    thisOne.classList.add('post-hash-clickable');
+  const allPostHashClickables = document.querySelectorAll('.post-hash-clickable');
+  allPostHashClickables.forEach(thisOne => {
     if (messageTextarea) {
       thisOne.addEventListener('click', function() {
         messageTextarea.value += '>>' + thisOne.getAttribute('hash')+'\n';

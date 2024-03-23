@@ -19,6 +19,8 @@ import { Ed25519Keypair, toBase64, fromBase64, sha256Sync, toHexString, PublicSi
 import { field, variant, vec, option, serialize, deserialize } from "@dao-xyz/borsh"
 import { multiaddr } from '@multiformats/multiaddr'
 
+import { createConnection } from 'socks'
+
 import Validate from "./validation.js"
 
 import fs from "fs"

@@ -635,6 +635,7 @@ const renderFunctions = {
 app.get('/:board/:pagenumber.html', async (req, res, next) => {
 
 	try {
+        console.time('buildIndex');
 		gatewayCanSeeBoard(req.params.board)
 	    if (watchedBoards.indexOf(req.params.board) === -1) {
 	    	throw new Error(`Board /${req.params.board}/ not in watched board list.`)
@@ -653,12 +654,10 @@ app.get('/:board/:pagenumber.html', async (req, res, next) => {
 
 		boardPagesCache[req.params.board] = indexPosts.totalpages
 
-    	console.time('buildIndex');
 		for(let threadPost in indexPosts.threads) {
 			indexPosts.threads[threadPost].replies = indexPosts.replies[threadPost]
 			indexPosts.threads[threadPost].omittedreplies = indexPosts.omittedreplies[threadPost]
 		}
-    	console.timeEnd('buildIndex');
 
         const options = await standardRenderOptions(req,res)
 		options.currentBoard = req.params.board
@@ -668,7 +667,8 @@ app.get('/:board/:pagenumber.html', async (req, res, next) => {
 		console.log(indexPosts.totalpages + " pages total")
 		const html = await rt['board'](options)
 		resetError()
-		res.send(html)
+        console.timeEnd('buildIndex');
+        res.send(html)
 
 	} catch (err) {
 		console.log('Failed to get posts for board \"'+req.params.board+'\".')
@@ -691,9 +691,7 @@ app.get('/:board/thread/:thread.html', async (req, res, next) => {
 	    if (watchedBoards.indexOf(req.params.board) === -1) {
 	    	throw new Error(`Board /${req.params.board}/ not in watched board list.`)
 	    }
-
 		const db = await import('./db.js')
-		
 		// let allPosts = makeRenderSafe(await db.getPosts(req.params.board))
 		let threadPost = await await db.getSpecificPost(req.params.board, req.params.thread)
 		// threadPost.replies = []
@@ -715,8 +713,11 @@ app.get('/:board/thread/:thread.html', async (req, res, next) => {
         options.threadId = req.params.thread
         options.numPages = boardPagesCache[req.params.board]
         options.posts = threadPost
+        if (req.query.reply) {
+            options.prefillMessageBox = '>>'+req.query.reply+'\n'
+        }
         options.currentBoard = req.params.board
-		const html = await rt['board'](options)
+        const html = await rt['board'](options)
 		resetError()
 		res.send(html)
 
@@ -802,7 +803,7 @@ app.get('', async (req, res, next) => { //todo: merge with above functionality o
 	res.redirect('/home')
 });
 
-
+//todo: revisit this
 app.get('/function/findThreadContainingPost/:boardId/:postHash', async (req, res, next) => {
     try {
         gatewayCanSeeBoard(req.params.boardId)
@@ -921,6 +922,7 @@ async function standardRenderOptions (req,res) { //todo: make this into a middle
     return {
         clientId: await db.clientId(),
         req: req,
+        prefillMessageBox: res.locals.prefillMessageBox,
         nonce: res.locals.nonce,
         boards: watchedBoards,
         alert: lastError,
