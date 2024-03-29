@@ -44,6 +44,7 @@ export class FileChunkDatabase extends Program<OpenArgs>{
 		super()
 		// this.id = properties?.id
 		// this.rootKeys = properties ? properties.rootKeys : []
+		console.log('DEBUG: opening fcdb with id ', properties?.id)
 		this.documents = new Documents({ id: properties?.id }) //
 		// this.documents = new Documents({ index: new DocumentIndex({ indexBy: '_id' }) })
 	}
@@ -116,6 +117,7 @@ export class FileDatabase extends Program<OpenArgs>{
 		super()
 		// this.id = properties?.id
 		// this.rootKeys = properties ? properties.rootKeys : []
+		console.log('DEBUG: opening fdb with id ', properties?.id)
 		this.chunks = new FileChunkDatabase({ id: properties?.id })
 		this.files = new Documents({ id: sha256Sync(this.chunks.documents.log.log.id) }) //
 		// this.documents = new Documents({ index: new DocumentIndex({ indexBy: '_id' }) })s

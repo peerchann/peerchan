@@ -8,6 +8,8 @@ import { currentModerators } from './db.js'
 
 
 import { sha256Sync, toBase64, toHexString, PublicSignKey } from "@peerbit/crypto"
+import { FileDatabase } from './files.js'
+
 
 import Validate from "./validation.js"
 
@@ -173,10 +175,14 @@ export class PostDatabase extends Program<OpenArgs> {
 
 	@field({ type: Documents })
 	documents: Documents<Post>
+	@field({ type: FileDatabase })
+	fileDb: FileDatabase
 
 	constructor(properties?: { id?: Uint8Array }) {
 		super()
 		// this.id = properties?.id
+		this.fileDb = new FileDatabase({ id: properties?.id })
+		console.log('DEBUG: opening pdb with id ', properties?.id)
 		this.documents = new Documents({ id: properties?.id }) //
 		// this.documents = new Documents({ index: new DocumentIndex({ indexBy: '_id' }) })
 	}
