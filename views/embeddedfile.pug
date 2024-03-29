@@ -1,7 +1,7 @@
 div.embedded-file(filehash=file.hash)
   p.embedded-info
     a(href=`/download/${currentBoard}/${file.hash}/${file.filename}`, download=file.filename) #{file.filename}
-    | , Size: #{renderFunctions.formatFileSize(file.size)}
+    | , #{renderFunctions.formatFileSize(file.size)}
   if file.fileStatus
     if cfg.embedImageFileExtensions.includes(file.extension.toLowerCase())
       div
