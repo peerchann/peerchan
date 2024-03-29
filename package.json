@@ -1,6 +1,6 @@
 {
   "name": "Gladden",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Distributed imageboard browsing.",
   "type": "module",
   "main": "./dist/server.js",

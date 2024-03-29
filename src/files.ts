@@ -44,7 +44,17 @@ export class FileChunkDatabase extends Program<OpenArgs>{
 		super()
 		// this.id = properties?.id
 		// this.rootKeys = properties ? properties.rootKeys : []
-		this.documents = new Documents({ id: properties?.id }) //
+
+		//note: done this way for backwards-compatibility with pan-board files database
+		if (properties?.id) {
+			if (!Buffer.compare(sha256Sync(Buffer.from("")), properties?.id)) {
+				this.documents = new Documents({ id: properties?.id })
+			} else {
+				this.documents = new Documents({ id: sha256Sync(Buffer.concat([properties.id, Buffer.from("FileChunks")]))})
+			}
+		} else {
+			this.documents = new Documents({ id: properties?.id })
+		}
 		// this.documents = new Documents({ index: new DocumentIndex({ indexBy: '_id' }) })
 	}
 
@@ -256,7 +266,7 @@ export class File extends BaseFileDocument {
 	}
 
 
-	async getFile(fileChunks: FileChunkDatabase): Promise<Uint8Array> {
+	async getFile(fileChunks: FileChunkDatabase) {
 		let fileArray = new Uint8Array(this.fileSize)
 		let chunkReads: any[] = []
 		// let chunkCidIndex = 0

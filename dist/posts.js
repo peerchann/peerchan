@@ -11,6 +11,7 @@ import { Documents, PutOperation, DeleteOperation } from "@peerbit/document"; //
 // import { nanoid } from 'nanoid'
 import { currentModerators } from './db.js';
 import { sha256Sync, toBase64, toHexString } from "@peerbit/crypto";
+import { FileDatabase } from './files.js';
 import Validate from "./validation.js";
 //todo: consolidate/move to validation file along with files.ts one
 function isModerator(theSigner, theIdentity, moderators = []) {
@@ -169,9 +170,11 @@ export { Post };
 //todo: consistency with the document type 
 let PostDatabase = class PostDatabase extends Program {
     documents;
+    fileDb;
     constructor(properties) {
         super();
         // this.id = properties?.id
+        this.fileDb = new FileDatabase({ id: properties?.id });
         this.documents = new Documents({ id: properties?.id }); //
         // this.documents = new Documents({ index: new DocumentIndex({ indexBy: '_id' }) })
     }
@@ -225,6 +228,9 @@ let PostDatabase = class PostDatabase extends Program {
 __decorate([
     field({ type: Documents })
 ], PostDatabase.prototype, "documents", void 0);
+__decorate([
+    field({ type: FileDatabase })
+], PostDatabase.prototype, "fileDb", void 0);
 PostDatabase = __decorate([
     variant("postdatabase") //todo: consider renaming/modifying as appropriate
 ], PostDatabase);

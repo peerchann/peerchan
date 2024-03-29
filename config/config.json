@@ -27,5 +27,6 @@
 	"deletePostRandomKey": false,
 	"postFileRandomKey": true,
 	"deleteFileRandomKey": false,
+	"queryFromPanBoardFilesDbIfFileNotFound": true,
 	"postHashLength": 8
 }

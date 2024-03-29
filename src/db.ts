@@ -19,8 +19,6 @@ import { Ed25519Keypair, toBase64, fromBase64, sha256Sync, toHexString, PublicSi
 import { field, variant, vec, option, serialize, deserialize } from "@dao-xyz/borsh"
 import { multiaddr } from '@multiformats/multiaddr'
 
-import { createConnection } from 'socks'
-
 import Validate from "./validation.js"
 
 import fs from "fs"
@@ -87,10 +85,29 @@ export async function clientId () {
 }
 
 //todo: move the config to a different spot
+//todo: consider finding a way to open files, chunks, posts async
 export async function openPostsDb (postsDbId = "my_post_db", options: any) {
+	console.log(`Opening database for /${postsDbId}/...`, options)
+	let newPostsDb = new PostDatabase({ id: sha256Sync(Buffer.from(postsDbId))})
+	// return
 	if (options?.replicationFactor) {
-		console.log(`Opening posts database for /${postsDbId}/...`, options)
-		openedBoards[postsDbId] = await client.open(new PostDatabase({ id: sha256Sync(Buffer.from(postsDbId)) }), {
+		await client.open(newPostsDb.fileDb.chunks, {
+			args: {
+				role: {
+					type: "replicator",
+					factor: options.replicationFactor
+				}
+			}
+		})
+		await client.open(newPostsDb.fileDb, {
+			args: {
+				role: {
+					type: "replicator",
+					factor: options.replicationFactor
+				}
+			}
+		})
+		openedBoards[postsDbId] = await client.open(newPostsDb, {
 			args: {
 				role: {
 					type: "replicator",
@@ -99,12 +116,17 @@ export async function openPostsDb (postsDbId = "my_post_db", options: any) {
 			}
 		})
 	} else {
+		await client.open(newPostsDb.fileDb.chunks)
+		await client.open(newPostsDb.fileDb)
 		openedBoards[postsDbId] = await client.open(new PostDatabase({ id: sha256Sync(Buffer.from(postsDbId)) }))
+		// await client.open(openedBoards[postsDbId].fileDb.chunks)
+		// await client.open(openedBoards[postsDbId].fileDb)
 	}
 
 	//Posts = await client.open(new PostDatabase({ id: sha256Sync(Buffer.from(postsDbId)) }))
 
 }
+
 
 export async function bootstrap () {
 
@@ -115,7 +137,11 @@ export async function bootstrap () {
 
 export async function closePostsDb (postsDbId = "my_post_db") {
 
-	await openedBoards[postsDbId].close()
+	await Promise.all([
+		openedBoards[postsDbId].fileDb.chunks.close(),
+		openedBoards[postsDbId].fileDb.close(),
+		openedBoards[postsDbId].close(),
+	])
 	//Posts = await client.open(new PostDatabase({ id: sha256Sync(Buffer.from(postsDbId)) }))
 
 }
@@ -129,7 +155,7 @@ export async function closePostsDb (postsDbId = "my_post_db") {
 // }
 
 
-//only one db for now
+//only used for pan-boards files db, the others board-specific ones are openend in openPostsDb
 export async function openFilesDb (filesDbId = "", options: any ) {
 
 	Files = new FileDatabase({ id: sha256Sync(Buffer.from(filesDbId)) })
@@ -150,10 +176,11 @@ export async function openFilesDb (filesDbId = "", options: any ) {
 					factor: options.replicationFactor
 				}
 			}
-	})
+		})
 	} else {
 		await client.open(Files.chunks)
 		await client.open(Files)
+
 	}
 
 }
@@ -187,6 +214,8 @@ export async function makeNewPost (postDocument: Post, whichBoard: string, rando
 
 export async function listPeers () {
 	let peerMultiAddrs = client.libp2p.getMultiaddrs()
+	//todo: remove debug
+	// console.log(openedBoards['test'], openedBoards['test'].fileDb, openedBoards['test'].fileDb.chunks)
 	//todo: fix this to actually list peers
 	console.log(peerMultiAddrs)
 	return peerMultiAddrs
@@ -364,24 +393,36 @@ export async function getRepliesToSpecificPost (whichBoard: string, whichThread:
 	//return await Posts.documents.index.search(new SearchRequest, { local: true, remote: remoteQuery });
 }
 
+//todo: revisit in light of per-board fileDbs
 export async function getAllFileDocuments () {
-
 		return await Files.files.index.search(new SearchRequest({ query: [] }), { local: true, remote: remoteQuery })
 
 }
 
-export async function putFile (fileData: Uint8Array, randomKey: true) {
+export async function putFile (fileData: Uint8Array, whichBoard: string, randomKey: true) {
 		//todo: maybe validate size in advance here or in writeChunks to avoid putting chunks and then exiting 
 		let fileDocument = await new File(fileData)
 		Validate.file(fileDocument) //check the file isn't too big before starting to write the chunks
-		await fileDocument.writeChunks(Files.chunks, fileData, randomKey)
-	    if (randomKey) {
-	    	const newKeyPair = await Ed25519Keypair.create()
-	    	await Files.files.put(fileDocument, { signers: [newKeyPair.sign.bind(newKeyPair)] });
-	    } else {
-	    	await Files.files.put(fileDocument);
-	    }
-		await Files.files.put(fileDocument)
+		if (whichBoard) {
+			await fileDocument.writeChunks(openedBoards[whichBoard].fileDb.chunks, fileData, randomKey)
+		    if (randomKey) {
+		    	const newKeyPair = await Ed25519Keypair.create()
+		    	await openedBoards[whichBoard].fileDb.files.put(fileDocument, { signers: [newKeyPair.sign.bind(newKeyPair)] });
+		    } else {
+		    	await openedBoards[whichBoard].fileDb.files.put(fileDocument);
+		    }
+			await openedBoards[whichBoard].fileDb.files.put(fileDocument)
+		} else {
+			await fileDocument.writeChunks(Files.chunks, fileData, randomKey)
+		    if (randomKey) {
+		    	const newKeyPair = await Ed25519Keypair.create()
+		    	await Files.files.put(fileDocument, { signers: [newKeyPair.sign.bind(newKeyPair)] });
+		    } else {
+		    	await Files.files.put(fileDocument);
+		    }
+			await Files.files.put(fileDocument)
+		}
+
 		// await Promise.all([ //todo: can move out of await
 		// 	// fileDocument.writeChunks(fileData, fileDocument.hash),
 		// 	db.documents.put(fileDocument)
@@ -389,45 +430,45 @@ export async function putFile (fileData: Uint8Array, randomKey: true) {
 		return fileDocument.hash
 }
 
-export async function getFile (fileHash: string) {
-		// console.log("debug 1 in db.ts getFile():")
-		// console.log(fileHash)
-		// let db = Files //todo: revisit this here and elsewhere
-		// console.log("FileChunks.documents.index.size:")
-		// console.log(FileChunks.documents.index.size)
-		let foundResults = await Files.files.index.search(new SearchRequest({ query: [new StringMatch({key: 'hash', value: fileHash })] }), { local: true, remote: remoteQuery }).then(results => results[0])
-		// console.log("debug 2 in db.ts getFile():")
-		// console.log(foundResults)
+export async function getFile (fileHash: string, whichBoard: string) {
+	if (whichBoard) {
+		let foundResults = await openedBoards[whichBoard].fileDb.files.index.search(new SearchRequest({ query: [new StringMatch({key: 'hash', value: fileHash })] }), { local: true, remote: remoteQuery }).then((results: File[]) => results[0])
 		if (foundResults) {
-			return await Files.getFile(foundResults.hash) //todo: revisit for missing files/etc. //todo: revisit for efficiency?
-//			return await foundResults?.results[0].value.getFile() //todo: revisit for missing files/etc.
-		} else {
-			return false
+			return await openedBoards[whichBoard].fileDb.getFile(foundResults.hash) //todo: revisit for efficiency?
 		}
+	} else {
+		let foundResults = await Files.files.index.search(new SearchRequest({ query: [new StringMatch({key: 'hash', value: fileHash })] }), { local: true, remote: remoteQuery }).then((results: File[] )=> results[0])
+		if (foundResults) {
+			return await Files.getFile(foundResults.hash)
+		}
+	}
+	return false
 }
 
 //todo: consider making more efficient with above
-export async function fileExists (fileHash: string) {
-		
+export async function fileExists (fileHash: string, whichBoard: string) {
+	if (whichBoard) {
+		let foundResults = await openedBoards[whichBoard].fileDb.files.index.search(new SearchRequest({ query: [new StringMatch({key: 'hash', value: fileHash })] }), { local: true, remote: remoteQuery })
+		if (foundResults.length) {
+			return true
+		}	
+	} else {
 		let foundResults = await Files.files.index.search(new SearchRequest({ query: [new StringMatch({key: 'hash', value: fileHash })] }), { local: true, remote: remoteQuery })
 		if (foundResults.length) {
 			return true
-		} else {
-			return false
-		}
+		}		
+	}
+	return false
 }
 
 //todo: need to get this also deleting the file chunks whenever anyone deletes, not just us
-export async function delFile (fileHash: string, randomKey: true) {
-	//todo:
-	// let foundResults = await Files.files.index.search(new SearchRequest({ query: [new StringMatch({key: 'hash', value: fileHash })] }), { local: true, remote: remoteQuery }).then(results => results[0])
-	//first delete all the chunks of the file we may have
-	// for (let chunkCid in foundResults.chunkCids) {
-	// 	await FileChunks.documents.del(chunkCid)
-	// }
-	//then delete the file document itself
+export async function delFile (fileHash: string, whichBoard: string, randomKey: true) {
 	try {
-		await Files.deleteFile(fileHash, randomKey)
+		if (whichBoard) {
+			await openedBoards[whichBoard].fileDb.deleteFile(fileHash, randomKey)
+		} else {
+			await Files.deleteFile(fileHash, randomKey)
+		}
 	} catch (err) {
 		console.log(err)
 		return err //todo: revisit return value
