@@ -594,14 +594,10 @@ const downloadFileHandler = async (req, res, next) => {
         gatewayCanDo(req, 'seeFile')
         const db = await import('./db.js')
         let fileData = await db.getFile(req.params.filehash, req.params.whichBoard)
-        console.log('DEBUG dfh 1', fileData)
         if (cfg.queryFromPanBoardFilesDbIfFileNotFound && !fileData) {
-            console.log('DEBUG dfh 2', fileData)
             fileData = await db.getFile(req.params.filehash, '')
-            console.log('DEBUG dfh 3', fileData)
         }
         if (fileData) {
-            console.log('DEBUG dfh 4', fileData)
             fileStream = new Stream.Readable()
             let i = 0
 
@@ -971,6 +967,7 @@ app.listen(cfg.browserPort, cfg.browserHost, () => {
 	console.log(`Starting Server at ${cfg.browserPort}:${cfg.browserHost}`);
 });
 
+
 (async () => {
 
 	process.setMaxListeners(0);
@@ -988,9 +985,6 @@ app.listen(cfg.browserPort, cfg.browserHost, () => {
     });
 
 
-	// console.log('db:')
-	// console.log(db)
-
 	try {
 
 
@@ -1001,7 +995,7 @@ app.listen(cfg.browserPort, cfg.browserHost, () => {
 		console.log("Successfully initialized Peerbit node.")
 		console.log(await db.clientId())
         try {
-            await db.bootstrap() //todo: restore            
+            await db.bootstrap()            
         } catch (bootstrapErr) {
             console.log("Failed to bootstrap:", bootstrapErr)
         }
@@ -1083,7 +1077,6 @@ app.listen(cfg.browserPort, cfg.browserHost, () => {
 
 	try {
 
-
         let dbOpens = cfg.queryFromPanBoardFilesDbIfFileNotFound ? [db.openFilesDb("", {replicationFactor: cfg.replicationFactor}).then(r => console.log("Successfully opened pan-board files database."))] : []
 
         for (let thisBoard of watchedBoards) {
@@ -1108,3 +1101,6 @@ if (cfg.openHomeOnStartup) {
 
 
 })();
+
+
+

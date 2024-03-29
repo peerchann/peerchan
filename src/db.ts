@@ -85,10 +85,9 @@ export async function clientId () {
 }
 
 //todo: move the config to a different spot
+//todo: consider finding a way to open files, chunks, posts async
 export async function openPostsDb (postsDbId = "my_post_db", options: any) {
 	console.log(`Opening database for /${postsDbId}/...`, options)
-	console.log("client", client)
-	console.log("debug1", openedBoards[postsDbId])
 	let newPostsDb = new PostDatabase({ id: sha256Sync(Buffer.from(postsDbId))})
 	// return
 	if (options?.replicationFactor) {
@@ -116,30 +115,6 @@ export async function openPostsDb (postsDbId = "my_post_db", options: any) {
 				}
 			}
 		})
-		// openedBoards[postsDbId] = await client.open(new PostDatabase({ id: sha256Sync(Buffer.from(postsDbId)) }), {
-		// 	args: {
-		// 		role: {
-		// 			type: "replicator",
-		// 			factor: options.replicationFactor
-		// 		}
-		// 	}
-		// })
-		// await client.open(openedBoards[postsDbId].fileDb.chunks, {
-		// 	args: {
-		// 		role: {
-		// 			type: "replicator",
-		// 			factor: options.replicationFactor
-		// 		}
-		// 	}
-		// })
-		// await client.open(openedBoards[postsDbId].fileDb, {
-		// 	args: {
-		// 		role: {
-		// 			type: "replicator",
-		// 			factor: options.replicationFactor
-		// 		}
-		// 	}
-		// })
 	} else {
 		await client.open(newPostsDb.fileDb.chunks)
 		await client.open(newPostsDb.fileDb)
@@ -163,9 +138,9 @@ export async function bootstrap () {
 export async function closePostsDb (postsDbId = "my_post_db") {
 
 	await Promise.all([
-		openedBoards[postsDbId].close(),
-		openedBoards[postsDbId].fileDb.close(),
 		openedBoards[postsDbId].fileDb.chunks.close(),
+		openedBoards[postsDbId].fileDb.close(),
+		openedBoards[postsDbId].close(),
 	])
 	//Posts = await client.open(new PostDatabase({ id: sha256Sync(Buffer.from(postsDbId)) }))
 
@@ -180,7 +155,7 @@ export async function closePostsDb (postsDbId = "my_post_db") {
 // }
 
 
-//only one db for now
+//only used for pan-boards files db, the others board-specific ones are openend in openPostsDb
 export async function openFilesDb (filesDbId = "", options: any ) {
 
 	Files = new FileDatabase({ id: sha256Sync(Buffer.from(filesDbId)) })
@@ -240,7 +215,7 @@ export async function makeNewPost (postDocument: Post, whichBoard: string, rando
 export async function listPeers () {
 	let peerMultiAddrs = client.libp2p.getMultiaddrs()
 	//todo: remove debug
-	console.log(openedBoards['test'], openedBoards['test'].fileDb, openedBoards['test'].fileDb.chunks)
+	// console.log(openedBoards['test'], openedBoards['test'].fileDb, openedBoards['test'].fileDb.chunks)
 	//todo: fix this to actually list peers
 	console.log(peerMultiAddrs)
 	return peerMultiAddrs
@@ -456,19 +431,14 @@ export async function putFile (fileData: Uint8Array, whichBoard: string, randomK
 }
 
 export async function getFile (fileHash: string, whichBoard: string) {
-	console.log("debug 1")
 	if (whichBoard) {
 		let foundResults = await openedBoards[whichBoard].fileDb.files.index.search(new SearchRequest({ query: [new StringMatch({key: 'hash', value: fileHash })] }), { local: true, remote: remoteQuery }).then((results: File[]) => results[0])
-		console.log("debug 2", foundResults)
 		if (foundResults) {
-			console.log("debug 3", foundResults)
 			return await openedBoards[whichBoard].fileDb.getFile(foundResults.hash) //todo: revisit for efficiency?
 		}
 	} else {
 		let foundResults = await Files.files.index.search(new SearchRequest({ query: [new StringMatch({key: 'hash', value: fileHash })] }), { local: true, remote: remoteQuery }).then((results: File[] )=> results[0])
-		console.log("debug 4", foundResults)
 		if (foundResults) {
-			console.log("debug 5", foundResults)
 			return await Files.getFile(foundResults.hash)
 		}
 	}

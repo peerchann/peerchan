@@ -182,7 +182,6 @@ export class PostDatabase extends Program<OpenArgs> {
 		super()
 		// this.id = properties?.id
 		this.fileDb = new FileDatabase({ id: properties?.id })
-		console.log('DEBUG: opening pdb with id ', properties?.id)
 		this.documents = new Documents({ id: properties?.id }) //
 		// this.documents = new Documents({ index: new DocumentIndex({ indexBy: '_id' }) })
 	}
