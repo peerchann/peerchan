@@ -1,5 +1,6 @@
 import { Program } from "@peerbit/program";
 import { Documents, RoleOptions } from "@peerbit/document";
+import { FileDatabase } from './files.js';
 export declare class BasePostDocument {
 }
 export declare class PostFile {
@@ -25,6 +26,7 @@ type OpenArgs = {
 };
 export declare class PostDatabase extends Program<OpenArgs> {
     documents: Documents<Post>;
+    fileDb: FileDatabase;
     constructor(properties?: {
         id?: Uint8Array;
     });

@@ -67,6 +67,7 @@ function loadConfig() {
                 "deletePostRandomKey": false,
                 "postFileRandomKey": true,
                 "deleteFileRandomKey": false,
+                "queryFromPanBoardFilesDbIfFileNotFound": true,
                 "postHashLength": 8
             }
 			fs.writeFileSync(configFile, JSON.stringify(defaultConfig, null, '\t'), 'utf8');
@@ -185,15 +186,18 @@ function makeRenderSafe(inputObj = {}) {
 }
 
 //todo: make more efficient/combine with above?
-async function addFileStatuses (inputObj = {}) {
+async function addFileStatuses (inputObj = {}, whichBoard) {
 	const db = await import('./db.js')
     for (let thisKey of Object.keys(inputObj)) {
         if (thisKey == 'files') {
         	for (let thisFile of inputObj[thisKey]) {
-				thisFile.fileStatus = await db.fileExists(thisFile.hash)
+				thisFile.fileStatus = await db.fileExists(thisFile.hash, whichBoard)
+                if (cfg.queryFromPanBoardFilesDbIfFileNotFound && !thisFile.fileStatus) {
+                    thisFile.fileStatus = await db.fileExists(thisFile.hash, '')
+                }
         	}
         } else if (typeof inputObj[thisKey] === 'object') {
-        	inputObj[thisKey] = await addFileStatuses(inputObj[thisKey])
+        	inputObj[thisKey] = await addFileStatuses(inputObj[thisKey], whichBoard)
         } 
     }
     return inputObj;
@@ -589,7 +593,10 @@ const downloadFileHandler = async (req, res, next) => {
     try {
         gatewayCanDo(req, 'seeFile')
         const db = await import('./db.js')
-        let fileData = await db.getFile(req.params.filehash)
+        let fileData = await db.getFile(req.params.filehash, req.params.whichBoard)
+        if (cfg.queryFromPanBoardFilesDbIfFileNotFound && !fileData) {
+            fileData = await db.getFile(req.params.filehash, '')
+        }
         if (fileData) {
             fileStream = new Stream.Readable()
             let i = 0
@@ -621,10 +628,10 @@ const downloadFileHandler = async (req, res, next) => {
 }
 
 //todo: check for redundancy
-app.get('/download/file/:filehash/:filename.:fileext', downloadFileHandler);
-app.get('/download/file/:filehash.:fileext', downloadFileHandler);
-app.get('/download/file/:filehash/:filename', downloadFileHandler);
-app.get('/download/file/:filehash', downloadFileHandler);
+app.get('/download/:whichBoard/:filehash/:filename.:fileext', downloadFileHandler);
+app.get('/download/:whichBoard/:filehash.:fileext', downloadFileHandler);
+app.get('/download/:whichBoard/:filehash/:filename', downloadFileHandler);
+app.get('/download/:whichBoard/:filehash', downloadFileHandler);
 
 const renderFunctions = {
     formatFileSize,
@@ -649,7 +656,7 @@ app.get('/:board/:pagenumber.html', async (req, res, next) => {
 
 		const db = await import('./db.js')
 
-		let indexPosts = await addFileStatuses(makeRenderSafe(await db.getThreadsWithReplies(req.params.board, cfg.threadsPerPage, cfg.previewReplies, whichPage)))
+		let indexPosts = await addFileStatuses(makeRenderSafe(await db.getThreadsWithReplies(req.params.board, cfg.threadsPerPage, cfg.previewReplies, whichPage)), req.params.board)
 		// let allPosts = makeRenderSafe(db.getThreadsWithReplies(req.params.board, cfg.threadsPerPage, cfg.previewReplies))
 
 		boardPagesCache[req.params.board] = indexPosts.totalpages
@@ -697,7 +704,7 @@ app.get('/:board/thread/:thread.html', async (req, res, next) => {
 		// threadPost.replies = []
 		if(threadPost.length) {
 			threadPost[0].replies = await db.getRepliesToSpecificPost(req.params.board, req.params.thread)
-			threadPost[0] = await addFileStatuses(makeRenderSafe(threadPost[0]))
+			threadPost[0] = await addFileStatuses(makeRenderSafe(threadPost[0]), req.params.board)
 		}
 
 
@@ -755,7 +762,7 @@ app.post('/submit', upload.any(), async (req, res, next) => {
             gatewayCanDo(req, 'postFile')
 	  		postFiles.push(
 	  			new dbPosts.PostFile ( //todo: consider what needs to be included in this
-		  			await db.putFile(thisFile.buffer, cfg.postFileRandomKey), //puts the file and returns the hash
+		  			await db.putFile(thisFile.buffer, req.body.whichBoard, cfg.postFileRandomKey), //puts the file and returns the hash
 		  			thisFile.originalname, //original filename
                     thisFile.originalname.includes('.') ? thisFile.originalname.split('.').pop() : '',
 		  			thisFile.size,
@@ -960,6 +967,7 @@ app.listen(cfg.browserPort, cfg.browserHost, () => {
 	console.log(`Starting Server at ${cfg.browserPort}:${cfg.browserHost}`);
 });
 
+
 (async () => {
 
 	process.setMaxListeners(0);
@@ -977,9 +985,6 @@ app.listen(cfg.browserPort, cfg.browserHost, () => {
     });
 
 
-	// console.log('db:')
-	// console.log(db)
-
 	try {
 
 
@@ -989,10 +994,15 @@ app.listen(cfg.browserPort, cfg.browserHost, () => {
 		await db.pbInitClient(cfg.peerbitPort)
 		console.log("Successfully initialized Peerbit node.")
 		console.log(await db.clientId())
-		await db.bootstrap()
+        try {
+            await db.bootstrap()            
+        } catch (bootstrapErr) {
+            console.log("Failed to bootstrap:", bootstrapErr)
+        }
+
 
 		// console.log(db.client)
-		// console.log(db.client.libp2p)
+		console.log(db.client.libp2p)
 
 		// db.client.libp2p.addEventListener('peer:connect', (peerMultiHash) => {
 		//     console.log('ping 0 debug');
@@ -1067,11 +1077,11 @@ app.listen(cfg.browserPort, cfg.browserHost, () => {
 
 	try {
 
-
-        let dbOpens = [db.openFilesDb("", {replicationFactor: cfg.replicationFactor}).then(r => console.log("Successfully opened files database."))]
+        let dbOpens = cfg.queryFromPanBoardFilesDbIfFileNotFound ? [db.openFilesDb("", {replicationFactor: cfg.replicationFactor}).then(r => console.log("Successfully opened pan-board files database."))] : []
 
         for (let thisBoard of watchedBoards) {
-            dbOpens.push(db.openPostsDb(thisBoard, {replicationFactor: cfg.replicationFactor}).then(r => console.log("Successfully opened posts database for \/"+thisBoard+"\/.")))
+            dbOpens.push(db.openPostsDb(thisBoard, {replicationFactor: cfg.replicationFactor}).then(r => console.log("Successfully opened database for \/"+thisBoard+"\/.")))
+            // dbOpens.push(db.openPostsDb(thisBoard).then(r => console.log("Successfully opened database for \/"+thisBoard+"\/.")))
         }
 
         db.setModerators(moderators)
@@ -1080,7 +1090,7 @@ app.listen(cfg.browserPort, cfg.browserHost, () => {
 
 
 	} catch (err) {
-		console.log("Failed to open Databases.")
+		console.log("Failed to open databases.")
 		console.log(err)
 	}
 
@@ -1091,3 +1101,6 @@ if (cfg.openHomeOnStartup) {
 
 
 })();
+
+
+
