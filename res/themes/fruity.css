@@ -53,7 +53,8 @@ p {
 }
 
 .post {
-  background-color: #b3b3ff; 
+  background-color: #b3b3ff;
+  word-wrap: break-word;
   display: inline-block; 
   padding: 10px; 
   margin-bottom: 5px; 
@@ -63,7 +64,8 @@ p {
 }
 
 .post_reply {
-  background-color: #ff9999; 
+  background-color: #ff9999;
+  word-wrap: break-word;
   display: inline-block; 
   padding: 10px; 
   margin-bottom: 5px; 
