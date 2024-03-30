@@ -140,6 +140,16 @@ function saveWatchedBoards() {
     }
 }
 
+function saveGatewayConfig() {
+    const configFile = configDir+'/gatewayConfig.json';
+    try {
+        fs.writeFileSync(configFile, JSON.stringify(gatewayCfg, null, '\t'), 'utf8');
+        console.log('Gateway configuration successfully.');
+    } catch (err) {
+        console.error('Error saving gateway configuration:', err);
+    }
+}
+
 const watchedBoards = loadWatchedBoards()
 
 
@@ -401,7 +411,7 @@ app.post('/addWatchedBoard', upload.any(), async (req, res, next) => {
 	    // Invoke the saveWatchedBoards function to save the updated watchedBoards array
 	    console.log("watchedBoards:")
 	    console.log(watchedBoards)
-	    saveWatchedBoards(watchedBoards);
+	    saveWatchedBoards();
     }
     // Redirect back to the previous page
   } catch (err) {
@@ -424,7 +434,7 @@ app.post('/removeWatchedBoard', upload.any(), async (req, res, next) => {
 		await db.closePostsDb(boardId)
 		watchedBoards.splice(index, 1);
 
-		saveWatchedBoards(watchedBoards);
+		saveWatchedBoards();
 	}
 
     // Redirect back to the previous page
@@ -436,19 +446,22 @@ app.post('/removeWatchedBoard', upload.any(), async (req, res, next) => {
 });
 
 app.get('/function/addBoard/:boardId',  async (req, res, next) => {
-	console.log('ping')
   try {
     gatewayCanDo(req, 'addBoard')
     const boardId = req.params.boardId;
     if (watchedBoards.indexOf(boardId) === -1) {
     	watchedBoards.push(boardId);
-	    await db.openPostsDb(boardId)
-	    saveWatchedBoards(watchedBoards);
+	    await db.openPostsDb(boardId, {replicationFactor: cfg.replicationFactor})
+	    saveWatchedBoards();
+        res.send(`Successfully opened /${req.params.boardId}/.`)
+    } else {
+        res.send(`/${req.params.boardId}/ was already in watched boards.`)
     }
   } catch (err) {
 	    console.error('Error adding watched board:', err);
+        lastError = err
+        res.send(err)
   }
-  res.send('') //todo: change this?
 });
 
 app.get('/function/removeBoard/:boardId', async (req, res, next) => {
@@ -461,13 +474,54 @@ app.get('/function/removeBoard/:boardId', async (req, res, next) => {
 		watchedBoards.splice(index, 1);
 		console.log("watchedBoards:")
 		console.log(watchedBoards)
-		saveWatchedBoards(watchedBoards);
-	}
-
+		saveWatchedBoards();
+        res.send(`Successfully closed /${req.params.boardId}/.`)
+	} else {
+        res.send(`/${req.params.boardId}/ was already not in watched boards.`)
+    }
   } catch (err) {
-    console.error('Error removing watched board:', err);
+        console.error('Error removing watched board:', err);
+        lastError = err
+        res.send(err)
   }
-  res.send('') //todo: change this?
+});
+
+
+app.get('/function/addGatewayBoard/:boardId',  async (req, res, next) => {
+  try {
+    gatewayCanDo(req, 'addBoard')
+    const boardId = req.params.boardId;
+    if (gatewayCfg.canSeeBoards.indexOf(boardId) === -1) {
+        gatewayCfg.canSeeBoards.push(boardId);
+        saveGatewayConfig();
+        res.send(`Successfully added /${req.params.boardId}/ to gateway boards.`)
+    } else {
+        res.send(`/${req.params.boardId}/ was already in gateway boards.`)
+    }
+  } catch (err) {
+        console.error('Error adding watched board:', err);
+        lastError = err
+        res.send(err)
+  }
+});
+
+app.get('/function/removeGatewayBoard/:boardId', async (req, res, next) => {
+  try {
+    gatewayCanDo(req, 'remBoard')
+    const boardId = req.params.boardId;
+    const index = gatewayCfg.canSeeBoards.indexOf(boardId)
+    if (index !== -1) {
+        gatewayCfg.canSeeBoards.splice(index, 1);
+        saveGatewayConfig();
+        res.send(`Successfully removed /${req.params.boardId}/ from gateway boards.`)
+    } else {
+        res.send(`/${req.params.boardId}/ was already not in gateway boards.`)
+    }
+  } catch (err) {
+        console.error('Error removing watched board:', err);
+        lastError = err
+        res.send(err)
+  }
 });
 
 const moderators = loadModerators()
@@ -476,7 +530,6 @@ async function addModerator(moderatorId) {
 	if (!moderatorId || moderatorId.length != 44) {
 		throw new Error('Moderator ID should be 44-characters long.')
 	}
-    // Add the board ID to the watchedBoards array
     if (moderators.indexOf(moderatorId) === -1) {
     	moderators.push(moderatorId);
     	await updateModerators()
