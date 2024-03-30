@@ -19,7 +19,7 @@ const configDir = 'config'
 if (!fs.existsSync(configDir)) {
 	fs.mkdirSync(configDir, { recursive: true });
 }
-
+let db
 const localhostIps = []
 //todo: another form of authentication (for bypassing gateway mode permissions)
 // const localhostIps = ['127.0.0.1', '::1']
@@ -187,7 +187,6 @@ function makeRenderSafe(inputObj = {}) {
 
 //todo: make more efficient/combine with above?
 async function addFileStatuses (inputObj = {}, whichBoard) {
-	const db = await import('./db.js')
     for (let thisKey of Object.keys(inputObj)) {
         if (thisKey == 'files') {
         	for (let thisFile of inputObj[thisKey]) {
@@ -298,7 +297,6 @@ app.get('/:board/deletepost=:posthash', async (req, res, next) => {
   try {
     gatewayCanDo(req, 'delPost')
   	console.log(`Deleting post: ${req.params.posthash}.`);
-	const db = await import('./db.js')
 	await db.delPost(req.params.posthash, req.params.board, cfg.deletePostRandomKey)
 
   } catch (err) {
@@ -313,7 +311,6 @@ app.get('/:board/deletepost=:posthash', async (req, res, next) => {
 app.get('/myreplicationfactors', async (req, res, next) => {
   try {
     gatewayCanDo(req, 'seeClientId') //todo: rename maybe throughout
-	const db = await import('./db.js')
 	res.send(makeRenderSafe([db.Files.files.log.role.segments[0].factor, db.Files.chunks.documents.log.role.segments[0].factor]))
   } catch (err) {
   	console.log('Failed to get replication factor.')
@@ -328,7 +325,6 @@ app.get('/myreplicationfactors', async (req, res, next) => {
 app.get('/mymultiaddr', async (req, res, next) => {
   try {
     gatewayCanDo(req, 'seeClientId')
-	const db = await import('./db.js')
 	res.send(db.client.libp2p.getMultiaddrs()[0])
   } catch (err) {
   	console.log('Failed to get multiAddr.')
@@ -346,7 +342,6 @@ app.get('/deletefile=:filehash', async (req, res, next) => {
     gatewayCanDo(req, 'delFile')
   	const fileHash = req.params.filehash
   	console.log(`Deleting file: ${fileHash}.`);
-	const db = await import('./db.js')
 	await db.delFile(fileHash, cfg.deleteFileRandomKey)
 
   } catch (err) {
@@ -365,7 +360,6 @@ app.post('/connectToPeer', upload.any(), async (req, res, next) => {
   	// console.log(req)
   	console.log(req.body)
   	console.log(`Connecting to peer: ${peerMultiAddr}.`);
-	const db = await import('./db.js')
 	await db.connectToPeer(peerMultiAddr)
 
   } catch (err) {
@@ -403,7 +397,6 @@ app.post('/addWatchedBoard', upload.any(), async (req, res, next) => {
     // Add the board ID to the watchedBoards array
     if (watchedBoards.indexOf(boardId) === -1) {
     	watchedBoards.push(boardId);
-		const db = await import('./db.js')
 	    await db.openPostsDb(boardId, {replicationFactor: cfg.replicationFactor})
 	    // Invoke the saveWatchedBoards function to save the updated watchedBoards array
 	    console.log("watchedBoards:")
@@ -428,7 +421,6 @@ app.post('/removeWatchedBoard', upload.any(), async (req, res, next) => {
     const index = watchedBoards.indexOf(boardId);
     if (index !== -1) {
       // Remove the board ID from the watchedBoards array
-		const db = await import('./db.js')
 		await db.closePostsDb(boardId)
 		watchedBoards.splice(index, 1);
 
@@ -450,7 +442,6 @@ app.get('/function/addBoard/:boardId',  async (req, res, next) => {
     const boardId = req.params.boardId;
     if (watchedBoards.indexOf(boardId) === -1) {
     	watchedBoards.push(boardId);
-		const db = await import('./db.js')
 	    await db.openPostsDb(boardId)
 	    saveWatchedBoards(watchedBoards);
     }
@@ -466,7 +457,6 @@ app.get('/function/removeBoard/:boardId', async (req, res, next) => {
     const boardId = req.params.boardId;
     const index = watchedBoards.indexOf(boardId);
     if (index !== -1) {
-		const db = await import('./db.js')
 		await db.closePostsDb(boardId)
 		watchedBoards.splice(index, 1);
 		console.log("watchedBoards:")
@@ -503,7 +493,6 @@ async function removeModerator(moderatorId) {
 
 async function updateModerators() {
 		saveModerators()
-		const db = await import('./db.js')
 	    db.setModerators(moderators) 
 } 
 
@@ -592,7 +581,6 @@ const downloadFileHandler = async (req, res, next) => {
     let fileStream
     try {
         gatewayCanDo(req, 'seeFile')
-        const db = await import('./db.js')
         let fileData = await db.getFile(req.params.filehash, req.params.whichBoard)
         if (cfg.queryFromPanBoardFilesDbIfFileNotFound && !fileData) {
             fileData = await db.getFile(req.params.filehash, '')
@@ -654,7 +642,6 @@ app.get('/:board/:pagenumber.html', async (req, res, next) => {
 			whichPage = 1
 		}
 
-		const db = await import('./db.js')
 
 		let indexPosts = await addFileStatuses(makeRenderSafe(await db.getThreadsWithReplies(req.params.board, cfg.threadsPerPage, cfg.previewReplies, whichPage)), req.params.board)
 		// let allPosts = makeRenderSafe(db.getThreadsWithReplies(req.params.board, cfg.threadsPerPage, cfg.previewReplies))
@@ -698,7 +685,6 @@ app.get('/:board/thread/:thread.html', async (req, res, next) => {
 	    if (watchedBoards.indexOf(req.params.board) === -1) {
 	    	throw new Error(`Board /${req.params.board}/ not in watched board list.`)
 	    }
-		const db = await import('./db.js')
 		// let allPosts = makeRenderSafe(await db.getPosts(req.params.board))
 		let threadPost = await await db.getSpecificPost(req.params.board, req.params.thread)
 		// threadPost.replies = []
@@ -755,7 +741,6 @@ app.post('/submit', upload.any(), async (req, res, next) => {
 		// console.log(req.files)
 		// console.log(req.body.message)
 		// let lastbumps = new Array(threads.length)
-		const db = await import('./db.js');
 		const dbPosts = await import('./posts.js')
 		let postFiles = []
 		for (let thisFile of req.files) {
@@ -814,7 +799,6 @@ app.get('', async (req, res, next) => { //todo: merge with above functionality o
 app.get('/function/findThreadContainingPost/:boardId/:postHash', async (req, res, next) => {
     try {
         gatewayCanSeeBoard(req.params.boardId)
-        const db = await import('./db.js')
         const specificPost = await db.getSpecificPost(req.params.boardId, req.params.postHash)
         const hashRefIndex = req.params.postHash.indexOf('#');
         if (specificPost.length) { //post was found
@@ -841,7 +825,6 @@ app.get('/home', async (req, res, next) => {
             return
         }
 
-		const db = await import('./db.js')
         const options = await standardRenderOptions(req,res)
 		const html = await rt['home'](options)
 		resetError()
@@ -858,7 +841,6 @@ app.get('/home', async (req, res, next) => {
 app.get('/listPeers', async (req, res, next) => {
     try {
         gatewayCanDo(req)
-        const db = await import('./db.js')
         res.json(await db.listPeers())
 
     } catch (error) {
@@ -873,7 +855,6 @@ app.get('/listPeers', async (req, res, next) => {
 app.get('/files', async (req, res, next) => {
     try {
         gatewayCanDo(req)
-        const db = await import('./db.js')
         const options = await standardRenderOptions(req,res)
         options.files = await db.getAllFileDocuments()
         console.log(options.files)
@@ -925,7 +906,6 @@ function canSeeBoards() { //todo: add req processing for eg. localhost bypass (i
 }
 
 async function standardRenderOptions (req,res) { //todo: make this into a middleware?
-    const db = await import('./db.js')
     return {
         clientId: await db.clientId(),
         req: req,
@@ -949,7 +929,6 @@ async function standardRenderOptions (req,res) { //todo: make this into a middle
 //gateway stuff
 app.get('/gateway', async (req, res, next) => {
     try {
-        const db = await import('./db.js')
         const options = await standardRenderOptions(req,res)
         console.log('options', options)
         const html = await rt['gatewayHome'](options)
@@ -972,7 +951,7 @@ app.listen(cfg.browserPort, cfg.browserHost, () => {
 
 	process.setMaxListeners(0);
 
-	const db = await import('./db.js');
+	db = await import('./db.js');
 
     process.on('uncaughtException', (error) => {
         if (error instanceof DeliveryError) {
