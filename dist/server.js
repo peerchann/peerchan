@@ -713,6 +713,65 @@ const renderFunctions = {
     gatewayCanDo
 }
 
+app.get('/overboard.html', async (req, res, next) => {
+    try {
+        console.time('buildOverboardIndex');
+        // gatewayCanSeeBoard(req, req.params.board)
+        // if (watchedBoards.indexOf(req.params.board) === -1) {
+        //     throw new Error(`Board /${req.params.board}/ not in watched board list.`)
+        // }
+
+        //todo: add additional overboard pages?
+        // //todo: consider changing this/eschewing ".html"
+        // var whichPage = parseInt(req.params.pagenumber)
+        // if (req.params.pagenumber == 'index') {
+        //     whichPage = 1
+        // }
+
+        //todo: more custom/efficient behavior instead of 
+
+        const options = await standardRenderOptions(req,res)
+
+        let boardQueries = []
+        let threads = []
+        let replies = []
+        let omittedreplies = []
+        for (let whichBoard of options.watchedBoards) {
+            boardQueries.push(db.getThreadsWithReplies(whichBoard, cfg.threadsPerPage, cfg.previewReplies, 1).then((thisBoardResults) => {
+                threads = threads.concat(thisBoardResults.threads);
+                replies = replies.concat(thisBoardResults.replies)
+                omittedreplies = omittedreplies.concat(thisBoardResults.omittedreplies)
+            }))
+        }
+        await Promise.all(boardQueries)
+
+        threads.sort((a, b) => (a.lastbumped > b.lastbumped) ? -1 : ((a.lastbumped < b.lastbumped) ? 1 : 0)) //newest on top
+        threads = threads.slice(0, cfg.threadsPerPage) //todo: other pages?
+        console.log(threads)
+        replies = threads.map(t => replies[t.index])
+        omittedreplies = threads.map(t => omittedreplies[t.index])
+
+        for(let threadPostIndex in threads) {
+            threads[threadPostIndex].replies = replies[threadPostIndex]
+            threads[threadPostIndex].omittedreplies = omittedreplies[threadPostIndex]
+        }
+
+        threads = await addFileStatuses(makeRenderSafe(threads))
+
+        options.currentBoard = "Overboard" //todo: change
+        options.posts = threads
+        options.indexMode = true
+        const html = await rt['board'](options)
+        resetError()
+        res.send(html)
+    } catch (err) {
+        console.log('Failed to get posts for overboard.')
+        console.log(err)
+        lastError = err
+        res.redirect('/home')
+    }
+    console.timeEnd('buildOverboardIndex');
+})
 
 app.get('/:board/:pagenumber.html', async (req, res, next) => {
 
@@ -748,7 +807,6 @@ app.get('/:board/:pagenumber.html', async (req, res, next) => {
 		console.log(indexPosts.totalpages + " pages total")
 		const html = await rt['board'](options)
 		resetError()
-        console.timeEnd('buildIndex');
         res.send(html)
 
 	} catch (err) {
@@ -757,7 +815,7 @@ app.get('/:board/:pagenumber.html', async (req, res, next) => {
 		lastError = err
 		res.redirect('/home')
 	}
-
+    console.timeEnd('buildIndex');
 })
 
 
@@ -1067,7 +1125,6 @@ app.post('/gatewayLogout', (req, res) => {
   }
   res.redirect(req.headers.referer);
 });
-
 
 // Start the Server
 app.listen(cfg.browserPort, cfg.browserHost, () => {

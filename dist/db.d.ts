@@ -29,11 +29,6 @@ export declare function getThreadsWithReplies(whichBoard: string, numThreads?: n
     omittedreplies: any[];
     totalpages: number;
 }>;
-export declare function getThreadsWithReplies_prev(whichBoard: string, numThreads?: number, numPreviewPostsPerThread?: number): Promise<{
-    threads: any;
-    replies: any[];
-    omittedreplies: any[];
-}>;
 export declare function getSpecificPost(whichBoard: string, whichPost: string): Promise<any>;
 export declare function getRepliesToSpecificPost(whichBoard: string, whichThread: string): Promise<any>;
 export declare function getAllFileDocuments(): Promise<File[]>;

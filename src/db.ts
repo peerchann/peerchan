@@ -318,40 +318,12 @@ export async function getThreadsWithReplies(whichBoard: string, numThreads: numb
     // Return only the numThreads newest results
     var numToSkip = (whichPage - 1) * numThreads
     threads = threads.slice(numToSkip, numThreads + numToSkip);
+    threads.forEach((t: any) => {t.board = whichBoard})
 
 	omittedreplies = threads.map((t: any) => omittedreplies[t.index]);
 	replies = threads.map((t: any) => replies[t.index]);
 
     return { threads, replies, omittedreplies, totalpages }
-}
-
-
-
-//todo: order by bumped
-//todo: deal with this (unused now)
-export async function getThreadsWithReplies_prev(whichBoard: string, numThreads: number = 10, numPreviewPostsPerThread: number = 5) {
-    if (!whichBoard) {
-        throw new Error('No board specified.');
-    }
-	let	threads = await openedBoards[whichBoard].documents.index.search(new SearchRequest({query: [new MissingField({ key: 'replyto' })]}), { local: true, remote: remoteQuery })
-	
-    // Sort the results by the 'date' property in descending order
-    threads.sort((a: any, b: any) => (a.date > b.date) ? -1 : ((a.date < b.date) ? 1 : 0)) //newest on top
-
-    // Return only the 10 newest results
-    threads = threads.slice(0, numThreads);
-    let replies = new Array(threads.length)
-    let omittedreplies = new Array(threads.length)
-
-	for (let i = 0; i < threads.length; i++) {
-		let thesereplies = await openedBoards[whichBoard].documents.index.search(new SearchRequest({query: [new StringMatch({ key: 'replyto', value: threads[i]['hash'] })]}), { local: true, remote: remoteQuery })
-		thesereplies.sort((a: any, b: any) => (a.date < b.date) ? -1 : ((a.date > b.date) ? 1 : 0)) //newest on bottom
-		omittedreplies[i] = Math.max(0, thesereplies.length - numPreviewPostsPerThread);
-		replies[i] = thesereplies.slice(-numPreviewPostsPerThread);
-	}
-
-    // Return only the 10 newest results
-    return { threads, replies, omittedreplies }
 }
 
 //todo: revisit remote
@@ -364,7 +336,6 @@ export async function getSpecificPost (whichBoard: string, whichPost: string) {
      if (!whichPost) {
         throw new Error('No post specified.');
     }
-
 
 	//todo: add query?
 	let	results = await openedBoards[whichBoard].documents.index.search(new SearchRequest({query: [new StringMatch({ key: 'hash', value: whichPost })]}), { local: true, remote: remoteQuery })
