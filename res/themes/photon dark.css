@@ -100,7 +100,11 @@ p {
   width: 100%;
 }
 
-.post-form input {
+.config-form {
+  max-width: 250px;
+}
+
+.post-form input, .config-form input {
   width: 100%;
   display: inline-block;
   background-color: #15202B;
@@ -111,7 +115,7 @@ p {
   box-shadow: 0px 0px 0px 2px rgba(255, 255, 255, 0.2);
 }
 
-.post-form textarea {
+.post-form textarea, .config-form textarea {
   width: 100%;
   display: inline-block;
   background-color: #15202B;

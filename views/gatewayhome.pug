@@ -4,53 +4,88 @@ block title
   title Gladden - Gateway
 
 block content
-  h2 Welcome
-  if gatewayCfg.can.addBoard
+  if loggedInAs
+      h3 Logged in as: #{loggedInAs}
+      form(action='/gatewayLogout' method='post' class="config-form")
+        button(type="submit", class="sidebarbutton") Logout
+  else
+    if gatewayCfg.gatewayTitle
+      h2 #{gatewayCfg.gatewayTitle}
+    if gatewayCfg.gatewayText
+      h3 #{gatewayCfg.gatewayText}
+
+  if gatewayCfg.adminUser
+    form(action='/gatewayLogin' method='post' class="config-form")
+      span Username:
+      input(type='text' id='username' name='username' required)
+      br
+      span Password:
+      input(type='password' id='password' name='password' required)
+      br
+      input(type='submit' value='Login')  
+
+  if loggedInAs || gatewayCfg.can.addBoard
     h2 Add Watched Board
-    form(action="/addWatchedBoard" method="POST")
+    form(action="/addWatchedBoard" method="POST" class="config-form")
       label(for="boardId") Board ID: &nbsp;
       input(type="text" id="boardId" name="boardId")
       |  
       button(type="submit", class="sidebarbutton") Add
 
-  if gatewayCfg.can.addBoard || gatewayCfg.can.remBoard
+  if loggedInAs || gatewayCfg.can.addBoard || gatewayCfg.can.remBoard
     h2 Currently Watched Boards
     each board, index in watchedBoards
       div.watched-board
         a(href=`/${board}/index.html`, style="display:inline-block;") #{board}
-        if gatewayCfg.can.remBoard
+        if loggedInAs || gatewayCfg.can.remBoard
           form(action="/removeWatchedBoard" method="POST", style="display:inline-block; margin-left: 5px;")
             input(type="hidden" name="boardId" value=board)
             button(type="submit", class="delete-link") X
 
-  if gatewayCfg.can.seeClientId
+  if loggedInAs || gatewayCfg.can.addBoard
+    h2 Add Gateway Board
+    form(action="/addGatewayBoard" method="POST" class="config-form")
+      label(for="agbId") Board ID: &nbsp;
+      input(type="text" id="agbId" name="agbId")
+      |  
+      button(type="submit", class="sidebarbutton") Add
+  if loggedInAs || gatewayCfg.can.remBoard
+    h2 Remove Gateway Board
+    form(action="/removeGatewayBoard" method="POST" class="config-form")
+      label(for="rgbId") Board ID: &nbsp;
+      input(type="text" id="rgbId" name="rgbId")
+      |  
+      button(type="submit", class="sidebarbutton") Remove
+
+
+  if loggedInAs || gatewayCfg.can.seeClientId
     h2 Client ID
     span #{clientId}
 
-  if gatewayCfg.can.addMod
+  if loggedInAs || gatewayCfg.can.addMod
     h2 Add Moderator
-    form(action="/addModerator" method="POST")
+    form(action="/addModerator" method="POST" class="config-form")
       label(for="moderatorId") Moderator Client ID: &nbsp;
       input(type="text" id="moderatorId" name="moderatorId")
       |  
       button(type="submit", class="sidebarbutton") Add
 
-  if gatewayCfg.can.seeMod
+  if loggedInAs || gatewayCfg.can.seeMod
     h2 Current Moderators
     each moderator, index in moderators
       div.moderator
         span #{moderator}
-        if gatewayCfg.can.remMod
+        if loggedInAs || gatewayCfg.can.remMod
           form(action="/removeModerator" method="POST", style="display:inline-block; margin-left: 5px;")
             input(type="hidden" name="moderatorId" value=moderator)
             button(type="submit", class="delete-link") X
 
-  if gatewayCfg.can.dialPeer
+  if loggedInAs || gatewayCfg.can.dialPeer
     h2 Peer Dialing
     label(for="myMultiAddrTextbox") My MultiAddr:
     br
     input(type="text", id="myMultiAddrTextbox", readonly, value=myMultiAddr)
-    form(action="/connectToPeer" method="POST" enctype="multipart/form-data")
+    form(action="/connectToPeer" method="POST" enctype="multipart/form-data" class="config-form")
       label(for="peerMultiAddr") Peer MultiAddr:
       br
       input(type="text", id="peerMultiAddr", name="peerMultiAddr")

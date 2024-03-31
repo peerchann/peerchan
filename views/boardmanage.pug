@@ -6,7 +6,7 @@ block title
 block content
   h2 Welcome
   h2 Add Watched Board
-  form(action="/addWatchedBoard" method="POST")
+  form(action="/addWatchedBoard" method="POST" class="config-form")
     label(for="boardId") Board ID: &nbsp;
     input(type="text" id="boardId" name="boardId")
     |  
@@ -24,7 +24,7 @@ block content
   span #{clientId}
 
   h2 Add Moderator
-  form(action="/addModerator" method="POST")
+  form(action="/addModerator" method="POST" class="config-form")
     label(for="moderatorId") Moderator Client ID: &nbsp;
     input(type="text" id="moderatorId" name="moderatorId")
     |  
@@ -42,7 +42,7 @@ block content
   label(for="myMultiAddrTextbox") My MultiAddr:
   br
   input(type="text", id="myMultiAddrTextbox", readonly, value=myMultiAddr)
-  form(action="/connectToPeer" method="POST" enctype="multipart/form-data")
+  form(action="/connectToPeer" method="POST" enctype="multipart/form-data" class="config-form")
     label(for="peerMultiAddr") Peer MultiAddr:
     br
     input(type="text", id="peerMultiAddr", name="peerMultiAddr")

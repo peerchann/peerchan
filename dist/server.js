@@ -1,4 +1,5 @@
 import express from 'express';
+import session from 'express-session';
 import { compileFile } from 'pug';
 import fs from 'fs';
 import open from 'open';
@@ -170,6 +171,12 @@ app.use((req, res, next) => {
   next();
 });
 
+const sessionKey = randomBytes(256).toString('base64')
+app.use(session({
+  secret: sessionKey,
+  resave: false,
+  saveUninitialized: false
+}));
 
 // Multer storage configuration
 const storage = multer.memoryStorage();
@@ -367,8 +374,6 @@ app.post('/connectToPeer', upload.any(), async (req, res, next) => {
   try {
     gatewayCanDo(req, 'dialPeer')
   	const peerMultiAddr = req.body.peerMultiAddr
-  	// console.log(req)
-  	console.log(req.body)
   	console.log(`Connecting to peer: ${peerMultiAddr}.`);
 	await db.connectToPeer(peerMultiAddr)
 
@@ -424,20 +429,13 @@ app.post('/addWatchedBoard', upload.any(), async (req, res, next) => {
 app.post('/removeWatchedBoard', upload.any(), async (req, res, next) => {
   try {
     gatewayCanDo(req, 'remBoard')
-    // Extract the board ID from the request body
     const boardId = req.body.boardId;
-
-    // Check if the board ID is in the watchedBoards array
     const index = watchedBoards.indexOf(boardId);
     if (index !== -1) {
-      // Remove the board ID from the watchedBoards array
 		await db.closePostsDb(boardId)
 		watchedBoards.splice(index, 1);
-
 		saveWatchedBoards();
 	}
-
-    // Redirect back to the previous page
   } catch (err) {
     console.error('Error removing watched board:', err);
     lastError = err
@@ -486,11 +484,11 @@ app.get('/function/removeBoard/:boardId', async (req, res, next) => {
   }
 });
 
-
+//todo: consolidate duplicated functionality
 app.get('/function/addGatewayBoard/:boardId',  async (req, res, next) => {
   try {
     gatewayCanDo(req, 'addBoard')
-    const boardId = req.params.boardId;
+    const boardId = req.body.boardId;
     if (gatewayCfg.canSeeBoards.indexOf(boardId) === -1) {
         gatewayCfg.canSeeBoards.push(boardId);
         saveGatewayConfig();
@@ -499,16 +497,15 @@ app.get('/function/addGatewayBoard/:boardId',  async (req, res, next) => {
         res.send(`/${req.params.boardId}/ was already in gateway boards.`)
     }
   } catch (err) {
-        console.error('Error adding watched board:', err);
         lastError = err
-        res.send(err)
+        res.send('Error adding watched board:', err);
   }
 });
 
 app.get('/function/removeGatewayBoard/:boardId', async (req, res, next) => {
   try {
     gatewayCanDo(req, 'remBoard')
-    const boardId = req.params.boardId;
+    const boardId = req.body.boardId;
     const index = gatewayCfg.canSeeBoards.indexOf(boardId)
     if (index !== -1) {
         gatewayCfg.canSeeBoards.splice(index, 1);
@@ -518,10 +515,47 @@ app.get('/function/removeGatewayBoard/:boardId', async (req, res, next) => {
         res.send(`/${req.params.boardId}/ was already not in gateway boards.`)
     }
   } catch (err) {
-        console.error('Error removing watched board:', err);
         lastError = err
-        res.send(err)
+        res.send('Error removing watched board:', err);
   }
+});
+
+//todo: consolidate duplicated functionality
+app.post('/addGatewayBoard', upload.any(), async (req, res, next) => {
+  try {
+    gatewayCanDo(req, 'addBoard')
+    const boardId = req.body.agbId;
+    if (gatewayCfg.canSeeBoards.indexOf(boardId) === -1) {
+        gatewayCfg.canSeeBoards.push(boardId);
+        saveGatewayConfig();
+        console.log(`Successfully added /${boardId}/ to gateway boards.`)
+    } else {
+        throw new Error(`/${boardId}/ was already in gateway boards.`)
+    }
+  } catch (err) {
+        console.log('Error adding watched board:', err);
+        lastError = err
+  }
+  res.redirect(req.headers.referer);
+});
+
+app.post('/removeGatewayBoard', upload.any(), async (req, res, next) => {
+  try {
+    gatewayCanDo(req, 'remBoard')
+    const boardId = req.body.rgbId;
+    const index = gatewayCfg.canSeeBoards.indexOf(boardId)
+    if (index !== -1) {
+        gatewayCfg.canSeeBoards.splice(index, 1);
+        saveGatewayConfig();
+        console.log(`Successfully removed /${boardId}/ from gateway boards.`)
+    } else {
+        throw new Error(`/${boardId}/ was already not in gateway boards.`)
+    }
+  } catch (err) {
+        console.log('Error removing watched board:', err);
+        lastError = err
+  }
+  res.redirect(req.headers.referer);
 });
 
 const moderators = loadModerators()
@@ -684,7 +718,7 @@ app.get('/:board/:pagenumber.html', async (req, res, next) => {
 
 	try {
         console.time('buildIndex');
-		gatewayCanSeeBoard(req.params.board)
+		gatewayCanSeeBoard(req, req.params.board)
 	    if (watchedBoards.indexOf(req.params.board) === -1) {
 	    	throw new Error(`Board /${req.params.board}/ not in watched board list.`)
 	    }
@@ -734,7 +768,7 @@ const boardPagesCache = {}; //todo: reconsider
 app.get('/:board/thread/:thread.html', async (req, res, next) => {
 
 	try {
-        gatewayCanSeeBoard(req.params.board)
+        gatewayCanSeeBoard(req, req.params.board)
 	    if (watchedBoards.indexOf(req.params.board) === -1) {
 	    	throw new Error(`Board /${req.params.board}/ not in watched board list.`)
 	    }
@@ -789,7 +823,7 @@ var lastError
 app.post('/submit', upload.any(), async (req, res, next) => {
 	try {
         gatewayCanDo(req, 'post')
-        gatewayCanSeeBoard(req.body.whichBoard)
+        gatewayCanSeeBoard(req, req.body.whichBoard)
 		// console.log('req.files:') //todo: remove debug
 		// console.log(req.files)
 		// console.log(req.body.message)
@@ -851,7 +885,7 @@ app.get('', async (req, res, next) => { //todo: merge with above functionality o
 //todo: revisit this
 app.get('/function/findThreadContainingPost/:boardId/:postHash', async (req, res, next) => {
     try {
-        gatewayCanSeeBoard(req.params.boardId)
+        gatewayCanSeeBoard(req, req.params.boardId)
         const specificPost = await db.getSpecificPost(req.params.boardId, req.params.postHash)
         const hashRefIndex = req.params.postHash.indexOf('#');
         if (specificPost.length) { //post was found
@@ -923,8 +957,11 @@ app.get('/files', async (req, res, next) => {
     }
 });
 
-//todo: consider making this a route
+//todo: consider making this a middleware
 function gatewayCanDo(req, whichPerm, throwErr = true) { //todo: revisit the name of this?
+    if (req.session.loggedIn) {
+        return true;
+    }
     if (localhostIps.includes(req.ip)) { //if we're not in gateway mode, allow anything.
         return true;
     } else if (gatewayCfg.gatewayMode) {
@@ -942,15 +979,19 @@ function gatewayCanDo(req, whichPerm, throwErr = true) { //todo: revisit the nam
     }
 }
 
-function gatewayCanSeeBoard(whichBoard) { //todo: add req processing for eg. localhost bypass (if implemented)
-    if (gatewayCfg.gatewayMode && !gatewayCfg.can.seeAllBoards && !gatewayCfg.canSeeBoards.includes(whichBoard)) {
+//todo: make into middleware
+function gatewayCanSeeBoard(req, whichBoard) {
+    if (req.session.loggedIn) {
+        return true
+    }
+    if ((gatewayCfg.gatewayMode) && !gatewayCfg.can.seeAllBoards && !gatewayCfg.canSeeBoards.includes(whichBoard)) {
         throw new Error (`Not permitted to browse /${whichBoard}/.`)
     } else {
         return true
     }
 }
 
-function canSeeBoards() { //todo: add req processing for eg. localhost bypass (if implemented)
+function canSeeBoards() { //todo: make into middleware, consolidate functionality
     if (gatewayCfg.gatewayMode && !gatewayCfg.can.seeAllBoards) {
         return gatewayCfg.canSeeBoards.filter(b => watchedBoards.includes(b))
     } else {
@@ -966,7 +1007,8 @@ async function standardRenderOptions (req,res) { //todo: make this into a middle
         nonce: res.locals.nonce,
         boards: watchedBoards,
         alert: lastError,
-        watchedBoards: canSeeBoards(),
+        loggedInAs: req.session.loggedIn,
+        watchedBoards: req.session.loggedIn ? watchedBoards : canSeeBoards(), //todo: split visible in top versus visible in gateway manage? nicer way to visualize which are gateway boards or not?
         themes: cssThemes,
         cssTheme: currentCssTheme,
         defaultName: cfg.defaultName, //todo: consolidate cfg where possible
@@ -980,10 +1022,10 @@ async function standardRenderOptions (req,res) { //todo: make this into a middle
 }
 
 //gateway stuff
+//todo: possibly consolidate with home or make a new settings page
 app.get('/gateway', async (req, res, next) => {
     try {
         const options = await standardRenderOptions(req,res)
-        console.log('options', options)
         const html = await rt['gatewayHome'](options)
         resetError()
         res.send(html)
@@ -993,6 +1035,39 @@ app.get('/gateway', async (req, res, next) => {
         lastError = err
     }
 });
+
+app.post('/gatewayLogin', (req, res) => {
+  const { username, password } = req.body;
+  try {
+    if (gatewayCfg.adminUser && username === gatewayCfg.adminUser && password === gatewayCfg.adminPass) {
+      req.session.loggedIn = username;
+    } else {
+      throw new Error('Invalid username or password.');
+    }
+  } catch (err) {
+    lastError = err;
+    console.log(err);
+  }
+  res.redirect(req.headers.referer);
+});
+
+// Endpoint to handle login form submission
+app.post('/gatewayLogout', (req, res) => {
+    console.log('ping')
+  try {
+    if (req.session.loggedIn) {
+        console.log('req.session.loggedIn', req.session.loggedIn)
+      req.session.loggedIn = null;
+    } else {
+      throw new Error('No session to log out from.');
+    }
+  } catch (err) {
+    lastError = err;
+    console.log(err);
+  }
+  res.redirect(req.headers.referer);
+});
+
 
 // Start the Server
 app.listen(cfg.browserPort, cfg.browserHost, () => {
@@ -1034,7 +1109,7 @@ app.listen(cfg.browserPort, cfg.browserHost, () => {
 
 
 		// console.log(db.client)
-		console.log(db.client.libp2p)
+		// console.log(db.client.libp2p)
 
 		// db.client.libp2p.addEventListener('peer:connect', (peerMultiHash) => {
 		//     console.log('ping 0 debug');

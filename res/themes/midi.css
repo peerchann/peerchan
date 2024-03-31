@@ -71,7 +71,12 @@ a:hover {
   width: 100%;
 }
 
-.post-form input {
+.config-form {
+  max-width: 250px;
+}
+
+
+.post-form input, .config-form input {
   width: 100%;
   display: inline-block;
   background-image: linear-gradient(rebeccapurple, black 60%, indigo 150%) ;
@@ -81,7 +86,7 @@ a:hover {
   border: dotted 1px violet;
 }
 
-.post-form textarea {
+.post-form textarea, .config-form textarea {
   width: 100%;
   display: inline-block;
   background-image: linear-gradient(rebeccapurple,black, black 60%, indigo 150%) ;
@@ -92,18 +97,20 @@ a:hover {
   height: 100px;
 }
 
+.post-form span,
+.post-form button,
+.config-form span,
+.config-form button, {
+  width: 100%;
+  display: inline-block;
+}
+
 .control-panel input {
   width: 100%;
   display: inline-block;
   margin-top: 5px;
   margin-bottom: 5px;
   border: dotted 1px violet;
-}
-
-.post-form span,
-.post-form button {
-  width: 100%;
-  display: inline-block;
 }
 
 .post-header {
@@ -286,3 +293,4 @@ a:hover {
   color: #d32f2f;
   font-weight: bold;
 }
+
