@@ -14,7 +14,7 @@ block content
     if gatewayCfg.gatewayText
       h3 #{gatewayCfg.gatewayText}
 
-  if gatewayCfg.adminUser
+  if !loggedInAs && gatewayCfg.adminUser
     form(action='/gatewayLogin' method='post' class="config-form")
       span Username:
       input(type='text' id='username' name='username' required)
