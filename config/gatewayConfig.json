@@ -3,7 +3,7 @@
 	"gatewayTitle": "Welcome",
 	"gatewayText": "Select a board above to begin browsing.",
 	"adminUser": "",
-	"adminPass": "",	
+	"adminPass": "",
 	"can": {
 		"post": false,
 		"postFile": false,
