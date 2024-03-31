@@ -20,21 +20,21 @@ html
             .alert #{alert}
           block content
 
-          .sidebar
-            if renderFunctions.gatewayCanDo(req,'post',false)
-              include postform.pug
+        .sidebar
+          if renderFunctions.gatewayCanDo(req,'post',false)
+            include postform.pug
 
-            if renderFunctions.gatewayCanDo(req,'delPost',false) || renderFunctions.gatewayCanDo(req,'delFile',false) 
-              h3.sidebar-header Moderation
-              if renderFunctions.gatewayCanDo(req,'delPost',false)
-                button(id="delete-post-button", class="sidebarbutton") Delete Post
-              if renderFunctions.gatewayCanDo(req,'delFile',false)
-                button(id="delete-file-button", class="sidebarbutton") Block File
+          if renderFunctions.gatewayCanDo(req,'delPost',false) || renderFunctions.gatewayCanDo(req,'delFile',false) 
+            h3.sidebar-header Moderation
+            if renderFunctions.gatewayCanDo(req,'delPost',false)
+              button(id="delete-post-button", class="sidebarbutton") Delete Post
+            if renderFunctions.gatewayCanDo(req,'delFile',false)
+              button(id="delete-file-button", class="sidebarbutton") Block File
 
-            if renderFunctions.gatewayCanDo(req,'changeTheme',false)
-              .control-panel
-                h3.sidebar-header Settings
-                label(for="cssThemeSelector") Theme: 
-                select(id="cssThemeSelector", onchange="changeTheme()")
-                  each theme in themes
-                    option(value=theme, selected=(theme === cssTheme ? 'selected' : null)) #{theme.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+          if renderFunctions.gatewayCanDo(req,'changeTheme',false)
+            .control-panel
+              h3.sidebar-header Settings
+              label(for="cssThemeSelector") Theme: 
+              select(id="cssThemeSelector", onchange="changeTheme()")
+                each theme in themes
+                  option(value=theme, selected=(theme === cssTheme ? 'selected' : null)) #{theme.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
