@@ -1,4 +1,4 @@
-div(class=item.replyto ? 'post_reply' : 'post', id=item.hash, board=currentBoard)
+div(class=item.replyto ? 'post_reply' : 'post', id=item.hash)
   div
     div.post-header
       if item.subject
@@ -9,12 +9,12 @@ div(class=item.replyto ? 'post_reply' : 'post', id=item.hash, board=currentBoard
         span.name #{item.name ? item.name : defaultName}
       span.date #{new Date(parseInt(item.date)).toLocaleString()}
       if indexMode
-        a(href=`/${currentBoard}/thread/${item.replyto || item.hash}.html?reply=${item.hash}#${item.hash}`, class='post-hash', hash=item.hash) #{'#'+item.hash.slice(0, cfg.postHashLength)}
+        a(href=`/${item.board}/thread/${item.replyto || item.hash}.html?reply=${item.hash}#${item.hash}`, class='post-hash', hash=item.hash) #{'#'+item.hash.slice(0, cfg.postHashLength)}
       else
         span.post-hash(class="post-hash-clickable", hash=item.hash) #{'#'+item.hash.slice(0, cfg.postHashLength)}
       if indexMode && !item.replyto
         span.reply-link
-          a(href=`/${currentBoard}/thread/${item.hash}.html`) [Reply]
+          a(href=`/${item.board}/thread/${item.hash}.html`) [Reply]
     if item.files && item.files.length > 0
       div.embedded-files
         each file in item.files
@@ -33,7 +33,7 @@ div(class=item.replyto ? 'post_reply' : 'post', id=item.hash, board=currentBoard
               if postsOnPage.includes(hashRef)
                 a.post-quote(href = '#'+hashRef, hash = hashRef) #{hexQuoteMatch[0].slice(0,cfg.postHashLength+2)}
               else
-                a.post-quote(href = `/function/findThreadContainingPost/${currentBoard}/${hashRef}#${hashRef}`, hash = hashRef) #{hexQuoteMatch[0].slice(0,cfg.postHashLength+2)}
+                a.post-quote(href = `/function/findThreadContainingPost/${item.board}/${hashRef}#${hashRef}`, hash = hashRef) #{hexQuoteMatch[0].slice(0,cfg.postHashLength+2)}
               span.message #{line.substring(hexQuoteMatch[0].length)}
           else
             p(class = quoteMatch ? 'message-quote' : 'message')

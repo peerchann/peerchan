@@ -1,18 +1,18 @@
 div.embedded-file(filehash=file.hash)
   p.embedded-info
-    a(href=`/download/${currentBoard}/${file.hash}/${file.filename}`, download=file.filename) #{file.filename}
+    a(href=`/download/${item.board}/${file.hash}/${file.filename}`, download=file.filename) #{file.filename}
     | , #{renderFunctions.formatFileSize(file.size)}
   if file.fileStatus
     if cfg.embedImageFileExtensions.includes(file.extension.toLowerCase())
       div
-        img(src=`/download/${currentBoard}/${file.hash}.${file.extension}`, alt=file.filename, class="embedded-image")
+        img(src=`/download/${item.board}/${file.hash}.${file.extension}`, alt=file.filename, class="embedded-image")
     else if cfg.embedVideoFileExtensions.includes(file.extension.toLowerCase())
       div
         video(controls="", loop="", class="embedded-image")
-          source(src=`/download/${currentBoard}/${file.hash}.${file.extension}`, type=`video/${file.extension}`)
+          source(src=`/download/${item.board}/${file.hash}.${file.extension}`, type=`video/${file.extension}`)
 
     else
-      a(href=`/download/${currentBoard}/${file.hash}${file.extension ? '.'+file.extension : ''}`, download=file.filename)
+      a(href=`/download/${item.board}/${file.hash}${file.extension ? '.'+file.extension : ''}`, download=file.filename)
         span.file-icon 🗎
   else
     span.file-not-found-icon ❌

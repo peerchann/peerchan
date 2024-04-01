@@ -207,7 +207,7 @@ async function addFileStatuses (inputObj = {}, whichBoard) {
     for (let thisKey of Object.keys(inputObj)) {
         if (thisKey == 'files') {
         	for (let thisFile of inputObj[thisKey]) {
-				thisFile.fileStatus = await db.fileExists(thisFile.hash, whichBoard)
+				thisFile.fileStatus = await db.fileExists(thisFile.hash, whichBoard || inputObj['board'])
                 if (cfg.queryFromPanBoardFilesDbIfFileNotFound && !thisFile.fileStatus) {
                     thisFile.fileStatus = await db.fileExists(thisFile.hash, '')
                 }
@@ -745,22 +745,20 @@ app.get('/overboard.html', async (req, res, next) => {
         }
         await Promise.all(boardQueries)
 
-        threads.sort((a, b) => (a.lastbumped > b.lastbumped) ? -1 : ((a.lastbumped < b.lastbumped) ? 1 : 0)) //newest on top
-        threads = threads.slice(0, cfg.threadsPerPage) //todo: other pages?
-        console.log(threads)
-        replies = threads.map(t => replies[t.index])
-        omittedreplies = threads.map(t => omittedreplies[t.index])
-
         for(let threadPostIndex in threads) {
             threads[threadPostIndex].replies = replies[threadPostIndex]
             threads[threadPostIndex].omittedreplies = omittedreplies[threadPostIndex]
         }
 
+        threads.sort((a, b) => (a.lastbumped > b.lastbumped) ? -1 : ((a.lastbumped < b.lastbumped) ? 1 : 0)) //newest on top
+        threads = threads.slice(0, cfg.threadsPerPage) //todo: other pages?
+
         threads = await addFileStatuses(makeRenderSafe(threads))
 
-        options.currentBoard = "Overboard" //todo: change
+        // options.currentBoard = "Overboard"
         options.posts = threads
         options.indexMode = true
+        options.overboardMode = true
         const html = await rt['board'](options)
         resetError()
         res.send(html)

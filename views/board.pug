@@ -19,12 +19,19 @@ block title
   title #{titleText}
 
 block content
-  h2 /#{currentBoard}/ 
+  if overboardMode
+    h2 Overboard
+  else
+    h2 /#{currentBoard}/
   include pagelinks.pug
   -var postsOnPage = (indexMode) ? [] : (posts.length ? [posts[0].hash].concat(posts[0].replies.map(r => r.hash)) : [])
   each post in posts
     -var item = post
     hr.dividing-line
+    if overboardMode
+      p.message
+        span Thread from 
+        a(href=`/${item.board}/index.html`) /#{item.board}/
     div
       include post.pug
       if indexMode && post.omittedreplies

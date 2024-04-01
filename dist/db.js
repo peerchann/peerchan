@@ -255,6 +255,7 @@ export async function getThreadsWithReplies(whichBoard, numThreads = 10, numPrev
     threads.forEach((t) => { t.board = whichBoard; });
     omittedreplies = threads.map((t) => omittedreplies[t.index]);
     replies = threads.map((t) => replies[t.index]);
+    replies.forEach((theseR) => theseR.forEach((thisR) => { thisR.board = whichBoard; }));
     return { threads, replies, omittedreplies, totalpages };
 }
 //todo: revisit remote
@@ -284,6 +285,7 @@ export async function getRepliesToSpecificPost(whichBoard, whichThread) {
     //todo: add query?
     let results = await openedBoards[whichBoard].documents.index.search(new SearchRequest({ query: [new StringMatch({ key: 'replyto', value: whichThread })] }), { local: true, remote: remoteQuery });
     results.sort((a, b) => (a.date < b.date) ? -1 : ((a.date > b.date) ? 1 : 0)); //newest on bottom
+    results.forEach((r) => { r.board = whichBoard; });
     return results;
     //return await Posts.documents.index.search(new SearchRequest, { local: true, remote: remoteQuery });
 }
