@@ -126,7 +126,7 @@ p {
 }
 
 .control-panel select, .control-panel select option {
-  color: ##f0b3b3;
+/*  color: #f0b3b3;*/
   background-color: #f0b3b3;
   max-width: 150px;
 }
