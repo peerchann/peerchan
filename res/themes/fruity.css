@@ -1,9 +1,17 @@
+:root {
+  --embed-width: 250px;
+  --embed-height: 250px;
+  --sidebar-width: 300px;
+}
+
 body {
   font-family: Arial, sans-serif;
   background-color: #f0b3b3; 
   margin: 0;
   padding: 0;
   display: flex;
+  scrollbar-gutter: stable both-edges;
+  overflow-wrap: break-word
 }
 
 .container {
@@ -13,6 +21,7 @@ body {
 a {
   color: #1976D2;
   text-decoration: none;
+  overflow-wrap: anywhere;
 }
 
 a:visited {
@@ -54,7 +63,7 @@ p {
 
 .post {
   background-color: #b3b3ff;
-  word-wrap: break-word;
+  overflow-wrap: anywhere;
   display: inline-block; 
   padding: 10px; 
   margin-bottom: 5px; 
@@ -64,7 +73,7 @@ p {
 
 .post_reply {
   background-color: #ff9999;
-  word-wrap: break-word;
+  overflow-wrap: anywhere;
   display: inline-block; 
   padding: 10px; 
   margin-bottom: 5px; 
@@ -73,15 +82,16 @@ p {
 }
 
 .wrapper {
+  display: flex;
 }
 
 .content {
   margin: 15px; 
-  margin-right: 555px;
+  margin-right: calc(var(--sidebar-width) + 55px);
 }
 
 .sidebar {
-  width: 500px; 
+  width: var(--sidebar-width); 
   padding: 20px; 
   background-color: #9985b9; 
   position: fixed; 
@@ -184,7 +194,7 @@ p {
 .message {
   color: #191970; 
   white-space: pre-wrap;
-  word-wrap: break-word;
+  overflow-wrap: anywhere;
   margin-top: 0px;
   margin-bottom: 0px;
 }
@@ -273,7 +283,7 @@ p {
 
 
 .embedded-info {
-  word-wrap: break-word;
+  overflow-wrap: anywhere;
   max-width: 250px;
   margin-bottom: 5px;
   margin-top: 0px
@@ -371,7 +381,7 @@ p {
 }
 
 .clientid {
-  word-wrap: break-word;
+  overflow-wrap: anywhere;
   color: #003bdf;
 }
 

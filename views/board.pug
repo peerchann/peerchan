@@ -32,15 +32,14 @@ block content
       p.message
         span Thread from 
         a(href=`/${item.board}/index.html`) /#{item.board}/
-    div
-      include post.pug
-      if indexMode && post.omittedreplies
+    include post.pug
+    if indexMode && post.omittedreplies
+      div
+        .omittedreplies #{post.omittedreplies} #{post.omittedreplies > 1 ? "replies" : "reply"} omitted, click Reply to view.
+    if post.replies && post.replies.length > 0
+      each reply in post.replies
+        - item = reply
         div
-          .omittedreplies #{post.omittedreplies} #{post.omittedreplies > 1 ? "replies" : "reply"} omitted, click Reply to view.
-      if post.replies && post.replies.length > 0
-        each reply in post.replies
-          - item = reply
-          div
-            include post.pug
+          include post.pug
   hr.dividing-line
   include pagelinks.pug

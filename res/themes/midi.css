@@ -1,3 +1,9 @@
+:root {
+  --embed-width: 250px;
+  --embed-height: 250px;
+  --sidebar-width: 300px;
+}
+
 body {
   background-color: black;
   color: #ddd;
@@ -9,6 +15,7 @@ body {
 a {
   color: thistle;
   text-decoration: none;
+  overflow-wrap: anywhere;
 }
 
 a:visited {
@@ -24,7 +31,7 @@ a:hover {
 .post, .post_reply {
   background-image: linear-gradient(rebeccapurple,black, black 60%, indigo 150%);
   color: thistle;
-  word-wrap: break-word;
+  overflow-wrap: anywhere;
   display: inline-block;
   padding: 5px;
   margin-bottom: 5px;
@@ -126,7 +133,7 @@ a:hover {
 .subject {
   color: violet;
   margin-right: 5px;
-  word-wrap: break-word;
+  overflow-wrap: anywhere;
 }
 
 .name {
@@ -159,7 +166,7 @@ a:hover {
 
 .message {
   white-space: pre-wrap;
-  word-wrap: break-word;
+  overflow-wrap: anywhere;
   margin-top: 0px;
   margin-bottom: 0px;
   color: #ddd;
@@ -238,15 +245,15 @@ a:hover {
 }
 
 .embedded-info {
-  word-wrap: break-word;
+  overflow-wrap: anywhere;
   max-width: 250px;
   margin-bottom: 5px;
   margin-top: 0px
 }
 
 .embedded-image {
-  max-width: 175px;
-  max-height: 175px;
+  max-width: var(--embed-width);
+  max-height: var(--embed-width);
   margin-top: 0px;
   cursor: pointer;
 }
@@ -278,7 +285,7 @@ a:hover {
 }
 
 .watched-boards {
-  word-wrap: : break-word;
+  word-wrap: break-word;
 }
 
 .watched-board {

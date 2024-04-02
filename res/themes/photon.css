@@ -10,6 +10,7 @@ body {
 a {
   color: #FF6600;
   text-decoration: none;
+  overflow-wrap: anywhere;
 }
 
 a:visited {
@@ -55,7 +56,7 @@ p {
 .post, .post_reply {
   background-color: #ddd;
   color: #333;
-  word-wrap: break-word;
+  overflow-wrap: anywhere;
   display: inline-block;
   padding: 10px;
   margin-bottom: 5px;
@@ -179,7 +180,7 @@ p {
 
 .message {
   white-space: pre-wrap;
-  word-wrap: break-word;
+  overflow-wrap: anywhere;
   margin-top: 0px;
   margin-bottom: 0px;
 }
@@ -263,7 +264,7 @@ p {
 }
 
 .embedded-info {
-  word-wrap: break-word;
+  overflow-wrap: anywhere;
   max-width: 250px;
   margin-bottom: 5px;
   margin-top: 0px
@@ -319,7 +320,7 @@ p {
 }
 
 .clientid {
-  word-wrap: break-word;
+  overflow-wrap: anywhere;
   color: #004A99;
 }
 
