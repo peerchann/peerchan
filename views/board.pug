@@ -3,7 +3,10 @@ extends home.pug
 block title
   - var titleText = ''
   if indexMode
-    - titleText = `/${currentBoard}/ - Index`
+    if overboardMode
+      - titleText = `Gladden - Overboard`
+    else
+      - titleText = `/${currentBoard}/ - Index`
   else
     if posts && posts[0]
       - const titlePost = posts[0]
