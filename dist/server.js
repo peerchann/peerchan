@@ -406,6 +406,9 @@ app.post('/updateHashStyle', (req, res) => {
 app.post('/addWatchedBoard', upload.any(), async (req, res, next) => {
   try {
     gatewayCanDo(req, 'addBoard')
+    if (!req.body.boardId) {
+        throw new Error ('Board ID should be at least one character.')
+    }
     // Extract the board ID from the request body
     const boardId = req.body.boardId;
 
@@ -429,6 +432,9 @@ app.post('/addWatchedBoard', upload.any(), async (req, res, next) => {
 app.post('/removeWatchedBoard', upload.any(), async (req, res, next) => {
   try {
     gatewayCanDo(req, 'remBoard')
+    if (!req.body.boardId) {
+        throw new Error ('Board ID should be at least one character.')
+    }
     const boardId = req.body.boardId;
     const index = watchedBoards.indexOf(boardId);
     if (index !== -1) {
@@ -446,6 +452,9 @@ app.post('/removeWatchedBoard', upload.any(), async (req, res, next) => {
 app.get('/function/addBoard/:boardId',  async (req, res, next) => {
   try {
     gatewayCanDo(req, 'addBoard')
+    if (!req.params.boardId) {
+        throw new Error ('Board ID should be at least one character.')
+    }
     const boardId = req.params.boardId;
     if (watchedBoards.indexOf(boardId) === -1) {
     	watchedBoards.push(boardId);
@@ -465,6 +474,9 @@ app.get('/function/addBoard/:boardId',  async (req, res, next) => {
 app.get('/function/removeBoard/:boardId', async (req, res, next) => {
   try {
     gatewayCanDo(req, 'remBoard')
+    if (!req.params.boardId) {
+        throw new Error ('Board ID should be at least one character.')
+    }
     const boardId = req.params.boardId;
     const index = watchedBoards.indexOf(boardId);
     if (index !== -1) {
@@ -488,6 +500,9 @@ app.get('/function/removeBoard/:boardId', async (req, res, next) => {
 app.get('/function/addGatewayBoard/:boardId',  async (req, res, next) => {
   try {
     gatewayCanDo(req, 'addBoard')
+    if (!req.params.boardId) {
+        throw new Error ('Board ID should be at least one character.')
+    }
     const boardId = req.body.boardId;
     if (gatewayCfg.canSeeBoards.indexOf(boardId) === -1) {
         gatewayCfg.canSeeBoards.push(boardId);
@@ -505,6 +520,9 @@ app.get('/function/addGatewayBoard/:boardId',  async (req, res, next) => {
 app.get('/function/removeGatewayBoard/:boardId', async (req, res, next) => {
   try {
     gatewayCanDo(req, 'remBoard')
+    if (!req.params.boardId) {
+        throw new Error ('Board ID should be at least one character.')
+    }
     const boardId = req.body.boardId;
     const index = gatewayCfg.canSeeBoards.indexOf(boardId)
     if (index !== -1) {
@@ -524,6 +542,9 @@ app.get('/function/removeGatewayBoard/:boardId', async (req, res, next) => {
 app.post('/addGatewayBoard', upload.any(), async (req, res, next) => {
   try {
     gatewayCanDo(req, 'addBoard')
+    if (!req.body.boardId) {
+        throw new Error ('Board ID should be at least one character.')
+    }
     const boardId = req.body.agbId;
     if (gatewayCfg.canSeeBoards.indexOf(boardId) === -1) {
         gatewayCfg.canSeeBoards.push(boardId);
@@ -542,6 +563,9 @@ app.post('/addGatewayBoard', upload.any(), async (req, res, next) => {
 app.post('/removeGatewayBoard', upload.any(), async (req, res, next) => {
   try {
     gatewayCanDo(req, 'remBoard')
+    if (!req.body.boardId) {
+        throw new Error ('Board ID should be at least one character.')
+    }
     const boardId = req.body.rgbId;
     const index = gatewayCfg.canSeeBoards.indexOf(boardId)
     if (index !== -1) {
