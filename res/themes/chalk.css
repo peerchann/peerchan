@@ -306,16 +306,9 @@ p {
   margin-top: 0px;
 }
 
-.embedded-video {
-  max-width: var(--embed-width);
-  max-height: var(--embed-width);
-  margin-right: 10px;
-  margin-bottom: 0px;
-}
-
 .embedded-image {
   max-width: var(--embed-width);
-  max-height: var(--embed-width);
+  max-height: var(--embed-height);
   margin-top: 0px;
   cursor: pointer;
 }

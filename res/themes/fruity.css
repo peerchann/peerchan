@@ -86,8 +86,9 @@ p {
 }
 
 .content {
-  margin: 15px; 
-  margin-right: calc(var(--sidebar-width) + 55px);
+  padding: 10px 20px;
+  color: #ddd;
+  margin-right: calc(var(--sidebar-width) + 40px);
 }
 
 .sidebar {
@@ -272,7 +273,7 @@ p {
 
 .embedded-file {
   flex: 0 0 auto;
-  margin-right: 10px;
+/*  margin-right: 10px;*/
   margin-bottom: 0px;
 }
 
@@ -284,20 +285,20 @@ p {
 
 .embedded-info {
   overflow-wrap: anywhere;
-  max-width: 250px;
+  max-width: var(--embed-width);
   margin-bottom: 5px;
   margin-top: 0px
 }
 
 .embedded-image {
-  max-width: 250px;
-  max-height: 250px;
+  max-width: var(--embed-width);
+  max-height: var(--embed-height);
   margin-top: 0px;
   cursor: pointer; 
 }
 
 .embedded-image.expanded {
-  max-width: 100%;
+  max-width: calc(100vw - var(--sidebar-width) - 120px);
   max-height: 100%;
 }
 
