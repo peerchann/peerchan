@@ -1,4 +1,4 @@
-div.embedded-file(filehash=file.hash)
+div.embedded-file(filehash=file.hash, board=currentBoard)
   p.embedded-info
     a(href=`/download/${item.board}/${file.hash}/${file.filename}`, download=file.filename) #{file.filename}
     | , #{renderFunctions.formatFileSize(file.size)}

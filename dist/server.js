@@ -313,7 +313,7 @@ app.get('/function/changeTheme/:themeName', async (req, res, next) => {
 app.get('/:board/deletepost=:posthash', async (req, res, next) => {
   try {
     gatewayCanDo(req, 'delPost')
-  	console.log(`Deleting post: ${req.params.posthash}.`);
+  	console.log(`Deleting post: ${req.params.posthash} on /${req.params.board}/.`);
 	await db.delPost(req.params.posthash, req.params.board, cfg.deletePostRandomKey)
 
   } catch (err) {
@@ -354,12 +354,19 @@ app.get('/mymultiaddr', async (req, res, next) => {
 });
 
 //todo: make this into a post req.
-app.get('/deletefile=:filehash', async (req, res, next) => {
+app.get('/:board/deletefile=:filehash', async (req, res, next) => {
   try {
     gatewayCanDo(req, 'delFile')
   	const fileHash = req.params.filehash
   	console.log(`Deleting file: ${fileHash}.`);
-	await db.delFile(fileHash, cfg.deleteFileRandomKey)
+    if (cfg.queryFromPanBoardFilesDbIfFileNotFound) {
+        await Promise.all([
+            db.delFile(fileHash, req.params.board, cfg.deleteFileRandomKey),
+            db.delFile(fileHash, null, cfg.deleteFileRandomKey)
+        ])
+    } else {
+        await db.delFile(fileHash, req.params.board, cfg.deleteFileRandomKey)        
+    }
 
   } catch (err) {
   	console.log(`Failed to delete file: ${params.params.fileHash}.`)
@@ -1039,6 +1046,7 @@ app.get('/files', async (req, res, next) => {
 });
 
 //todo: consider making this a middleware
+//todo: some kind of board consideration? so can delete files on x board but not y board, based on canSeeBoards
 function gatewayCanDo(req, whichPerm, throwErr = true) { //todo: revisit the name of this?
     if (req.session.loggedIn) {
         return true;
