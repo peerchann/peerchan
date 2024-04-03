@@ -1,4 +1,4 @@
-div(class=item.replyto ? 'post_reply' : 'post', id=item.hash)
+div(class=item.replyto ? 'post_reply' : 'post', id=item.hash, board=currentBoard)
   div.post-header
     if item.subject
       span.subject #{item.subject}
