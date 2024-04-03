@@ -53,7 +53,7 @@ const Validate = {
             if (inpFile.extension && (inpFile.extension.length > vConf["post"]["files"]["extension"].maxLength)) {
                 throw new Error(`${inpFile.filename} extension length exceeded max length of ${vConf["post"]["files"]["extension"].maxLength}.`);
             }
-            if (inpFile.size > BigInt(vConf["post"]["files"]["size"].maxSize)) {
+            if (vConf["post"]["files"]["size"].maxSize && inpFile.size > BigInt(vConf["post"]["files"]["size"].maxSize)) {
                 throw new Error(`${inpFile.filename} size exceeded max size of ${vConf["post"]["files"]["size"].maxSize}.`);
             }
         }

@@ -92,9 +92,9 @@ function exitDeletionModeOnce(event) {
 function expandImage(img) {
   img.classList.toggle('expanded');
 }
-function handleFileClick(hash) {
+function handleFileClick(currentBoard, hash) {
   if (deleteMode === 'file') {
-    window.location.href = `/deletefile=${hash}`;
+    window.location.href = `/${currentBoard}/deletefile=${hash}`;
   }
 }
 function handlePostClick(currentBoard, hash) {
@@ -115,7 +115,7 @@ document.addEventListener("DOMContentLoaded", function() {
   const embeddedFiles = document.querySelectorAll('.embedded-file');
   embeddedFiles.forEach(thisOne => {
     thisOne.addEventListener('click', function() {
-      handleFileClick(thisOne.getAttribute('filehash'));
+      handleFileClick(thisOne.getAttribute('board'),thisOne.getAttribute('filehash'));
     });
   });
   const embeddedImages = document.querySelectorAll('.embedded-image');
