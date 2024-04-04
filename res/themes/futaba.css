@@ -5,9 +5,9 @@
 }
 
 body {
-  font-family: Arial, sans-serif;
-  background-color: #1a1a1a;
-  color: #ddd;
+  font-family: serif;
+  background-color: #FFFFEE;
+  color: #800000;
   margin: 0;
   padding: 0;
   display: flex;
@@ -16,18 +16,18 @@ body {
 }
 
 a {
-  color: #64a5a6;
-  text-decoration: none;
+  color: #0000EE;
+  text-decoration: underline;
   overflow-wrap: anywhere;
 }
 
 a:visited {
-  color: #9575cd;
+/*  color: #9575cd;*/
   text-decoration: none;
 }
 
 a:hover {
-  color: #81c784;
+  color: #DD0000;
   text-decoration: underline;
 }
 
@@ -36,7 +36,7 @@ h1 {
 }
 
 p {
-  color: #a3cea6;
+/*  color: #a3cea6;*/
 }
 
 .container {
@@ -44,7 +44,8 @@ p {
 }
 
 .sidebarbutton {
-  background-color: #2b2b2b;
+/*    font-family: serif;*/
+/*  background-color: #2b2b2b;
   border: none;
   color: #eee;
   padding: 15px 32px;
@@ -53,18 +54,18 @@ p {
   display: inline-block;
   font-size: 16px;
   margin: 4px 2px;
-  cursor: pointer;
-  border-radius: 5px;
+  cursor: pointer;*/
+/*  border-radius: 2px;*/
 }
 
 .sidebarbutton:hover {
-  background-color: #3c3c3c;
+/*  background-color: #3c3c3c;*/
 }
 
 .post, .post_reply {
   flex: 1;
-  background-color: #444;
-  color: #ddd;
+/*  background-color: #EEAA88;*/
+  color: #800000;
   display: inline-block;
   overflow-wrap: anywhere;
   padding: 10px;
@@ -80,7 +81,7 @@ p {
 }
 
 .post_reply {
-  background-color: #333;
+  background-color: #f0e0d6;
 }
 
 .wrapper {
@@ -93,14 +94,15 @@ p {
 /*  max-width: calc(100vw - (var(--sidebar-width) + 20px));*/
 /*  width: 100%;*/
   padding: 10px 20px;
-  color: #ddd;
+/*  color: #ddd;*/
   margin-right: calc(var(--sidebar-width) + 40px);
 }
 
 .sidebar {
   width: var(--sidebar-width);
   padding: 20px;
-  background-color: #444;
+  border: 1px solid #8d8d83;
+/*  background-color: #444;*/
   position: fixed;
   top: 0;
   right: 0;
@@ -108,6 +110,7 @@ p {
 }
 
 .sidebar-header {
+  background-color: #eeaa88;
   margin-bottom: 5px;
   margin-top: 5px;
 }
@@ -123,22 +126,28 @@ p {
 .post-form input, .config-form input {
   width: 100%;
   display: inline-block;
-  background-color: #444;
-  color: #ddd;
+  border: 1px solid #abadb3;
+/*  background-color: #444;*/
+  font-family: serif;
+  color: black;
   margin-top: 5px;
   margin-bottom: 5px;
-  border: none;
+/*  border: none;*/
   box-shadow: 0px 0px 0px 2px rgba(255, 255, 255, 0.2);
+}
+
+input[type="file"] {
+    background-color: white;
 }
 
 .post-form textarea, .config-form textarea {
   width: 100%;
   display: inline-block;
-  background-color: #444;
-  color: #ddd;
+  border: 1px solid #abadb3;
+  font-family: serif;
+  color: black;
   margin-top: 5px;
   margin-bottom: 5px;
-  border: none;
   box-shadow: 0px 0px 0px 2px rgba(255, 255, 255, 0.2);
   height: 150px;
 }
@@ -161,8 +170,9 @@ p {
 }
 
 .control-panel select, .control-panel select option {
-  color: #ddd;
-  background-color: #444;
+/*  color: #ddd;*/
+/*  background-color: #444;*/
+  font-family: serif;
   max-width: 150px;
 }
 
@@ -172,28 +182,31 @@ p {
 }
 
 .subject {
-  color: #4fc3f7;
+  font-weight: bold;
+  color: #CC1105;
   margin-right: 5px;
   overflow-wrap: anywhere;
 }
 
 .name {
-  color: #f06292;
+  color: #117743;
+  font-weight:bold;
   margin-right: 5px;
 }
 
 .namewithlink {
-  color: #ba68c8;
+/*  color: #ba68c8;*/
+  font-weight:bold;
   margin-right: 5px;
 }
 
 .date {
-  color: #81c784;
+/*  color: #81c784;*/
   margin-right: 5px;
 }
 
 .post-hash {
-  color: #bda0c1;
+/*  color: #800000;*/
 }
 
 .post-hash-clickable:hover {
@@ -210,25 +223,25 @@ p {
   overflow-wrap: anywhere;
   margin-top: 0px;
   margin-bottom: 0px;
-  color: #ddd;
+  color: #800000;
 }
 
 .post-quote {
-  color: #a095f1;
+/*  color: #a095f1;*/
 }
 
 .post-quote:visited {
-  color: #a095f1;
+/*  color: #a095f1;*/
 }
 
 .post-quote:hover {
-  color: #a095f1;
+/*  color: #a095f1;*/
 }
 
 .message-quote {
   margin-top: 0px;
   margin-bottom: 0px;
-  color: #4dd0e1;
+  color: #789922;
 }
 
 .email {
@@ -236,7 +249,7 @@ p {
 }
 
 .replyingsonoinput {
-  background-color: #f48fb1;
+  background-color: #f0e0d6;
   color: #666;
   cursor: not-allowed;
 }
@@ -267,8 +280,8 @@ p {
 
 .dividing-line {
   border: 0;
-  height: 2px;
-  background-color: #666;
+  height: 1px;
+  background-color: #8d8d83;
   margin-bottom: 5px;
   margin-top: 5px;
 /*  flex-grow: 1;*/
