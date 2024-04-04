@@ -325,7 +325,7 @@ app.get('/:board/deletepost=:posthash', async (req, res, next) => {
 });
 
 
-app.get('/myreplicationfactors', async (req, res, next) => {
+app.get('/myreplicationfactors.html', async (req, res, next) => {
   try {
     gatewayCanDo(req, 'seeClientId') //todo: rename maybe throughout
 	res.send(makeRenderSafe([db.Files.files.log.role.segments[0].factor, db.Files.chunks.documents.log.role.segments[0].factor]))
@@ -333,13 +333,13 @@ app.get('/myreplicationfactors', async (req, res, next) => {
   	console.log('Failed to get replication factor.')
   	console.log(err)
   	lastError = err
-  	res.redirect('/home')
+  	res.redirect('/home.html')
   }
 
 	// res.redirect(req.headers.referer); //todo: check propriety
 });
 
-app.get('/mymultiaddr', async (req, res, next) => {
+app.get('/mymultiaddr.json', async (req, res, next) => {
   try {
     gatewayCanDo(req, 'seeClientId')
 	res.send(db.client.libp2p.getMultiaddrs()[0])
@@ -347,7 +347,7 @@ app.get('/mymultiaddr', async (req, res, next) => {
   	console.log('Failed to get multiAddr.')
   	console.log(err)
   	lastError = err
-  	res.redirect('/home')
+  	res.redirect('/home.html')
   }
 
 	// res.redirect(req.headers.referer); //todo: check propriety
@@ -798,7 +798,7 @@ app.get('/overboard.html', async (req, res, next) => {
         console.log('Failed to get posts for overboard.')
         console.log(err)
         lastError = err
-        res.redirect('/home')
+        res.redirect('/home.html')
     }
     console.timeEnd('buildOverboardIndex');
 })
@@ -843,7 +843,7 @@ app.get('/:board/:pagenumber.html', async (req, res, next) => {
 		console.log('Failed to get posts for board \"'+req.params.board+'\".')
 		console.log(err)
 		lastError = err
-		res.redirect('/home')
+		res.redirect('/home.html')
 	}
     console.timeEnd('buildIndex');
 })
@@ -893,7 +893,7 @@ app.get('/:board/thread/:thread.html', async (req, res, next) => {
 		console.log('Failed to get posts for board \"'+req.params.board+'\".')
 		console.log(err)
 		lastError = err
-		res.redirect('/home')
+		res.redirect('/home.html')
 	}
 
 })
@@ -967,7 +967,7 @@ app.post('/submit', upload.any(), async (req, res, next) => {
 });
 
 app.get('', async (req, res, next) => { //todo: merge with above functionality or filegateway
-	res.redirect('/home')
+	res.redirect('/home.html')
 });
 
 //todo: revisit this
@@ -993,10 +993,10 @@ app.get('/function/findThreadContainingPost/:boardId/:postHash', async (req, res
 })
 
 //todo: fix redundancy with boards
-app.get('/home', async (req, res, next) => {
+app.get('/home.html', async (req, res, next) => {
 	try {
         if (!localhostIps.includes(req.ip) && gatewayCfg.gatewayMode) { //todo: make this go through gatewayCanDo function?
-            res.redirect('/gateway')
+            res.redirect('/gateway.html')
             return
         }
 
@@ -1022,12 +1022,12 @@ app.get('/listPeers', async (req, res, next) => {
         console.log('Failed to list peers')
         console.log(error)
         lastError = error
-        res.redirect('home')
+        res.redirect('home.html')
     }
 });
 
 
-app.get('/files', async (req, res, next) => {
+app.get('/files.html', async (req, res, next) => {
     try {
         gatewayCanDo(req)
         const options = await standardRenderOptions(req,res)
@@ -1041,7 +1041,7 @@ app.get('/files', async (req, res, next) => {
         console.log('Failed to open files page')
         console.log(error)
         lastError = error
-        res.redirect('home')
+        res.redirect('home.html')
     }
 });
 
@@ -1112,7 +1112,7 @@ async function standardRenderOptions (req,res) { //todo: make this into a middle
 
 //gateway stuff
 //todo: possibly consolidate with home or make a new settings page
-app.get('/gateway', async (req, res, next) => {
+app.get('/gateway.html', async (req, res, next) => {
     try {
         const options = await standardRenderOptions(req,res)
         const html = await rt['gatewayHome'](options)
@@ -1156,6 +1156,10 @@ app.post('/gatewayLogout', (req, res) => {
   }
   res.redirect(req.headers.referer);
 });
+
+app.get('/:board', async (req, res, next) => {
+    res.redirect(`/${req.params.board}/index.html`)
+})
 
 // Start the Server
 app.listen(cfg.browserPort, cfg.browserHost, () => {
@@ -1289,9 +1293,9 @@ app.listen(cfg.browserPort, cfg.browserHost, () => {
 		console.log(err)
 	}
 
-//open the boardlist:
+//open the configured homepage
 if (cfg.openHomeOnStartup) {
-	open('http://'+cfg.browserHost+':'+cfg.browserPort+'/home');
+	open(`http://${cfg.browserHost}:${cfg.browserPort}/${cfg.openOnStartupUrl}`);
 }
 
 

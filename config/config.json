@@ -7,6 +7,7 @@
 	"previewReplies": 3,
 	"defaultName": "Anonymous",
 	"openHomeOnStartup": true,
+	"openOnStartupUrl": "home.html",
 	"defaultTheme": "chalk",
 	"embedImageFileExtensions": [
 		"jpg",
