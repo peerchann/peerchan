@@ -10,7 +10,10 @@ div.embedded-file(filehash=file.hash, board=currentBoard)
       div
         video(controls="", loop="", class="embedded-image")
           source(src=`/download/${item.board}/${file.hash}.${file.extension}`, type=`video/${file.extension}`)
-
+    else if cfg.embedAudioFileExtensions.includes(file.extension.toLowerCase())
+      div
+        audio(controls="", class="embedded-image")
+          source(src=`/download/${item.board}/${file.hash}.${file.extension}`, type=`audio/${file.extension}`)
     else
       a(href=`/download/${item.board}/${file.hash}${file.extension ? '.'+file.extension : ''}`, download=file.filename)
         span.file-icon 🗎

@@ -82,6 +82,7 @@ a:hover {
 .post-form input, .config-form input {
   width: 100%;
   display: inline-block;
+  font-family: serif;
   background-image: linear-gradient(rebeccapurple, black 60%, indigo 150%) ;
   color: white;
   margin-top: 2px;
@@ -93,13 +94,15 @@ a:hover {
   background-image: linear-gradient(rebeccapurple, black 60%, indigo 150%) ;
   color: white;
   background-color: black;
-  border: dotted 1px violet
+  border: dotted 1px violet;
+  font-family: serif;
   max-width: 150px;
 }
 
 .post-form textarea, .config-form textarea {
   width: 100%;
   display: inline-block;
+  font-family: serif;
   background-image: linear-gradient(rebeccapurple,black, black 60%, indigo 150%) ;
   color: white;
   margin-top: 5px;
@@ -113,7 +116,14 @@ a:hover {
 .config-form span,
 .config-form button, {
   width: 100%;
+/*  font-family: serif;*/
   display: inline-block;
+}
+
+.sidebarbutton {
+/*  border-radius: 0px;*/
+  font-family: serif;
+
 }
 
 .control-panel input {

@@ -60,9 +60,15 @@ function loadConfig() {
                     "webm",
                     "mp4"
                 ],
+                "embedAudioFileExtensions": [
+                    "mp3",
+                    "flac",
+                    "ogg"
+                ],
                 "hyperlinkSchemes": [
                     "http://",
-                    "https://"
+                    "https://",
+                    "magnet:?"
                 ],
                 "postPostRandomKey": true,
                 "deletePostRandomKey": false,
