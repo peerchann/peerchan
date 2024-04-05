@@ -20,7 +20,7 @@ div(class=item.replyto ? 'post_reply' : 'post', id=item.hash, board=currentBoard
         include embeddedfile.pug
       if item.files.length > cfg.maxFilesPerPostToShow
         div.embedded-file
-          p.embedded-info #{item.files.length - cfg.maxFilesPerPostToShow} additional file#{item.files.length - cfg.maxFilesPerPostToShow > 1 ? 's' : ''} not shown.
+          p.embedded-info +#{item.files.length - cfg.maxFilesPerPostToShow} file#{item.files.length - cfg.maxFilesPerPostToShow > 1 ? 's' : ''} not shown.
 
   else
     div.embedded-nothing

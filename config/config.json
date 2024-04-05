@@ -35,6 +35,6 @@
 	"postFileRandomKey": true,
 	"deleteFileRandomKey": false,
 	"queryFromPanBoardFilesDbIfFileNotFound": true,
-	"maxFilesPerPostToShow": 5,
+	"maxFilesPerPostToShow": 3,
 	"postHashLength": 8
 }
