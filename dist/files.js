@@ -55,7 +55,17 @@ let FileChunkDatabase = class FileChunkDatabase extends Program {
     async open(properties) {
         await this.documents.open({
             type: FileChunk,
-            index: { key: 'hash' },
+            index: { key: 'hash',
+                fields: async (chunkDocument, context) => {
+                    return {
+                        "hash": chunkDocument.hash,
+                        "fileHash": chunkDocument.fileHash,
+                        "chunkIndex": chunkDocument.chunkIndex,
+                        "chunkSize": chunkDocument.chunkSize
+                        // "chunkData": chunkDocument.chunkData //omitted to save memory
+                    };
+                }
+            },
             role: properties?.role,
             canPerform: async (operation, { entry }) => {
                 const signers = await entry.getPublicKeys();

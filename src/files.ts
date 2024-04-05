@@ -61,7 +61,18 @@ export class FileChunkDatabase extends Program<OpenArgs>{
 	async open(properties?: OpenArgs) {
 		await this.documents.open({
 			type: FileChunk,
-			index: { key: 'hash' },
+			index: { key: 'hash',
+				fields: async (chunkDocument, context) => { //custom behavior because we don't want to store the actual chunk data in the index
+					return {
+						"hash": chunkDocument.hash,
+						"fileHash": chunkDocument.fileHash,
+						"chunkIndex": chunkDocument.chunkIndex,
+						"chunkSize": chunkDocument.chunkSize
+						// "chunkData": chunkDocument.chunkData //omitted to save memory
+					}
+
+				}
+			},
 			role: properties?.role,
 			canPerform: async (operation, { entry }) => {
 				const signers = await entry.getPublicKeys();
