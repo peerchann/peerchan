@@ -75,7 +75,7 @@ function loadConfig() {
                 "postFileRandomKey": true,
                 "deleteFileRandomKey": false,
                 "queryFromPanBoardFilesDbIfFileNotFound": true,
-                "maxFilesPerPostToShow": 5,
+                "maxFilesPerPostToShow": 3,
                 "postHashLength": 8
             }
 			fs.writeFileSync(configFile, JSON.stringify(defaultConfig, null, '\t'), 'utf8');
