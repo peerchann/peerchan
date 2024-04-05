@@ -101,7 +101,7 @@ p {
 .sidebar {
   width: var(--sidebar-width);
   padding: 20px;
-  border: 1px solid #8d8d83;
+  border-left: 1px solid #8d8d83;
 /*  background-color: #444;*/
   position: fixed;
   top: 0;
