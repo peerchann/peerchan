@@ -209,8 +209,15 @@ input[type="file"] {
 /*  color: #800000;*/
 }
 
-.post-hash-clickable:hover {
+.post-hash-clickable {
   text-decoration: underline;
+  color: blue;
+  cursor: pointer;
+}
+
+.post-hash-clickable:hover {
+/*  text-decoration: underline;*/
+  color: #dd0000;
   cursor: pointer;
 }
 
