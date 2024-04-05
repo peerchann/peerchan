@@ -19,7 +19,7 @@
 			"maxLength": 10000
 		},
 		"files": {
-			"maxFiles": 1,
+			"maxFiles": 64,
 			"hashLength": 64,
 			"fileName": {
 				"maxLength": 128
@@ -33,7 +33,7 @@
 		}
 	},
 	"file": {
-		"maxSize": 4194304
+		"maxSize": 5242880
 	},
 	"filechunk": {
 		"fileHash": {

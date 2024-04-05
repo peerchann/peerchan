@@ -294,6 +294,10 @@ p {
   margin-bottom: 0px;
 }
 
+.embedded-file + .embedded-file {
+  margin-left: 5px;
+}
+
 .embedded-nothing {
   margin-bottom: 0px;
   margin-top: 0px;

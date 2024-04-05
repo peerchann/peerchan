@@ -84,6 +84,7 @@ p {
 .post_reply {
 /*  border: 1px solid #355;*/
   border-top: 1px solid #577;
+  border-left: none;
 }
 
 .wrapper {
@@ -313,8 +314,11 @@ input {
 
 .embedded-file {
   flex: 0 0 auto;
-  margin-right: 0px;
   margin-bottom: 0px;
+}
+
+.embedded-file + .embedded-file {
+  margin-left: 5px;
 }
 
 .embedded-nothing {

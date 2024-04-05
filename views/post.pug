@@ -16,8 +16,12 @@ div(class=item.replyto ? 'post_reply' : 'post', id=item.hash, board=currentBoard
         a(href=`/${item.board}/thread/${item.hash}.html`) [Reply]
   if item.files && item.files.length > 0
     div.embedded-files
-      each file in item.files
+      each file in item.files.slice(0, cfg.maxFilesPerPostToShow)
         include embeddedfile.pug
+      if item.files.length > cfg.maxFilesPerPostToShow
+        div.embedded-file
+          p.embedded-info #{item.files.length - cfg.maxFilesPerPostToShow} additional file#{item.files.length - cfg.maxFilesPerPostToShow > 1 ? 's' : ''} not shown.
+
   else
     div.embedded-nothing
   if item.message
