@@ -1164,7 +1164,12 @@ app.post('/gatewayLogout', (req, res) => {
 });
 
 app.get('/:board', async (req, res, next) => {
-    res.redirect(`/${req.params.board}/index.html`)
+    if (/[\s!"#$%&'()*+,\-./:;<=>?@[\\\]^_`{|}~]/.test(req.params.board)) {
+        res.redirect('/home.html')
+    } else {
+        res.redirect(`/${req.params.board}/index.html`)
+    }
+    
 })
 
 // Start the Server
