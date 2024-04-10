@@ -83,7 +83,7 @@ p {
 
 .post_reply {
 /*  border: 1px solid #355;*/
-  border-top: 1px solid #577;
+  border-top: 1px dashed #577;
   border-left: none;
 }
 
@@ -105,7 +105,7 @@ p {
   width: var(--sidebar-width);
   padding: 20px;
   border-left: 1px solid #888;
-/*  background-color: #444;*/
+  background-color: #000;
   position: fixed;
   top: 0;
   right: 0;
@@ -295,15 +295,20 @@ input {
   background-color: #50c;
   margin-bottom: 5px;
   margin-top: 5px;
-/*  flex-grow: 1;*/
-/*  width: calc(100% - var(--sidebar-width));*/
-/*  flex-grow: 1;*/
-/*  margin-right: calc(100% - var(--sidebar-width) + 0px);*/
-/*  width: calc(200% + 0px);*/
-/*  position: fixed;*/
   left: 0;
   margin-left: 0;
 }
+
+
+/*.dividing-line {
+  height: 1px;
+  background-color: transparent; 
+  border: none; 
+  margin-top: 7px;
+  margin-bottom: 7px;
+  box-shadow: 0 2px #50c, 0 -2px #50c;
+}
+*/
 
 .embedded-files, .embedded-nothing {
   display: flex;
