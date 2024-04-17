@@ -123,11 +123,14 @@ export async function bootstrap() {
     //Posts = await client.open(new PostDatabase({ id: sha256Sync(Buffer.from(postsDbId)) }))
 }
 export async function closePostsDb(postsDbId = "my_post_db") {
-    await Promise.all([
-        openedBoards[postsDbId].fileDb.chunks.close(),
-        openedBoards[postsDbId].fileDb.close(),
-        openedBoards[postsDbId].close(),
-    ]);
+    let thisBoard = openedBoards[postsDbId];
+    if (thisBoard) {
+        await Promise.all([
+            thisBoard.fileDb && thisBoard.fileDb.chunks ? thisBoard.fileDb.chunks.close() : Promise.resolve(),
+            thisBoard.fileDb ? thisBoard.fileDb.close() : Promise.resolve(),
+            thisBoard.close(),
+        ]);
+    }
     //Posts = await client.open(new PostDatabase({ id: sha256Sync(Buffer.from(postsDbId)) }))
 }
 // //only one for now
