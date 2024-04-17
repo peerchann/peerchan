@@ -30,54 +30,21 @@ function loadConfig() {
     const configFile = configDir+'/config.json';
     
     try {
+        const defaultConfig = JSON.parse(fs.readFileSync(configDir+'/configDefault.json', 'utf8'));
         if (fs.existsSync(configFile)) {
             const configObject = JSON.parse(fs.readFileSync(configFile, 'utf8'));
-            //todo: make this into a migration or something
-            if (!configObject.postHashLength) {
-                configObject.postHashLength = 16
+            let anyChanges = false
+            for (let thisCfgKey of Object.keys(defaultConfig)) {
+                if (configObject[thisCfgKey] === undefined) {
+                    configObject[thisCfgKey] = defaultConfig[thisCfgKey]
+                    anyChanges = true
+                }
+            }
+            if (anyChanges) {
                 fs.writeFileSync(configFile, JSON.stringify(configObject, null, '\t'), 'utf8');
             }
             return configObject
         } else {
-            const defaultConfig = {
-                "browserPort": 8000,
-                "peerbitPort": 8500,
-                "browserHost": "127.0.0.1",
-                "replicationFactor": 1,
-                "threadsPerPage": 10,
-                "previewReplies": 3,
-                "defaultName": "Anonymous",
-                "openHomeOnStartup": true,
-                "defaultTheme": "chalk",
-                "embedImageFileExtensions": [
-                    "jpg",
-                    "jpeg",
-                    "png",
-                    "gif",
-                    "webp"
-                ],
-                "embedVideoFileExtensions": [
-                    "webm",
-                    "mp4"
-                ],
-                "embedAudioFileExtensions": [
-                    "mp3",
-                    "flac",
-                    "ogg"
-                ],
-                "hyperlinkSchemes": [
-                    "http://",
-                    "https://",
-                    "magnet:?"
-                ],
-                "postPostRandomKey": true,
-                "deletePostRandomKey": false,
-                "postFileRandomKey": true,
-                "deleteFileRandomKey": false,
-                "queryFromPanBoardFilesDbIfFileNotFound": true,
-                "maxFilesPerPostToShow": 3,
-                "postHashLength": 8
-            }
 			fs.writeFileSync(configFile, JSON.stringify(defaultConfig, null, '\t'), 'utf8');
             return defaultConfig;
         }

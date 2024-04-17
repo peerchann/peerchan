@@ -3,3 +3,4 @@ package-lock.json
 yarn.lock
 storage/
 config/watchedBoards.json
+config/config.json
