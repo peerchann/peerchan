@@ -1007,11 +1007,9 @@ app.get('/home.html', async (req, res, next) => {
 
         const options = await standardRenderOptions(req, res);
         options.boardStats = {};
-
         await Promise.all(watchedBoards.map(async (thisBoard) => {
             options.boardStats[thisBoard] = await getBoardStats(thisBoard);
         }));
-
         const html = await rt['home'](options);
         resetError();
         res.send(html);
@@ -1126,6 +1124,10 @@ app.get('/gateway.html', async (req, res, next) => {
     try {
         const options = await standardRenderOptions(req,res)
         const html = await rt['gatewayHome'](options)
+        options.boardStats = {};
+        await Promise.all(watchedBoards.map(async (thisBoard) => {
+            options.boardStats[thisBoard] = await getBoardStats(thisBoard);
+        }));
         resetError()
         res.send(html)
     } catch (err) {
