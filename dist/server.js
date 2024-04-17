@@ -1123,11 +1123,11 @@ async function standardRenderOptions (req,res) { //todo: make this into a middle
 app.get('/gateway.html', async (req, res, next) => {
     try {
         const options = await standardRenderOptions(req,res)
-        const html = await rt['gatewayHome'](options)
         options.boardStats = {};
         await Promise.all(watchedBoards.map(async (thisBoard) => {
             options.boardStats[thisBoard] = await getBoardStats(thisBoard);
         }));
+        const html = await rt['gatewayHome'](options)
         resetError()
         res.send(html)
     } catch (err) {
