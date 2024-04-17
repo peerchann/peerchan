@@ -127,6 +127,25 @@ export async function openPostsDb (postsDbId = "my_post_db", options: any) {
 
 }
 
+//todo: use enums or whatever
+export async function getBoardStats (whichBoard: string) {
+	const thisBoard = openedBoards[whichBoard]
+	let boardStatus = 0 //0 means the board object isn't instatiated
+	if (thisBoard && thisBoard.fileDb && thisBoard.fileDb.chunks) { //todo: more granularity to see which dbs are loading still
+		if (thisBoard.closed || thisBoard.fileDb.closed || thisBoard.fileDb.chunks.closed) { //todo: ditto
+			boardStatus = 1 //1 means the board is still loading
+		} else {
+			boardStatus = 2 //2 means the board is opened successfully
+		}
+	}
+	let rfStatus = [null, null, null]
+	//if the board is opened, we get the replication factors, corresponding to posts, files, and fileChunks
+	if (boardStatus == 2) {
+		 rfStatus = [thisBoard.documents.log.role.segments[0].factor, thisBoard.fileDb.files.log.role.segments[0].factor, thisBoard.fileDb.chunks.documents.log.role.segments[0].factor]
+	}
+
+	return {boardStatus, rfStatus}
+}
 
 export async function bootstrap () {
 
@@ -223,7 +242,7 @@ export async function listPeers () {
 
 //todo: allow arbitrary post dbs to be posted to
 export async function delPost (whichPost: string, whichBoard: string, randomKey: true) {
-	
+	console.log(`DEBUG delPost${whichPost}, ${whichBoard}, ${randomKey}`)
 	if (!whichPost) {
 		throw new Error('No post specified.');
 	}

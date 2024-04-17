@@ -1,4 +1,7 @@
 'use strict';
+
+//note: this file is currently unused
+
 import { Peerbit } from "peerbit"
 import { field, variant, vec, option, serialize, deserialize } from "@dao-xyz/borsh"
 import { Program } from "@peerbit/program"

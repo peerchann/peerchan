@@ -283,6 +283,10 @@ input[type="file"] {
   to { transform: translateX(5px); }
 }
 
+.board-stats-table {
+  text-align: center;
+}
+
 .dividing-line {
   border: 0;
   height: 1px;

@@ -44,7 +44,7 @@ function loadConfig() {
                 "peerbitPort": 8500,
                 "browserHost": "127.0.0.1",
                 "replicationFactor": 1,
-                "threadsPerPage": 5,
+                "threadsPerPage": 10,
                 "previewReplies": 3,
                 "defaultName": "Anonymous",
                 "openHomeOnStartup": true,
@@ -450,6 +450,7 @@ app.post('/addWatchedBoard', upload.any(), async (req, res, next) => {
     res.redirect(req.headers.referer);
 });
 
+//todo: remove upload if unecessary
 app.post('/removeWatchedBoard', upload.any(), async (req, res, next) => {
   try {
     gatewayCanDo(req, 'remBoard')
@@ -467,6 +468,23 @@ app.post('/removeWatchedBoard', upload.any(), async (req, res, next) => {
   }
   res.redirect(req.headers.referer);
 });
+
+//todo: add GET equivalent for this
+//todo: gateway considerations
+app.post('/reloadBoard', async (req, res, next) => {
+  try {
+    gatewayCanDo(req, 'addBoard') //todo: maybe a separate perm for this?
+    const boardId = req.body.boardId
+    validateBoardId(boardId)
+    await db.closePostsDb(boardId)
+    await db.openPostsDb(boardId, {replicationFactor: cfg.replicationFactor}) 
+
+  } catch (err) {
+    console.error('Error reloading board:', err);
+    lastError = err
+  }
+  res.redirect(req.headers.referer);
+})
 
 app.get('/function/addBoard/:boardId',  async (req, res, next) => {
   try {
@@ -999,26 +1017,44 @@ app.get('/function/findThreadContainingPost/:boardId/:postHash', async (req, res
     }
 })
 
+
+async function getBoardStats(whichBoard) {
+    try {
+        return db.getBoardStats(whichBoard)
+    } catch {err} {
+        console.log(`Failed to get board stats for /${whichBoard}`)
+        console.log(err)
+        lastError = err
+        return {}
+    }
+}
+
+
 //todo: fix redundancy with boards
 app.get('/home.html', async (req, res, next) => {
-	try {
-        if (!localhostIps.includes(req.ip) && gatewayCfg.gatewayMode) { //todo: make this go through gatewayCanDo function?
-            res.redirect('/gateway.html')
-            return
+    try {
+        if (!localhostIps.includes(req.ip) && gatewayCfg.gatewayMode) {
+            res.redirect('/gateway.html');
+            return;
         }
 
-        const options = await standardRenderOptions(req,res)
-		const html = await rt['home'](options)
-		resetError()
-		res.send(html)
+        const options = await standardRenderOptions(req, res);
+        options.boardStats = {};
 
-	} catch (error) {
-		console.log('Failed to open homepage')
-		console.log(error)
-        lastError = error
-        //todo: redirect somewhere?
-	}
+        await Promise.all(watchedBoards.map(async (thisBoard) => {
+            options.boardStats[thisBoard] = await getBoardStats(thisBoard);
+        }));
+
+        const html = await rt['home'](options);
+        resetError();
+        res.send(html);
+    } catch (error) {
+        console.log('Failed to open homepage');
+        console.log(error);
+        lastError = error;
+    }
 });
+
 
 app.get('/listPeers', async (req, res, next) => {
     try {

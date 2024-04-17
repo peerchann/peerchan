@@ -228,6 +228,10 @@ a:hover {
   to { transform: translateX(5px); }
 }
 
+.board-stats-table {
+  text-align: center;
+}
+
 .dividing-line {
   border:4;
   background-color: black;

@@ -15,6 +15,10 @@ export declare let openedBoards: any;
 export declare function pbInitClient(listenPort?: number): Promise<void>;
 export declare function clientId(): Promise<string>;
 export declare function openPostsDb(postsDbId: string | undefined, options: any): Promise<void>;
+export declare function getBoardStats(whichBoard: string): Promise<{
+    boardStatus: number;
+    rfStatus: null[];
+}>;
 export declare function bootstrap(): Promise<void>;
 export declare function closePostsDb(postsDbId?: string): Promise<void>;
 export declare function openFilesDb(filesDbId: string | undefined, options: any): Promise<void>;

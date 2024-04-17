@@ -284,6 +284,10 @@ input {
   animation: shake 0.3s infinite alternate;
 }
 
+.board-stats-table {
+  text-align: center;
+}
+
 @keyframes shake {
   from { transform: translateX(-5px); }
   to { transform: translateX(5px); }

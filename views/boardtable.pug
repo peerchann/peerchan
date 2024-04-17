@@ -1,0 +1,25 @@
+table.board-stats-table
+  thead
+    tr
+      th Board
+      th Status
+      th Replication
+      th Reload
+      th Unwatch
+  tbody
+    each board in watchedBoards
+      tr.watched-board
+        td
+          a(href=`/${board}/index.html`) #{board}
+        td
+          span(title=boardStats[board].boardStatus === 2 ? 'Open' : (boardStats[board].boardStatus === 1 ? 'Loading' : 'Closed')) #{boardStats[board].boardStatus === 2 ? '🟢' : (boardStats[board].boardStatus === 1 ? '⏳' : '🛑')}
+        td
+          span(title=boardStats[board].boardStatus === 2 ? 'Posts, File References, File Chunks' : '') #{boardStats[board].boardStatus === 2 ? boardStats[board].rfStatus : '-'}
+        td
+          form(action="/reloadBoard" method="POST" style="display:inline-block;")
+            input(type="hidden" name="boardId" value=board)
+            button(type="submit" class="delete-link") 🔄
+        td
+          form(action="/removeWatchedBoard" method="POST" style="display:inline-block;")
+            input(type="hidden" name="boardId" value=board)
+            button(type="submit" class="delete-link") X
