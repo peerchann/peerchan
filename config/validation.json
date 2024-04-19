@@ -19,7 +19,7 @@
 			"maxLength": 10000
 		},
 		"files": {
-			"maxFiles": 64,
+			"maxFiles": 8,
 			"hashLength": 64,
 			"fileName": {
 				"maxLength": 128

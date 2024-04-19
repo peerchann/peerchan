@@ -244,7 +244,6 @@ export async function listPeers () {
 
 //todo: allow arbitrary post dbs to be posted to
 export async function delPost (whichPost: string, whichBoard: string, randomKey: true) {
-	console.log(`DEBUG delPost${whichPost}, ${whichBoard}, ${randomKey}`)
 	if (!whichPost) {
 		throw new Error('No post specified.');
 	}
@@ -331,7 +330,7 @@ export async function getThreadsWithReplies(whichBoard: string, numThreads: numb
 		threads[i].index = i
 		omittedreplies[i] = Math.max(0, thesereplies.length - numPreviewPostsPerThread);
 		thesereplies.sort((a: any, b: any) => (a.date < b.date) ? -1 : ((a.date > b.date) ? 1 : 0)) //newest on bottom
-		replies[i] = thesereplies.slice(-numPreviewPostsPerThread);
+		replies[i] = numPreviewPostsPerThread ? thesereplies.slice(-numPreviewPostsPerThread) : [];
 	}
 
     threads.sort((a: any, b: any) => (a.lastbumped > b.lastbumped) ? -1 : ((a.lastbumped < b.lastbumped) ? 1 : 0)) //newest on top

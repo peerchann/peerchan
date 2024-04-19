@@ -62,7 +62,7 @@ p {
 /*  background-color: #3c3c3c;*/
 }
 
-.post, .post_reply {
+.post, .post_reply, .post_catalog {
   flex: 1;
 /*  background-color: #EEAA88;*/
 /*  color: #800000;*/
@@ -85,6 +85,21 @@ p {
 /*  border: 1px solid #355;*/
   border-top: 1px dashed #577;
   border-left: none;
+}
+
+.post_catalog {
+  width: 300px;
+  height: 300px;
+  overflow: hidden;
+  margin-right: 10px;
+}
+
+.post_catalog + .post_catalog {
+  margin-right: 10px;
+}
+
+.post_catalog > .embedded-files {
+  justify-content: center; /* Horizontally center the embedded-files div */
 }
 
 .wrapper {

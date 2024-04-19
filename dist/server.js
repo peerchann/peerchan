@@ -496,6 +496,20 @@ app.get('/function/removeBoard/:boardId', async (req, res, next) => {
   }
 });
 
+app.get('/function/pruneBoard/:boardId', async (req, res, next) => {
+  try {
+    gatewayCanDo(req, 'remBoard')
+    validateBoardId(req.params.boardId)
+    await db.pruneBoard(req.params.boardId)
+    res.send(`Successfully pruned data from /${req.params.boardId}/.`)
+  } catch (err) {
+        console.error('Error pruning data from board:', err);
+        lastError = err
+        res.send(err)
+  }
+});
+
+
 //todo: consolidate duplicated functionality
 app.get('/function/addGatewayBoard/:boardId',  async (req, res, next) => {
   try {
@@ -793,6 +807,42 @@ app.get('/overboard.html', async (req, res, next) => {
         res.redirect('/home.html')
     }
     console.timeEnd('buildOverboardIndex');
+})
+
+app.get('/:board/catalog.html', async (req, res, next) => {
+    try {
+        console.time('buildCatalog');
+        gatewayCanSeeBoard(req, req.params.board)
+        if (watchedBoards.indexOf(req.params.board) === -1) {
+            throw new Error(`Board /${req.params.board}/ not in watched board list.`)
+        }
+
+        // let allPosts = makeRenderSafe(db.getThreadsWithReplies(req.params.board, cfg.threadsPerPage, cfg.previewReplies))
+        let indexPosts = await addFileStatuses(makeRenderSafe(await db.getThreadsWithReplies(req.params.board, 1000, 0, 1)), req.params.board) //todo: make 1000 dynamic/configurable/or make infinite
+
+        for(let threadPost in indexPosts.threads) {
+            indexPosts.threads[threadPost].replies = indexPosts.replies[threadPost]
+            indexPosts.threads[threadPost].omittedreplies = indexPosts.omittedreplies[threadPost]
+        }
+
+        const options = await standardRenderOptions(req,res)
+        options.currentBoard = req.params.board
+        options.posts = indexPosts.threads
+        options.numPages = boardPagesCache[req.params.board]
+        options.indexMode = true
+        options.catalogMode = true
+        console.log(indexPosts.totalpages + " pages total")
+        const html = await rt['board'](options)
+        resetError()
+        res.send(html)
+
+    } catch (err) {
+        console.log('Failed to get posts for board \"'+req.params.board+'\".')
+        console.log(err)
+        lastError = err
+        res.redirect('/home.html')
+    }
+    console.timeEnd('buildCatalog');
 })
 
 app.get('/:board/:pagenumber.html', async (req, res, next) => {

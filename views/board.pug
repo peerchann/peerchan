@@ -5,6 +5,8 @@ block title
   if indexMode
     if overboardMode
       - titleText = `Gladden - Overboard`
+    else if catalogMode
+      - titleText = `/${currentBoard}/ - Catalog`    
     else
       - titleText = `/${currentBoard}/ - Index`
   else
@@ -26,18 +28,21 @@ block content
     h2 Overboard
   else
     h2 /#{currentBoard}/
-  include pagelinks.pug
-  -var postsOnPage = (indexMode) ? [] : (posts.length ? [posts[0].hash].concat(posts[0].replies.map(r => r.hash)) : [])
+    include pagelinks.pug
+  -var postsOnPage = (indexMode && !catalogMode) ? [] : (posts.length ? [posts[0].hash].concat(posts[0].replies.map(r => r.hash)) : [])
+  if postsOnPage.length && catalogMode
+    hr.dividing-line
   each post in posts
     -var item = post
-    hr.dividing-line
+    if !catalogMode
+      hr.dividing-line
     if overboardMode
       -currentBoard = item.board
       p.message
         span Thread from 
         a(href=`/${item.board}/index.html`) /#{item.board}/
     include post.pug
-    if indexMode && post.omittedreplies
+    if indexMode && !catalogMode && post.omittedreplies
       div
         .omittedreplies #{post.omittedreplies} #{post.omittedreplies > 1 ? "replies" : "reply"} omitted, click Reply to view.
     if post.replies && post.replies.length > 0

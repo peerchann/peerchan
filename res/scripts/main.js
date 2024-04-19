@@ -120,9 +120,11 @@ document.addEventListener("DOMContentLoaded", function() {
   });
   const embeddedImages = document.querySelectorAll('.embedded-image');
   embeddedImages.forEach(thisOne => {
-    thisOne.addEventListener('click', function() {
-      expandImage(thisOne)
-    });
+    if (!thisOne.closest('.post_catalog')) {
+      thisOne.addEventListener('click', function() {
+        expandImage(thisOne);
+      });
+    }
   });
   const allPosts = document.querySelectorAll('.post, .post_reply');
   allPosts.forEach(thisOne => {

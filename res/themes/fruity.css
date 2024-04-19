@@ -62,7 +62,7 @@ p {
   background-color: #ff5f55; 
 }
 
-.post {
+.post, .post_reply, .post_catalog {
   background-color: #b3b3ff;
   overflow-wrap: anywhere;
   display: inline-block; 
@@ -74,12 +74,21 @@ p {
 
 .post_reply {
   background-color: #ff9999;
-  overflow-wrap: anywhere;
-  display: inline-block; 
-  padding: 10px; 
-  margin-bottom: 5px; 
-  margin-top: 5px; 
-  box-shadow: 0px 0px 0px 2px rgba(0, 0, 0, 0.2); 
+}
+
+.post_catalog {
+  width: 300px;
+  height: 300px;
+  overflow: hidden;
+  margin-right: 10px;
+}
+
+.post_catalog + .post_catalog {
+  margin-right: 10px;
+}
+
+.post_catalog > .embedded-files {
+  justify-content: center; /* Horizontally center the embedded-files div */
 }
 
 .wrapper {

@@ -61,7 +61,7 @@ p {
   background-color: #3c3c3c;
 }
 
-.post, .post_reply {
+.post, .post_reply, .post_catalog {
   flex: 1;
   background-color: #444;
   color: #ddd;
@@ -81,6 +81,21 @@ p {
 
 .post_reply {
   background-color: #333;
+}
+
+.post_catalog {
+  width: 300px;
+  height: 300px;
+  overflow: hidden;
+  margin-right: 10px;
+}
+
+.post_catalog + .post_catalog {
+  margin-right: 10px;
+}
+
+.post_catalog > .embedded-files {
+  justify-content: center; /* Horizontally center the embedded-files div */
 }
 
 .wrapper {
@@ -322,10 +337,8 @@ p {
 }
 
 .embedded-image.expanded {
-/*  max-width: calc(100vw - (var(--sidebar-width)+100px));*/
   max-width: calc(100vw - var(--sidebar-width) - 120px);
   max-height: 100%;
-/*  margin-right: 500px;*/
 }
 
 .post.deletion-mode:hover::after, .post_reply.deletion-mode:hover::after, .embedded-file.deletion-mode:hover::after {

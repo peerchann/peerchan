@@ -59,7 +59,7 @@ p {
   background-color: #eee;
 }
 
-.post, .post_reply {
+.post, .post_reply, .post_catalog {
   background-color: #ddd;
   color: #333;
   overflow-wrap: anywhere;
@@ -71,6 +71,21 @@ p {
 
 .post_reply {
   background-color: #ddd;
+}
+
+.post_catalog {
+  width: 300px;
+  height: 300px;
+  overflow: hidden;
+  margin-right: 10px;
+}
+
+.post_catalog + .post_catalog {
+  margin-right: 10px;
+}
+
+.post_catalog > .embedded-files {
+  justify-content: center; /* Horizontally center the embedded-files div */
 }
 
 .wrapper {

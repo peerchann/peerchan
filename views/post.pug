@@ -1,4 +1,4 @@
-div(class=item.replyto ? 'post_reply' : 'post', id=item.hash, board=currentBoard)
+div(class=catalogMode ? 'post_catalog' : (item.replyto ? 'post_reply' : 'post'), id=item.hash, board=currentBoard)
   div.post-header
     if item.subject
       span.subject #{item.subject}
@@ -15,6 +15,8 @@ div(class=item.replyto ? 'post_reply' : 'post', id=item.hash, board=currentBoard
       span.reply-link
         a(href=`/${item.board}/thread/${item.hash}.html`) [Reply]
   if item.files && item.files.length > 0
+    if catalogMode
+      - cfg.maxFilesPerPostToShow = 1 
     div.embedded-files
       each file in item.files.slice(0, cfg.maxFilesPerPostToShow)
         include embeddedfile.pug
