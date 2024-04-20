@@ -953,6 +953,9 @@ var lastError
 app.post('/submit', upload.any(), async (req, res, next) => {
 	try {
         gatewayCanDo(req, 'post')
+        if (req.files?.length) {
+            gatewayCanDo(req, 'postFile')
+        }
         gatewayCanSeeBoard(req, req.body.whichBoard)
 		// console.log('req.files:') //todo: remove debug
 		// console.log(req.files)
@@ -961,8 +964,8 @@ app.post('/submit', upload.any(), async (req, res, next) => {
 		const dbPosts = await import('./posts.js')
 		let postFiles = []
 		for (let thisFile of req.files) {
-            gatewayCanDo(req, 'postFile')
-	  		postFiles.push(
+	  		thisFile.originalname = Buffer.from(thisFile.originalname, 'latin1').toString('utf-8'); //allow unicode in filenames, gets around issue with multer 1.4.5/busboy for the time being
+            postFiles.push(
 	  			new dbPosts.PostFile ( //todo: consider what needs to be included in this
 		  			await db.putFile(thisFile.buffer, req.body.whichBoard, cfg.postFileRandomKey), //puts the file and returns the hash
 		  			thisFile.originalname, //original filename
@@ -970,35 +973,35 @@ app.post('/submit', upload.any(), async (req, res, next) => {
 		  			thisFile.size,
 	  			)
 	  		)
-		  }
+		}
 		  //todo: consolidate
-		  const newPost = new dbPosts.Post(
-				BigInt(Date.now()),
-				req.body.replyto,
-				req.body.name,
-				req.body.replyto ? undefined : req.body.subject,
-				req.body.email,
-				req.body.message,
-				postFiles
-		  	)
-		  const Validate = await import('./validation.js')
-		  // console.log(Validate)
-		  Validate.default.post(newPost)
-		  //todo: make pass post document
-		  await db.makeNewPost(newPost, req.body.whichBoard, cfg.postPostRandomKey)
-		  // await db.makeNewPost({
-		  //   date:  BigInt(Date.now()),
-		  //   replyto: req.body.replyto,
-		  //   // replyto: undefined,
-		  //   // replyto: `replyto ${generateRandomSubstring()}`,
-		  //   name: req.body.name,
-		  //   subject: req.body.replyto ? undefined : req.body.subject,
-		  //   message: req.body.message,
-		  //   email: req.body.email,
-		  //   files: postFiles
-		  // }, req.body.whichBoard); //todo: make dynamic, change var name?
-		  console.log('Post submitted successfully')
-		  // res.redirect(req.headers.referer)
+    	const newPost = new dbPosts.Post(
+    		BigInt(Date.now()),
+    		req.body.replyto,
+    		req.body.name,
+    		req.body.replyto ? undefined : req.body.subject,
+    		req.body.email,
+    		req.body.message,
+    		postFiles
+    	)
+    	const Validate = await import('./validation.js')
+    	// console.log(Validate)
+    	Validate.default.post(newPost)
+    	//todo: make pass post document
+    	await db.makeNewPost(newPost, req.body.whichBoard, cfg.postPostRandomKey)
+    	// await db.makeNewPost({
+    	//   date:  BigInt(Date.now()),
+    	//   replyto: req.body.replyto,
+    	//   // replyto: undefined,
+    	//   // replyto: `replyto ${generateRandomSubstring()}`,
+    	//   name: req.body.name,
+    	//   subject: req.body.replyto ? undefined : req.body.subject,
+    	//   message: req.body.message,
+    	//   email: req.body.email,
+    	//   files: postFiles
+    	// }, req.body.whichBoard); //todo: make dynamic, change var name?
+    	console.log('Post submitted successfully')
+    	// res.redirect(req.headers.referer)
 	} catch (err) {
 	  console.log('Failed to submit new post')
 	  console.log(err)
