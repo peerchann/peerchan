@@ -311,6 +311,15 @@ export async function getRepliesToSpecificPost(whichBoard, whichThread) {
     return results;
     //return await Posts.documents.index.search(new SearchRequest, { local: true, remote: remoteQuery });
 }
+// export async function initializeEventListeners (whichBoard: string) {
+//     if (!whichBoard) {
+//         throw new Error('No board specified.');
+//     }
+//     openedBoards[whichBoard].documents.events.addEventListener("change", (event: any) => {
+//     	console.log('DEBUG event triggered:')
+//     	console.log(event.detail)
+//     })
+// }
 //todo: revisit in light of per-board fileDbs
 export async function getAllFileDocuments() {
     return await Files.files.index.search(new SearchRequest({ query: [] }), { local: true, remote: remoteQuery });

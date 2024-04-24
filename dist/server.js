@@ -1358,6 +1358,23 @@ app.listen(cfg.browserPort, cfg.browserHost, () => {
         await Promise.all(dbOpens)
 
 
+        //todo: consider change name
+        const eventTriggersPath = `../${configDir}/events.js`
+        const EventTriggers = await import(eventTriggersPath)
+
+        //event listeners
+        for (let thisBoard of watchedBoards) {
+            db.openedBoards[thisBoard].documents.events.addEventListener("change", (event) => {
+                EventTriggers.default.onChange(event.detail, thisBoard)
+            })
+            db.openedBoards[thisBoard].fileDb.files.events.addEventListener("change", (event) => {
+                EventTriggers.default.onChange(event.detail, thisBoard)
+            })
+            db.openedBoards[thisBoard].fileDb.chunks.documents.events.addEventListener("change", (event) => {
+                EventTriggers.default.onChange(event.detail, thisBoard)
+            })
+        }
+
 	} catch (err) {
 		console.log("Failed to open databases.")
 		console.log(err)
