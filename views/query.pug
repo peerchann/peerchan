@@ -1,0 +1,18 @@
+extends home.pug
+
+block title
+  title #{cfg.pageTitle} - Query
+
+block content
+  h2 Enter Query
+  form(action="/submitQuery" method="POST" class="config-form")
+    label(for="boardIds") Comma-Separated Board IDs: &nbsp;
+    input(type="text" id="boardIds" name="boardIds" value=lastQueryBoards)
+    label(for="queryString") NoSQL Query String: &nbsp;
+    input(type="text" id="queryString" name="queryString" value=lastQuery)
+    |  
+    button(type="submit", class="sidebarbutton") Execute
+  h2 Query Results
+  form(class = "post-form")
+    textarea(id="queryResults" name="queryResults")
+      | #{JSON.stringify(lastQueryResults)}

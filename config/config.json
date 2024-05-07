@@ -9,6 +9,7 @@
 	"openHomeOnStartup": true,
 	"openOnStartupUrl": "home.html",
 	"defaultTheme": "chalk",
+	"pageTitle": "Gladden",
 	"embedImageFileExtensions": [
 		"jpg",
 		"jpeg",
