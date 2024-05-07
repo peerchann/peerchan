@@ -10,9 +10,9 @@ block content
         button(type="submit", class="sidebarbutton") Logout
   else
     if gatewayCfg.gatewayTitle
-      h2 #{gatewayCfg.gatewayTitle}
+      h2 !{gatewayCfg.gatewayTitle}
     if gatewayCfg.gatewayText
-      h3 #{gatewayCfg.gatewayText}
+      h3 !{gatewayCfg.gatewayText}
 
   if !loggedInAs && gatewayCfg.adminUser
     form(action='/gatewayLogin' method='post' class="config-form")
