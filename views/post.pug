@@ -26,18 +26,30 @@ div(class=catalogMode ? 'post_catalog' : (item.replyto ? 'post_reply' : 'post'),
   else
     div.embedded-nothing
 
-
   mixin renderSection(sectionContent, sectionType)
-    if sectionContent
+    - const hyperlinkRegex = new RegExp('\\b(?:' + cfg.hyperlinkSchemes.map(scheme => scheme.replace(/[.*+\-?^${}()|[\]\\]/g, '\\$&')).join('|') + ')\\S+\\b', 'gi');
       p(class=sectionType)
-        each part in sectionContent.split(/(?:>>([0-9a-fA-F]{64}))/)
+        each part, index in sectionContent.split(/(?:>>([0-9a-fA-F]{64}))/)
           if part.match(/^([0-9a-fA-F]{64})/)
             if postsOnPage.includes(part)
               a.post-quote(href = '#'+part, hash = part) #{'>>'+part.slice(0,cfg.postHashLength)}
             else
               a.post-quote(href = `/function/findThreadContainingPost/${item.board}/${part}#${part}`, hash = part) #{'>>'+part.slice(0,cfg.postHashLength)}
           else
-            span(class=sectionType) #{part}
+            - const inMessageQuote = index == 0 && sectionType == 'message-quote'
+            if inMessageQuote
+              - part = part.slice(1)
+            - var currentWords = inMessageQuote ? '>' : ''
+            each word, wordIndex in part.split(/(\s+)/)
+              if cfg.hyperlinkSchemes.some(scheme => word.startsWith(scheme))
+                if currentWords
+                  span(class=sectionType) #{currentWords}
+                  - currentWords = ''
+                a(href=word) #{word}
+              else
+                - currentWords += word
+            if currentWords
+              span(class=sectionType) #{currentWords}
 
   if item.message
     - var currentSection = ''
