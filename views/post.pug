@@ -23,32 +23,46 @@ div(class=catalogMode ? 'post_catalog' : (item.replyto ? 'post_reply' : 'post'),
       if item.files.length > cfg.maxFilesPerPostToShow
         div.embedded-file
           p.embedded-info +#{item.files.length - cfg.maxFilesPerPostToShow} file#{item.files.length - cfg.maxFilesPerPostToShow > 1 ? 's' : ''} not shown.
-
   else
     div.embedded-nothing
-  if item.message
-    each line in item.message.split('\n')
-      - const hexQuoteMatch = line.match(/^>>([0-9a-fA-F]{64})/)
-      - const quoteMatch = line.match(/^>/) !== null
-      - const splitIntoSpaces = quoteMatch ? line.slice(1).split(/(\s+)/) : line.split(/(\s+)/)
-      if hexQuoteMatch
-        - const hashRef = hexQuoteMatch[0].slice(2)
-        p.message
-          if postsOnPage.includes(hashRef)
-            a.post-quote(href = '#'+hashRef, hash = hashRef) #{hexQuoteMatch[0].slice(0,cfg.postHashLength+2)}
-          else
-            a.post-quote(href = `/function/findThreadContainingPost/${item.board}/${hashRef}#${hashRef}`, hash = hashRef) #{hexQuoteMatch[0].slice(0,cfg.postHashLength+2)}
-          span.message #{line.substring(hexQuoteMatch[0].length)}
-      else
-        p.message
-          - let index = 0
-          -let messageLineClass = quoteMatch ? 'message-quote' : 'message'
-          span(class=messageLineClass) #{quoteMatch ? '>' : ''}
-          each word in splitIntoSpaces
-            - index++
-            if cfg.hyperlinkSchemes.some(scheme => word.startsWith(scheme))
-              a(href=word) #{word}
+
+
+  mixin renderSection(sectionContent, sectionType)
+    if sectionContent
+      p(class=sectionType)
+        each part in sectionContent.split(/(?:>>([0-9a-fA-F]{64}))/)
+          if part.match(/^([0-9a-fA-F]{64})/)
+            if postsOnPage.includes(part)
+              a.post-quote(href = '#'+part, hash = part) #{'>>'+part.slice(0,cfg.postHashLength)}
             else
-              span(class=messageLineClass) #{word}
+              a.post-quote(href = `/function/findThreadContainingPost/${item.board}/${part}#${part}`, hash = part) #{'>>'+part.slice(0,cfg.postHashLength)}
+          else
+            span(class=sectionType) #{part}
 
-
+  if item.message
+    - var currentSection = ''
+    - var pType
+    each line in item.message.split('\n')
+      //if the line starts with > but not a post quote
+      if line.startsWith('>') && !line.match(/^>>([0-9a-fA-F]{64})/)
+        //if we were not in a message section, we don't need to make a new section
+        if pType != 'message'
+          - currentSection += line
+          - pType = 'message-quote'
+        else
+          //if we are changing from a message section to a message-quote section, we need to render the previous section as a message and start a new message-quote section
+          + renderSection(currentSection, pType)
+          - pType = 'message-quote'
+          - currentSection = line
+      else
+        //if we were not in a message-quote section, we don't need to make a new section
+        if pType != 'message-quote'
+          - currentSection += line
+          - pType = 'message'
+        else
+          //if we are changing from a message quote section to a message section, we need to render the previous section as a message-quote and start a new message section
+          + renderSection(currentSection, pType)
+          - pType = 'message'
+          - currentSection = line
+    //finally, we render the remaining section
+    + renderSection(currentSection, pType)
