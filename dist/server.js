@@ -1547,10 +1547,10 @@ app.listen(cfg.browserPort, cfg.browserHost, () => {
                         addEventListeners(thisBoard)
                     }) 
                     .catch((err) => {
-                        console.log("Failed to open database for \/" + thisBoard + "\/:", err, )
-                        console.log('posts:', db.openedBoards[thisBoard])
-                        console.log('file references:', db.openedBoards[thisBoard]?.fileDb)
-                        console.log('file chunks:', db.openedBoards[thisBoard]?.fileDb?.chunks)
+                        console.log("Failed to open database for \/" + thisBoard + "\/:", err)
+                        // console.log('posts:', db.openedBoards[thisBoard])
+                        // console.log('file references:', db.openedBoards[thisBoard]?.fileDb)
+                        // console.log('file chunks:', db.openedBoards[thisBoard]?.fileDb?.chunks)
                     })
             )
         }
