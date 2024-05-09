@@ -35,6 +35,9 @@ export declare function getThreadsWithReplies(whichBoard: string, numThreads?: n
 }>;
 export declare function getSpecificPost(whichBoard: string, whichPost: string): Promise<any>;
 export declare function getRepliesToSpecificPost(whichBoard: string, whichThread: string): Promise<any>;
+export declare function queryPosts(whichBoards: string[], queryObj: any): Promise<{
+    [key: string]: any;
+}>;
 export declare function getAllFileDocuments(): Promise<File[]>;
 export declare function putFile(fileData: Uint8Array, whichBoard: string, randomKey: true): Promise<string>;
 export declare function getFile(fileHash: string, whichBoard: string): Promise<any>;

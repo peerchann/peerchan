@@ -88,7 +88,7 @@ export async function clientId () {
 //todo: consider finding a way to open files, chunks, posts async
 export async function openPostsDb (postsDbId = "my_post_db", options: any) {
 	console.log(`Opening database for /${postsDbId}/...`, options)
-	let newPostsDb = new PostDatabase({ id: sha256Sync(Buffer.from(postsDbId))})
+	let newPostsDb = openedBoards[postsDbId] || new PostDatabase({ id: sha256Sync(Buffer.from(postsDbId))})
 	// return
 	if (options?.replicationFactor) {
 		await client.open(newPostsDb.fileDb.chunks, {
@@ -96,7 +96,7 @@ export async function openPostsDb (postsDbId = "my_post_db", options: any) {
 				role: {
 					type: "replicator",
 					factor: options.replicationFactor
-				}
+				},
 			}
 		})
 		await client.open(newPostsDb.fileDb, {
@@ -157,11 +157,18 @@ export async function bootstrap () {
 export async function closePostsDb (postsDbId = "my_post_db") {
 	let thisBoard = openedBoards[postsDbId]
 	if (thisBoard) {
-		await Promise.all([
-	        thisBoard.fileDb && thisBoard.fileDb.chunks ? thisBoard.fileDb.chunks.close() : Promise.resolve(),
-            thisBoard.fileDb ? thisBoard.fileDb.close() : Promise.resolve(),
-			thisBoard.close(),
-		])
+		if (thisBoard.fileDb) {
+			if (thisBoard.fileDb.chunks) {
+				await thisBoard.fileDb.chunks.close()
+			}	
+			await thisBoard.fileDb.close()
+		}
+		await thisBoard.close()
+		// await Promise.all([
+	    //     thisBoard.fileDb && thisBoard.fileDb.chunks ? thisBoard.fileDb.chunks.close() : Promise.resolve(),
+        //     thisBoard.fileDb ? thisBoard.fileDb.close() : Promise.resolve(),
+		// 	thisBoard.close(),
+		// ])
 	}
 	//Posts = await client.open(new PostDatabase({ id: sha256Sync(Buffer.from(postsDbId)) }))
 
@@ -396,6 +403,24 @@ export async function getRepliesToSpecificPost (whichBoard: string, whichThread:
 //     	console.log(event.detail)
 //     })
 // }
+
+//todo: how to handle files, file chunks, etc.
+//todo: async queries across boards
+//todo: more efficient way of concatting results?
+export async function queryPosts(whichBoards: string[], queryObj: any) {
+    console.log('DEBUG 077:',whichBoards,queryObj)
+    let results: { [key: string]: any } = {}
+    for (let thisBoard of whichBoards) {
+    	console.log("DEBUG 078:", thisBoard)
+        //todo: optimize
+        let thisBoardResults = await openedBoards[thisBoard].documents.index.search(new SearchRequest({ query: queryObj }), { local: true, remote: remoteQuery })
+    	if (thisBoardResults.length) {
+	    	results[thisBoard] = thisBoardResults	
+    	}
+    	console.log("DEBUG 079:",thisBoardResults)
+    }
+    return results
+}
 
 //todo: revisit in light of per-board fileDbs
 export async function getAllFileDocuments () {
