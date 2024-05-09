@@ -452,15 +452,15 @@ app.post('/reloadBoard', async (req, res, next) => {
       })
       .catch(async (err) => {
         console.error(`Error re-opening /${boardId}/:`, err)
-        console.log('posts:', db.openedBoards[boardId])
-        console.log('file references:', db.openedBoards[boardId]?.fileDb)
-        console.log('file chunks:', db.openedBoards[boardId]?.fileDb?.chunks)
+        // console.log('posts:', db.openedBoards[boardId])
+        // console.log('file references:', db.openedBoards[boardId]?.fileDb)
+        // console.log('file chunks:', db.openedBoards[boardId]?.fileDb?.chunks)
         await db.closePostsDb(boardId)
         throw err;
       });
 
   } catch (err) {
-    console.error('Error reloading board:', err);
+    console.error(`Error reloading /${req.body.boardId}/:`, err);
     lastError = err
   }
   res.redirect(req.headers.referer);
