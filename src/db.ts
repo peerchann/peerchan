@@ -99,7 +99,8 @@ export async function openPostsDb(postsDbId = "my_post_db", options: any) {
                         type: "replicator",
                         factor: options.replicationFactor
                     },
-                }
+                },
+                existing: "reuse"
             });
         }
         if (openedBoards[postsDbId].fileDb.closed) {
@@ -109,7 +110,8 @@ export async function openPostsDb(postsDbId = "my_post_db", options: any) {
                         type: "replicator",
                         factor: options.replicationFactor
                     }
-                }
+                },
+                existing: "reuse"
             });
         }
         if (openedBoards[postsDbId].closed) {
@@ -119,19 +121,20 @@ export async function openPostsDb(postsDbId = "my_post_db", options: any) {
                         type: "replicator",
                         factor: options.replicationFactor
                     }
-                }
+                },
+                existing: "reuse"
             });
         }
     }
     else {
         if (openedBoards[postsDbId].fileDb.chunks.closed) {
-            await client.open(openedBoards[postsDbId].fileDb.chunks);
+            await client.open(openedBoards[postsDbId].fileDb.chunks, { existing: "reuse" });
         }
         if (openedBoards[postsDbId].fileDb.closed) {
-            await client.open(openedBoards[postsDbId].fileDb);
+            await client.open(openedBoards[postsDbId].fileDb, { existing: "reuse" });
         }
         if (openedBoards[postsDbId].closed) {
-            await client.open(new PostDatabase({ id: sha256Sync(Buffer.from(postsDbId)) }));
+            await client.open(openedBoards[postsDbId], { existing: "reuse" });
         }
         // await client.open(openedBoards[postsDbId].fileDb.chunks)
         // await client.open(openedBoards[postsDbId].fileDb)
