@@ -1441,7 +1441,7 @@ app.listen(cfg.browserPort, cfg.browserHost, () => {
         } else {
             console.error('An uncaught exception occurred:', error.message);
             console.error('Stack trace:', error.stack);
-            process.exit(1);
+            // process.exit(1);
         }
     });
 
