@@ -62,11 +62,12 @@ export async function clientId() {
 //todo: consider finding a way to open files, chunks, posts async
 export async function openPostsDb(postsDbId = "my_post_db", options) {
     console.log(`Opening database for /${postsDbId}/...`, options);
-    let newPostsDb = openedBoards[postsDbId] || new PostDatabase({ id: sha256Sync(Buffer.from(postsDbId)) });
-    // return
+    if (!openedBoards[postsDbId]) {
+        openedBoards[postsDbId] = new PostDatabase({ id: sha256Sync(Buffer.from(postsDbId)) });
+    }
     if (options?.replicationFactor) {
-        if (newPostsDb.fileDb.chunks.closed) {
-            await client.open(newPostsDb.fileDb.chunks, {
+        if (openedBoards[postsDbId].fileDb.chunks.closed) {
+            await client.open(openedBoards[postsDbId].fileDb.chunks, {
                 args: {
                     role: {
                         type: "replicator",
@@ -75,8 +76,8 @@ export async function openPostsDb(postsDbId = "my_post_db", options) {
                 }
             });
         }
-        if (newPostsDb.fileDb.closed) {
-            await client.open(newPostsDb.fileDb, {
+        if (openedBoards[postsDbId].fileDb.closed) {
+            await client.open(openedBoards[postsDbId].fileDb, {
                 args: {
                     role: {
                         type: "replicator",
@@ -85,8 +86,8 @@ export async function openPostsDb(postsDbId = "my_post_db", options) {
                 }
             });
         }
-        if (newPostsDb.closed) {
-            openedBoards[postsDbId] = await client.open(newPostsDb, {
+        if (openedBoards[postsDbId].closed) {
+            await client.open(openedBoards[postsDbId], {
                 args: {
                     role: {
                         type: "replicator",
@@ -97,14 +98,14 @@ export async function openPostsDb(postsDbId = "my_post_db", options) {
         }
     }
     else {
-        if (newPostsDb.fileDb.chunks.closed) {
-            await client.open(newPostsDb.fileDb.chunks);
+        if (openedBoards[postsDbId].fileDb.chunks.closed) {
+            await client.open(openedBoards[postsDbId].fileDb.chunks);
         }
-        if (newPostsDb.fileDb.closed) {
-            await client.open(newPostsDb.fileDb);
+        if (openedBoards[postsDbId].fileDb.closed) {
+            await client.open(openedBoards[postsDbId].fileDb);
         }
-        if (newPostsDb.closed) {
-            openedBoards[postsDbId] = await client.open(new PostDatabase({ id: sha256Sync(Buffer.from(postsDbId)) }));
+        if (openedBoards[postsDbId].closed) {
+            await client.open(new PostDatabase({ id: sha256Sync(Buffer.from(postsDbId)) }));
         }
         // await client.open(openedBoards[postsDbId].fileDb.chunks)
         // await client.open(openedBoards[postsDbId].fileDb)
