@@ -86,45 +86,56 @@ export async function clientId () {
 
 //todo: move the config to a different spot
 //todo: consider finding a way to open files, chunks, posts async
-export async function openPostsDb (postsDbId = "my_post_db", options: any) {
-	console.log(`Opening database for /${postsDbId}/...`, options)
-	let newPostsDb = openedBoards[postsDbId] || new PostDatabase({ id: sha256Sync(Buffer.from(postsDbId))})
-	// return
-	if (options?.replicationFactor) {
-		await client.open(newPostsDb.fileDb.chunks, {
-			args: {
-				role: {
-					type: "replicator",
-					factor: options.replicationFactor
-				},
-			}
-		})
-		await client.open(newPostsDb.fileDb, {
-			args: {
-				role: {
-					type: "replicator",
-					factor: options.replicationFactor
-				}
-			}
-		})
-		openedBoards[postsDbId] = await client.open(newPostsDb, {
-			args: {
-				role: {
-					type: "replicator",
-					factor: options.replicationFactor
-				}
-			}
-		})
-	} else {
-		await client.open(newPostsDb.fileDb.chunks)
-		await client.open(newPostsDb.fileDb)
-		openedBoards[postsDbId] = await client.open(new PostDatabase({ id: sha256Sync(Buffer.from(postsDbId)) }))
-		// await client.open(openedBoards[postsDbId].fileDb.chunks)
-		// await client.open(openedBoards[postsDbId].fileDb)
-	}
-
-	//Posts = await client.open(new PostDatabase({ id: sha256Sync(Buffer.from(postsDbId)) }))
-
+export async function openPostsDb(postsDbId = "my_post_db", options: any) {
+    console.log(`Opening database for /${postsDbId}/...`, options);
+    let newPostsDb = openedBoards[postsDbId] || new PostDatabase({ id: sha256Sync(Buffer.from(postsDbId)) });
+    // return
+    if (options?.replicationFactor) {
+        if (newPostsDb.fileDb.chunks.closed) {
+            await client.open(newPostsDb.fileDb.chunks, {
+                args: {
+                    role: {
+                        type: "replicator",
+                        factor: options.replicationFactor
+                    },
+                }
+            });
+        }
+        if (newPostsDb.fileDb.closed) {
+             await client.open(newPostsDb.fileDb, {
+                args: {
+                    role: {
+                        type: "replicator",
+                        factor: options.replicationFactor
+                    }
+                }
+            });
+        }
+        if (newPostsDb.closed) {
+            openedBoards[postsDbId] = await client.open(newPostsDb, {
+                args: {
+                    role: {
+                        type: "replicator",
+                        factor: options.replicationFactor
+                    }
+                }
+            });
+        }
+    }
+    else {
+        if (newPostsDb.fileDb.chunks.closed) {
+            await client.open(newPostsDb.fileDb.chunks);
+        }
+        if (newPostsDb.fileDb.closed) {
+            await client.open(newPostsDb.fileDb);
+        }
+        if (newPostsDb.closed) {
+            openedBoards[postsDbId] = await client.open(new PostDatabase({ id: sha256Sync(Buffer.from(postsDbId)) }));
+        }
+        // await client.open(openedBoards[postsDbId].fileDb.chunks)
+        // await client.open(openedBoards[postsDbId].fileDb)
+    }
+    //Posts = await client.open(new PostDatabase({ id: sha256Sync(Buffer.from(postsDbId)) }))
 }
 
 //todo: use enums or whatever
