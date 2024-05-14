@@ -219,6 +219,8 @@ p {
 }
 
 .message-quote {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
   margin-top: 0px;
   margin-bottom: 0px;
   color: #789922;

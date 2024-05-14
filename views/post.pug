@@ -28,53 +28,52 @@ div(class=catalogMode ? 'post_catalog' : (item.replyto ? 'post_reply' : 'post'),
 
   mixin renderSection(sectionContent, sectionType)
     - const hyperlinkRegex = new RegExp('\\b(?:' + cfg.hyperlinkSchemes.map(scheme => scheme.replace(/[.*+\-?^${}()|[\]\\]/g, '\\$&')).join('|') + ')\\S+\\b', 'gi');
-      p(class=sectionType)
-        each part, index in sectionContent.split(/(?:>>([0-9a-fA-F]{64}))/)
-          if part.match(/^([0-9a-fA-F]{64})/)
-            if postsOnPage.includes(part)
-              a.post-quote(href = '#'+part, hash = part) #{'>>'+part.slice(0,cfg.postHashLength)}
-            else
-              a.post-quote(href = `/function/findThreadContainingPost/${item.board}/${part}#${part}`, hash = part) #{'>>'+part.slice(0,cfg.postHashLength)}
+    p(class=sectionType)
+      each part, index in sectionContent.split(/(?:>>([0-9a-fA-F]{64}))/)
+        if part.match(/^([0-9a-fA-F]{64})/)
+          if postsOnPage.includes(part)
+            a.post-quote(href = '#'+part, hash = part) #{'>>'+part.slice(0,cfg.postHashLength)}
           else
-            - const inMessageQuote = index == 0 && sectionType == 'message-quote'
-            if inMessageQuote
-              - part = part.slice(1)
-            - var currentWords = inMessageQuote ? '>' : ''
-            each word, wordIndex in part.split(/(\s+)/)
-              if cfg.hyperlinkSchemes.some(scheme => word.startsWith(scheme))
-                if currentWords
-                  span(class=sectionType) #{currentWords}
-                  - currentWords = ''
-                a(href=word) #{word}
-              else
-                - currentWords += word
-            if currentWords
-              span(class=sectionType) #{currentWords}
+            a.post-quote(href = `/function/findThreadContainingPost/${item.board}/${part}#${part}`, hash = part) #{'>>'+part.slice(0,cfg.postHashLength)}
+        else
+          - const inMessageQuote = index == 0 && sectionType == 'message-quote'
+          if inMessageQuote
+            - part = part.slice(1)
+          - var currentWords = inMessageQuote ? '>' : ''
+          each word, wordIndex in part.split(/(\s+)/)
+            if cfg.hyperlinkSchemes.some(scheme => word.startsWith(scheme))
+              if currentWords
+                span(class=sectionType) #{currentWords}
+                - currentWords = ''
+              a(href=word) #{word}
+            else
+              - currentWords += word
+          if currentWords
+            span(class=sectionType) #{currentWords}
 
   if item.message
     - var currentSection = ''
-    - var pType
-    each line in item.message.split('\n')
-      //if the line starts with > but not a post quote
+    each line in item.message.split('\r\n')
+      // if the line starts with > but not a post quote
       if line.startsWith('>') && !line.match(/^>>([0-9a-fA-F]{64})/)
-        //if we were not in a message section, we don't need to make a new section
+        // if we were not in a message section, we don't need to make a new section
         if pType != 'message'
-          - currentSection += line
+          - currentSection += line + '\n'
           - pType = 'message-quote'
         else
-          //if we are changing from a message section to a message-quote section, we need to render the previous section as a message and start a new message-quote section
-          + renderSection(currentSection, pType)
+          // if we are changing from a message section to a message-quote section, we need to render the previous section as a message and start a new message-quote section
+          + renderSection(currentSection.trim(), pType)
           - pType = 'message-quote'
-          - currentSection = line
+          - currentSection = line + '\n'
       else
-        //if we were not in a message-quote section, we don't need to make a new section
+        // if we were not in a message-quote section, we don't need to make a new section
         if pType != 'message-quote'
-          - currentSection += line
+          - currentSection += line + '\n'
           - pType = 'message'
         else
-          //if we are changing from a message quote section to a message section, we need to render the previous section as a message-quote and start a new message section
-          + renderSection(currentSection, pType)
+          // if we are changing from a message quote section to a message section, we need to render the previous section as a message-quote and start a new message section
+          + renderSection(currentSection.trim(), pType)
           - pType = 'message'
-          - currentSection = line
-    //finally, we render the remaining section
-    + renderSection(currentSection, pType)
+          - currentSection = line + '\n'
+    // finally, we render the remaining section
+    + renderSection(currentSection.trim(), pType)
