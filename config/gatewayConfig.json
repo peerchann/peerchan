@@ -18,7 +18,8 @@
 		"dialPeer": false,
 		"seeClientId": false,
 		"changeTheme": false,
-		"seeAllBoards": false
+		"seeAllBoards": false,
+		"query": false
 	},
 	"canSeeBoards": [
 		"landing",

@@ -4,7 +4,7 @@ import { Program, } from "@peerbit/program"
 //import { createBlock, getBlockValue } from "@peerbit/libp2p-direct-block"
 import { Ed25519Keypair, sha256Sync, toBase64, toHexString, PublicSignKey } from "@peerbit/crypto"
 import { Documents, DocumentIndex, SearchRequest, StringMatch, Results, PutOperation, DeleteOperation, RoleOptions } from "@peerbit/document" //todo: remove address redundancy
-import { currentModerators } from './db.js'
+import { currentModerators, remoteQueryFileChunks } from './db.js'
 
 import Validate from "./validation.js"
 
@@ -284,7 +284,7 @@ export class File extends BaseFileDocument {
 		for (let chunkCidIndex = 0; chunkCidIndex < this.chunkCids.length; chunkCidIndex++) {
 			// chunkCidIndex = parseInt(chunkCidIndex)
 
-			chunkReads.push(fileChunks.documents.index.search(new SearchRequest({ query: [new StringMatch({ key: 'hash', value: this.chunkCids[chunkCidIndex] })] }), { local: true, remote: true })
+			chunkReads.push(fileChunks.documents.index.search(new SearchRequest({ query: [new StringMatch({ key: 'hash', value: this.chunkCids[chunkCidIndex] })] }), { local: true, remote: remoteQueryFileChunks })
 				.then(result => {
 					if (result && result.length) {
 						if (result[0].chunkData.length > fileChunkingSize) {

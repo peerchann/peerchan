@@ -86,3 +86,7 @@ block content
       br
       br
       button(type="connecttopeer", class="sidebarbutton") Connect to Peer MultiAddr
+
+  if loggedInAs || gatewayCfg.can.query
+    h2
+      a(href="/query.html") Query Interface

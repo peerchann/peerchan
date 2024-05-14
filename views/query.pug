@@ -8,11 +8,17 @@ block content
   form(action="/submitQuery" method="POST" class="config-form")
     label(for="boardIds") Comma-Separated Board IDs: &nbsp;
     input(type="text" id="boardIds" name="boardIds" value=lastQueryBoards)
-    label(for="queryString") NoSQL Query String: &nbsp;
+    label(for="queryString") Query: &nbsp;
     input(type="text" id="queryString" name="queryString" value=lastQuery)
     |  
     button(type="submit", class="sidebarbutton") Execute
+  p
+    != "Queries take the form:<br>name = \"User\" and date >= " + (Date.now() - 7 * 24 * 60 * 60 * 1000) + " or name = empty and date >= " + (Date.now() - 1 * 24 * 60 * 60 * 1000) + "<br>Supported operations are =, >, <, >=, <=, (and/AND/&/&&), (or/OR/|/||).<br>AND comes before OR.<br>Number queries are partially bugged currently."
   h2 Query Results
   form(class = "post-form")
+    label(for="queryResults") Results data:
     textarea(id="queryResults" name="queryResults")
       | #{JSON.stringify(lastQueryResults)}
+    label(for="queryResults") Results hashes:
+    textarea(id="queryResults" name="queryResults")
+      | #{JSON.stringify(lastQueryResultsHashes)}

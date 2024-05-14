@@ -12,6 +12,9 @@ export declare let Boards: BoardDatabase;
 export declare let Files: FileDatabase;
 export declare let currentModerators: string[];
 export declare let openedBoards: any;
+export declare let remoteQueryPosts: boolean;
+export declare let remoteQueryFileRefs: boolean;
+export declare let remoteQueryFileChunks: boolean;
 export declare function pbInitClient(listenPort?: number): Promise<void>;
 export declare function clientId(): Promise<string>;
 export declare function openPostsDb(postsDbId: string | undefined, options: any): Promise<void>;
@@ -44,6 +47,7 @@ export declare function getFile(fileHash: string, whichBoard: string): Promise<a
 export declare function fileExists(fileHash: string, whichBoard: string): Promise<boolean>;
 export declare function delFile(fileHash: string, whichBoard: string, randomKey: true): Promise<unknown>;
 export declare function setModerators(moderators?: string[]): void;
+export declare function setRemoteQuery(rqPosts: boolean, rqFileRefs: boolean, rqFileChunks: boolean): void;
 export declare function pbStopClient(): Promise<void>;
 export declare function resetDb(): void;
 export declare function connectToPeer(peerAddress: string): Promise<void>;

@@ -11,7 +11,7 @@ import Stream from 'stream';
 
 import { DeliveryError } from '@peerbit/stream-interface';
 import { randomBytes } from '@peerbit/crypto';
-import { StringMatch, IntegerCompare, Compare, MissingField } from '@peerbit/document'
+import { StringMatch, IntegerCompare, Compare, MissingField, Or, And } from '@peerbit/document'
 
 const app = express();
 
@@ -757,88 +757,143 @@ const renderFunctions = {
 }
 
 //todo: do this
-//todo: replace mongo with nosql
 //todo: consider adding sift as a dep or not
 //todo: neaten up
 //todo: handle case sensitive etc?
+//todo: optimize maybe
+//todo: paren handling?
 
-function noSQLToPeerbitQuery (noSQLQuery) {
-    console.log("noSQLQueryToPbQuery() in index.js")
-    console.log("noSQLQuery:")
-    console.log(noSQLQuery)
+function convertQueryToPeerbitQuery (queryString) {
+    // console.log("convertQueryToPeerbitQuery() in server.js")
+    // console.log("queryString:")
+    // console.log(queryString)
+    try {
     let pbQuery = []
-    //this moreQueries array contains any queries that weren't directly parsed into peerbit query objects, so that these can be applied afterwards to the pb query results
-        //todo: implement
-        //todo: replace with native peerbit query operator solution once implemented
-    let moreQueries = {}
-    // let moreQueries: any = []
-    //todo: do this somehow with mapping?
-    //todo: make this more efficient
-    for (let queryKey of Object.keys(noSQLQuery)) {
-        console.log("DEBUG 1234567")
-        console.log(queryKey)
-        console.log(noSQLQuery[queryKey])
-        console.log(typeof noSQLQuery[queryKey])
-        //if dot notation, pass it to sift as it's not supported by peerbit
-        //todo: revisit this
-        if (queryKey.indexOf('.') !== -1) {
-            console.log("Unimplemented dot-notation in query... \'" + queryKey + "\', adding to post-processing."); //todo: handle /revisit this w.r.t. using secondary-querying, etc. and this text
-            moreQueries[queryKey] = noSQLQuery[queryKey]
-            continue
-        }
-        switch (noSQLQuery[queryKey] === null || noSQLQuery[queryKey] === undefined ? 'empty' : typeof noSQLQuery[queryKey]) {
-            case 'string':
-                pbQuery.push(new StringMatch({key: queryKey, value: noSQLQuery[queryKey]}))
-                break
-            case 'bigint': case 'number': //todo: revisit this...?
-                pbQuery.push(new IntegerCompare({key: queryKey, value: BigInt(noSQLQuery[queryKey]), compare: Compare.Equal}))
-                break //todo: flesh out Compare?
-            case 'empty':
-                // console.log("Error, unimplemented query type... \'null\'") //todo: handle
-                pbQuery.push(new MissingField({key: queryKey}))
-                break
-            case 'object':
-                let subQuery = noSQLQuery[queryKey]
-                if (Object.keys(subQuery)[0][0] === '$' && Object.keys(subQuery).length == 1) { //todo: see if this works properly/makes sense
-                // if (Object.keys(subQuery)[0][0] === '$' && !(queryKey[0] === '$')) { //todo: see if this works properly/makes sense
-                    switch (Object.keys(subQuery)[0].slice(1)) {
-                        case 'gt':
-                            pbQuery.push(new IntegerCompare({key: queryKey, value: BigInt(subQuery[Object.keys(subQuery)[0]]), compare: Compare.Greater})); break
-                        case 'gte':
-                            pbQuery.push(new IntegerCompare({key: queryKey, value: BigInt(subQuery[Object.keys(subQuery)[0]]), compare: Compare.GreaterOrEqual})); break
-                        case 'lt':
-                            pbQuery.push(new IntegerCompare({key: queryKey, value: BigInt(subQuery[Object.keys(subQuery)[0]]), compare: Compare.Less})); break
-                        case 'lte':
-                            pbQuery.push(new IntegerCompare({key: queryKey, value: BigInt(subQuery[Object.keys(subQuery)[0]]), compare: Compare.LessOrEqual})); break
-                        case 'eq':
-                            pbQuery.push(new IntegerCompare({key: queryKey, value: BigInt(subQuery[Object.keys(subQuery)[0]]), compare: Compare.Equal})); break
-                        default:
-                            console.log("Adding query: \'" + noSQLQuery[queryKey] + "\' to moreQueries.") //todo: handle //revisit this w.r.t. using secondary-querying, etc. and text
-                            moreQueries[queryKey] = noSQLQuery[queryKey]
-                        }
-                } else {
-                    console.log("Unimplemented query... \'" + noSQLQuery[queryKey] + "\', adding to post-processing.") //todo: handle //revisit this w.r.t. using secondary-querying, etc. and this text esp. w.r.t. the below
-                    moreQueries[queryKey] = noSQLQuery[queryKey]
-                    // console.log("moreQuery:")
-                    // let moreQuery: any = {}
-                    // moreQuery[queryKey] = noSQLQuery[queryKey]
-                    // console.log(moreQuery)
-                    // moreQueries.push(moreQuery)
-                } //todo: fix indent?
-                break
-            default:
-                console.log("Unimplemented query type... \'" + typeof noSQLQuery[queryKey] + "\'"); //todo: handle /revisit this w.r.t. using secondary-querying, etc. and this text
-                moreQueries[queryKey] = noSQLQuery[queryKey]
+    //supported operations are =, >, <. >=, <=, and, or
+    //order of operations:
+        // =, >, <, >=, <=
+        // and
+        // or
+    //operations and terms are separated by single spaces
+    //for an empty query, the value empty (without quotes) is used
+    //bigints and numbers are treated as interchangeable
+
+    //first split the input string into tokens
+    const tokens = queryString.match(/"[^"]*"|\S+/g)
+
+    // console.log("debug queryString")
+
+    function queryExpToPeerbitQueryExp(tokenArray) {
+        //we get the type of the Peerbit query based on the third element of the array
+        if (tokenArray[2] == 'empty' && tokenArray[1] == '=') {
+            return new Or([new StringMatch({key: tokenArray[0], value: ''}), new MissingField({key: tokenArray[0]})])
+        } else if (tokenArray[2].startsWith('"') && tokenArray[2].endsWith('"') && tokenArray[1] == '=') {
+            //todo: partial matches, case sensitivity, etc
+            return new StringMatch({key: tokenArray[0], value: tokenArray[2].slice(1, -1)})
+        } else {
+            switch (tokenArray[1]) {
+            case '=':
+                return new IntegerCompare({key: tokenArray[0], value: BigInt(tokenArray[2]), compare: Compare.Equal})
+            case '>':
+                return new IntegerCompare({key: tokenArray[0], value: BigInt(tokenArray[2]), compare: Compare.Greater})
+            case '<':
+                return new IntegerCompare({key: tokenArray[0], value: BigInt(tokenArray[2]), compare: Compare.Less})
+            case '>=':
+                return new IntegerCompare({key: tokenArray[0], value: BigInt(tokenArray[2]), compare: Compare.GreaterOrEqual})
+            case '<=':
+                return new IntegerCompare({key: tokenArray[0], value: BigInt(tokenArray[2]), compare: Compare.LessOrEqual})
+            }
         }
     }
-    console.log('pbQuery:')
-    console.log(pbQuery)
-    console.log("moreQueries:")
-    console.log(moreQueries) //todo: handle edge cases with multiple $in or $or, etc? (if this makes sense)
 
-    // return {pbQuery: new SearchRequest({query: pbQuery}), moreQueries: moreQueries}
-    return { pbQuery, moreQueries }
+    function parseAnds(tokenArray) {
+        const andInds = tokenArray.reduce((indices, token, index) => (['and', 'AND', '&', '&&'].includes(token) && indices.push(index), indices), []);
+        if (andInds.length) {
+            let startInd = 0
+            let allAndExps = []
+            andInds.forEach((endInd, i) => {
+                const expressionTokens = tokens.slice(startInd, endInd)
+                allAndExps.push(queryExpToPeerbitQueryExp(expressionTokens))
+                startInd = endInd +1
+            })
+            const remainingTokens = tokens.slice(startInd)
+            if (remainingTokens.length) {
+                allAndExps.push(queryExpToPeerbitQueryExp(remainingTokens))
+            }
+            return new And(allAndExps)
+        } else {
+            return queryExpToPeerbitQueryExp(tokenArray)
+        }
+    }
 
+    let peerbitQuery
+
+    if (tokens) {
+        const orInds = tokens.reduce((indices, token, index) => (['or', 'OR', '|', '||'].includes(token) && indices.push(index), indices), []);
+
+        if (orInds.length) {
+            let startInd = 0
+            let allOrExps = []
+            orInds.forEach((endInd, i) => {
+                const expressionTokens = tokens.slice(startInd, endInd)
+                allOrExps.push(parseAnds(expressionTokens))
+                startInd = endInd + 1
+            })
+            const remainingTokens = tokens.slice(startInd)
+            if (remainingTokens.length) {
+                allOrExps.push(parseAnds(remainingTokens))
+            }
+            peerbitQuery = new Or(allOrExps)
+        } else {
+            peerbitQuery = parseAnds(tokens)
+
+        }
+    }
+
+
+    ///
+
+    // const orInds = tokens.reduce((indices, token, index) => (['or', 'OR', '|', '||'].includes(token) && indices.push(index), indices), []);
+    // const andInds = tokens.reduce((indices, token, index) => (['and', 'AND', '&', '&&'].includes(token) && indices.push(index), indices), []);
+
+    // const orAndInds = [...orInds, ...andInds].sort((a, b) => a - b);
+
+    // let queryExpressions = new Array (Math.max(orAndInds));
+    // let startIndex = 0;
+
+    // for (let orAndInd of orAndInds) {
+    //     queryExpressions.push(tokens.slice(startIndex, orAndInd));
+    //     startIndex = orAndInd + 1;
+    // }
+
+    // if (startIndex < tokens.length) {
+    //     queryExpressions.push(tokens.slice(startIndex));
+    // }
+
+    // console.log(queryExpressions);
+
+    // const peerbitQueryExpressions = []
+
+
+    // function combineAndQueryExpressions(inputArray) {
+
+    // }
+
+    // //if there are any "or" tokens, the query needs to split up accordingly
+    // if (orInds.length) {
+    //     let prevOrInd = 0
+    //     for (thisOrInd of orInds) {
+            
+    //         prevOrInd = thisOrInd
+    //     }
+    // }
+
+    console.log("Parsed query:", peerbitQuery)
+    return peerbitQuery
+    } catch (err) {
+        //todo: more explicative error handling
+        throw new Error(`Malformed query: ${err}`);
+    }
 }
 
 //todo: query files, file chunks, etc.
@@ -869,37 +924,36 @@ function convertQueryToBigInt (query) {
 app.post('/submitQuery', async (req, res, next) => {
     try {
         gatewayCanDo(req, 'useQueryPage')
+        // console.log('req.body:', req.body)
         lastQuery = req.body.queryString
         lastQueryBoards = req.body.boardIds
         let boardsToQuery = canSeeBoards()
-        if (req.query.boardIds) {
-            const specifiedBoards = req.query.boards.split(',');
-            boardsToQuery = boardsToShow.filter(b => specifiedBoards.includes(b));
+        if (req.body.boardIds) {
+            const specifiedBoards = req.body.boardIds.split(',');
+            boardsToQuery = boardsToQuery.filter(b => specifiedBoards.includes(b));
         }
-        console.log('debug 01') //todo: remove
-        console.log(req.body.queryString)
-        console.log('debug 02')
-        console.log(JSON.parse(req.body.queryString))
-        console.log('debug 03')
-        console.log(convertQueryToBigInt(JSON.parse(req.body.queryString)))
-        console.log('debug 04')
-        console.log(noSQLToPeerbitQuery(convertQueryToBigInt(JSON.parse(req.body.queryString))))
+        // console.log('debug 01') //todo: remove
+        // console.log(req.body.queryString)
+        // console.log('debug 02')
+        // console.log(JSON.parse(req.body.queryString))
+        // console.log('debug 03')
+        // console.log(convertQueryToBigInt(JSON.parse(req.body.queryString)))
+        // console.log('debug 04')
+        // console.log(convertQueryToPeerbitQuery(convertQueryToBigInt(JSON.parse(req.body.queryString))))
 
-        const peerbitQuery = noSQLToPeerbitQuery(convertQueryToBigInt(JSON.parse(req.body.queryString))).pbQuery;
+        const peerbitQuery = convertQueryToPeerbitQuery(req.body.queryString);
 
         //todo: handle non-implemented query?
 
-        //todo: remove debug
-        console.log("NoSQL query:")
-        console.log(lastQuery)
-        console.log('Peerbit query:')
-        console.log(peerbitQuery)
-
-        console.log(await db.queryPosts(boardsToQuery, peerbitQuery))
+        // //todo: remove debug
+        // console.log("NoSQL query:")
+        // console.log(lastQuery)
+        // console.log('Peerbit query:')
+        // console.log(peerbitQuery)
 
         lastQueryResults = makeRenderSafe(await db.queryPosts(boardsToQuery, peerbitQuery))
-        console.log("queryResults:")
-        console.log(lastQueryResults)
+        // console.log("queryResults:")
+        // console.log(lastQueryResults)
     } catch (err) {
         lastQueryResults = 'Error executing query.'
         console.log('Failed to submit query.')
@@ -911,16 +965,24 @@ app.post('/submitQuery', async (req, res, next) => {
 
 //todo: add link to this somewhere
 //todo: made disabled on gateway by default (check if already is)
+//todo: raw json api (hashes only?)
 app.get('/query.html', async (req, res, next) => {
     try {
         console.time('buildQueryPage');
         gatewayCanDo(req, 'query')
-        console.log("lastQueryResults in query.html")
-        console.log(lastQueryResults)
+        // console.log("lastQueryResults in query.html")
+        // console.log(lastQueryResults)
         const options = await standardRenderOptions(req,res)
         options.lastQuery = lastQuery
         options.lastQueryBoards = lastQueryBoards
         options.lastQueryResults = lastQueryResults
+        if (lastQueryResults) {
+            options.lastQueryResultsHashes = {}
+            for (let thisBoard of Object.keys(lastQueryResults)) {
+                console.log("debug THISBOARD:", thisBoard)
+                options.lastQueryResultsHashes[thisBoard] = lastQueryResults[thisBoard].map(r => r.hash)
+            }
+        }
 
         // threads = await addFileStatuses(makeRenderSafe(threads))
 
@@ -931,9 +993,24 @@ app.get('/query.html', async (req, res, next) => {
         console.log('Failed to generate query page.')
         console.log(err)
         lastError = err
-        res.redirect('/home.html')
+        res.redirect('/query.html')
     }
     console.timeEnd('buildQueryPage');
+})
+
+
+app.get('/test.html', async (req, res, next) => {
+    try {
+        console.log("test")
+        for (let i of [1,2,3]) {
+            console.log("test trial:", i)
+            await db.queryPosts(["test"], new IntegerCompare({key: "date", value: BigInt("1713929645458"), compare: Compare.Greater}))
+            // console.log()
+        }
+    } catch (err) {
+        console.log(err)
+    }
+    res.redirect('/query.html')
 })
 
 app.get('/overboard.html', async (req, res, next) => {
@@ -1434,6 +1511,13 @@ app.listen(cfg.browserPort, cfg.browserHost, () => {
 	process.setMaxListeners(0);
 
 	db = await import('./db.js');
+
+    //todo: allow updating these (and other settings) dynamically while running
+    db.setRemoteQuery(
+        cfg.remoteQueryPosts,
+        cfg.remoteQueryFileRefs,
+        cfg.remoteQueryFileChunks
+        )
 
     process.on('uncaughtException', (error) => {
         if (error instanceof DeliveryError) {
