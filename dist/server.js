@@ -764,7 +764,7 @@ const renderFunctions = {
 //todo: paren handling?
 
 function convertQueryToPeerbitQuery (queryString) {
-    // console.log("convertQueryToPeerbitQuery() in server.js")
+    // console.log("convertQueryToPeerbitQuery() in index.js")
     // console.log("queryString:")
     // console.log(queryString)
     try {
@@ -777,11 +777,10 @@ function convertQueryToPeerbitQuery (queryString) {
     //operations and terms are separated by single spaces
     //for an empty query, the value empty (without quotes) is used
     //bigints and numbers are treated as interchangeable
+    //todo: implement empty
 
     //first split the input string into tokens
-    const tokens = queryString.match(/"[^"]*"|\S+/g)
-
-    // console.log("debug queryString")
+    const tokens = queryString.match(/"[^"]*"|\S+/g);
 
     function queryExpToPeerbitQueryExp(tokenArray) {
         //we get the type of the Peerbit query based on the third element of the array
@@ -820,36 +819,33 @@ function convertQueryToPeerbitQuery (queryString) {
             if (remainingTokens.length) {
                 allAndExps.push(queryExpToPeerbitQueryExp(remainingTokens))
             }
-            return new And(allAndExps)
+            return new And([allAndExps])
         } else {
             return queryExpToPeerbitQueryExp(tokenArray)
         }
+        //todo: split up by ands
     }
 
-    let peerbitQuery
+    let peerbitQuery = []
 
-    if (tokens) {
-        const orInds = tokens.reduce((indices, token, index) => (['or', 'OR', '|', '||'].includes(token) && indices.push(index), indices), []);
-
-        if (orInds.length) {
-            let startInd = 0
-            let allOrExps = []
-            orInds.forEach((endInd, i) => {
-                const expressionTokens = tokens.slice(startInd, endInd)
-                allOrExps.push(parseAnds(expressionTokens))
-                startInd = endInd + 1
-            })
-            const remainingTokens = tokens.slice(startInd)
-            if (remainingTokens.length) {
-                allOrExps.push(parseAnds(remainingTokens))
-            }
-            peerbitQuery = new Or(allOrExps)
-        } else {
-            peerbitQuery = parseAnds(tokens)
-
+    const orInds = tokens.reduce((indices, token, index) => (['or', 'OR', '|', '||'].includes(token) && indices.push(index), indices), []);
+    if (orInds.length) {
+        let startInd = 0
+        let allOrExps = []
+        orInds.forEach((endInd, i) => {
+            const expressionTokens = tokens.slice(startInd, endInd)
+            allOrExps.push(parseAnds(expressionTokens))
+            startInd = endInd + 1
+        })
+        const remainingTokens = tokens.slice(startInd)
+        if (remainingTokens.length) {
+            allOrExps.push(parseAnds(remainingTokens))
         }
-    }
+        peerbitQuery.push(new Or([allOrExps]))
+    } else {
+        peerbitQuery.push(parseAnds(tokens))
 
+    }
 
     ///
 
@@ -965,7 +961,6 @@ app.post('/submitQuery', async (req, res, next) => {
 
 //todo: add link to this somewhere
 //todo: made disabled on gateway by default (check if already is)
-//todo: raw json api (hashes only?)
 app.get('/query.html', async (req, res, next) => {
     try {
         console.time('buildQueryPage');
@@ -976,10 +971,9 @@ app.get('/query.html', async (req, res, next) => {
         options.lastQuery = lastQuery
         options.lastQueryBoards = lastQueryBoards
         options.lastQueryResults = lastQueryResults
-        if (lastQueryResults) {
+        if (typeof lastQueryResults === "object") {
             options.lastQueryResultsHashes = {}
             for (let thisBoard of Object.keys(lastQueryResults)) {
-                console.log("debug THISBOARD:", thisBoard)
                 options.lastQueryResultsHashes[thisBoard] = lastQueryResults[thisBoard].map(r => r.hash)
             }
         }
@@ -993,10 +987,11 @@ app.get('/query.html', async (req, res, next) => {
         console.log('Failed to generate query page.')
         console.log(err)
         lastError = err
-        res.redirect('/query.html')
+        res.redirect('/home.html')
     }
     console.timeEnd('buildQueryPage');
 })
+
 
 
 app.get('/test.html', async (req, res, next) => {
@@ -1005,12 +1000,10 @@ app.get('/test.html', async (req, res, next) => {
         for (let i of [1,2,3]) {
             console.log("test trial:", i)
             await db.queryPosts(["test"], new IntegerCompare({key: "date", value: BigInt("1713929645458"), compare: Compare.Greater}))
-            // console.log()
         }
     } catch (err) {
         console.log(err)
     }
-    res.redirect('/query.html')
 })
 
 app.get('/overboard.html', async (req, res, next) => {
@@ -1511,13 +1504,6 @@ app.listen(cfg.browserPort, cfg.browserHost, () => {
 	process.setMaxListeners(0);
 
 	db = await import('./db.js');
-
-    //todo: allow updating these (and other settings) dynamically while running
-    db.setRemoteQuery(
-        cfg.remoteQueryPosts,
-        cfg.remoteQueryFileRefs,
-        cfg.remoteQueryFileChunks
-        )
 
     process.on('uncaughtException', (error) => {
         if (error instanceof DeliveryError) {
