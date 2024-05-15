@@ -13,7 +13,7 @@ block content
     |  
     button(type="submit", class="sidebarbutton") Execute
   p.message
-    != "Queries take the form:<br>name = \"User\" and date >= " + (Date.now() - 7 * 24 * 60 * 60 * 1000) + " or name = empty and date >= " + (Date.now() - 1 * 24 * 60 * 60 * 1000) + "<br>Supported operators are =, >, <, >=, <=, (and/AND/&/&&), (or/OR/|/||).<br>AND comes before OR.<br>Number queries are partially bugged currently."
+    != "Queries take the form:<br>name = \"User\" and date >= " + (Date.now() - 7 * 24 * 60 * 60 * 1000) + " or name = empty and date >= " + (Date.now() - 1 * 24 * 60 * 60 * 1000) + "<br>Supported operators are =, >, <, >=, <=, (and/AND/&/&&), (or/OR/|/||).<br>AND comes before OR."
   h2 Query Results
   form(class = "post-form")
     label(for="queryResults") Results data:

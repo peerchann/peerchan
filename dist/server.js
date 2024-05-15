@@ -166,30 +166,41 @@ rt['files'] = compileFile('./views/files.pug');
 rt['gatewayHome'] = compileFile('./views/gatewayhome.pug');
 rt['query'] = compileFile('./views/query.pug');
 
+//todo: consider not making the bigint into a string instead show it without quotes at least for query results
 function makeRenderSafe(inputObj = {}) {
+    let outputObj = {}
     for (let thisKey of Object.keys(inputObj)) {
         if (typeof inputObj[thisKey] === 'bigint') { // Check if the value is a BigInt
-            inputObj[thisKey] = inputObj[thisKey].toString(); // Convert BigInt to string
-        } else if (typeof inputObj[thisKey] === 'object' && inputObj[thisKey] !== null) { // Check if the value is an object (and not null)
+            outputObj[thisKey] = inputObj[thisKey].toString(); // Convert BigInt to string
+        } else if (typeof inputObj[thisKey] === 'object') { // Check if the value is an object (and not null)
             // If the value is an object, recursively call makeRenderSafe on it
-            inputObj[thisKey] = makeRenderSafe(inputObj[thisKey]);
+            if (Array.isArray(inputObj[thisKey])) {
+                outputObj[thisKey] = []
+                for (let thisArrayElement of inputObj[thisKey]) {
+                    outputObj[thisKey].push(makeRenderSafe(thisArrayElement))
+                }
+            } else {
+                outputObj[thisKey] = makeRenderSafe(inputObj[thisKey]);
+            }
+        } else {
+            outputObj[thisKey] = inputObj[thisKey]
         }
     }
-    return inputObj;
+    return outputObj
 }
 
 //todo: make more efficient/combine with above?
 async function addFileStatuses (inputObj = {}, whichBoard) {
     for (let thisKey of Object.keys(inputObj)) {
         if (thisKey == 'files') {
-        	for (let thisFile of inputObj[thisKey]) {
-				thisFile.fileStatus = await db.fileExists(thisFile.hash, whichBoard || inputObj['board'])
+            for (let thisFile of inputObj[thisKey]) {
+                thisFile.fileStatus = await db.fileExists(thisFile.hash, whichBoard || inputObj['board'])
                 if (cfg.queryFromPanBoardFilesDbIfFileNotFound && !thisFile.fileStatus) {
                     thisFile.fileStatus = await db.fileExists(thisFile.hash, '')
                 }
-        	}
+            }
         } else if (typeof inputObj[thisKey] === 'object') {
-        	inputObj[thisKey] = await addFileStatuses(inputObj[thisKey], whichBoard)
+            inputObj[thisKey] = await addFileStatuses(inputObj[thisKey], whichBoard)
         } 
     }
     return inputObj;
@@ -819,7 +830,7 @@ function convertQueryToPeerbitQuery (queryString) {
             if (remainingTokens.length) {
                 allAndExps.push(queryExpToPeerbitQueryExp(remainingTokens))
             }
-            return new And([allAndExps])
+            return new And(allAndExps)
         } else {
             return queryExpToPeerbitQueryExp(tokenArray)
         }
@@ -841,7 +852,7 @@ function convertQueryToPeerbitQuery (queryString) {
         if (remainingTokens.length) {
             allOrExps.push(parseAnds(remainingTokens))
         }
-        peerbitQuery.push(new Or([allOrExps]))
+        peerbitQuery.push(new Or(allOrExps))
     } else {
         peerbitQuery.push(parseAnds(tokens))
 
