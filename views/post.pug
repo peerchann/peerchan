@@ -53,6 +53,7 @@ div(class=catalogMode ? 'post_catalog' : (item.replyto ? 'post_reply' : 'post'),
 
   if item.message
     - var currentSection = ''
+    - var pType = ''
     each line in item.message.split('\r\n')
       // if the line starts with > but not a post quote
       if line.startsWith('>') && !line.match(/^>>([0-9a-fA-F]{64})/)

@@ -167,26 +167,27 @@ rt['gatewayHome'] = compileFile('./views/gatewayhome.pug');
 rt['query'] = compileFile('./views/query.pug');
 
 //todo: consider not making the bigint into a string instead show it without quotes at least for query results
-function makeRenderSafe(inputObj = {}) {
-    let outputObj = {}
-    for (let thisKey of Object.keys(inputObj)) {
-        if (typeof inputObj[thisKey] === 'bigint') { // Check if the value is a BigInt
-            outputObj[thisKey] = inputObj[thisKey].toString(); // Convert BigInt to string
-        } else if (typeof inputObj[thisKey] === 'object') { // Check if the value is an object (and not null)
-            // If the value is an object, recursively call makeRenderSafe on it
-            if (Array.isArray(inputObj[thisKey])) {
-                outputObj[thisKey] = []
-                for (let thisArrayElement of inputObj[thisKey]) {
-                    outputObj[thisKey].push(makeRenderSafe(thisArrayElement))
+function makeRenderSafe(inputObj) {
+    switch (typeof inputObj) {
+        case "object":
+            if (Array.isArray(inputObj)) {
+                let outputArr = []
+                for (let thisArrayElement of inputObj) {
+                    outputArr.push(makeRenderSafe(thisArrayElement))
                 }
+                return outputArr
             } else {
-                outputObj[thisKey] = makeRenderSafe(inputObj[thisKey]);
+                let outputObj = {}
+                for (let thisKey of Object.keys(inputObj)) {
+                    outputObj[thisKey] = makeRenderSafe(inputObj[thisKey])
+                }
+                return outputObj
             }
-        } else {
-            outputObj[thisKey] = inputObj[thisKey]
-        }
+        case "bigint":
+            return inputObj.toString()
+        default:
+            return inputObj
     }
-    return outputObj
 }
 
 //todo: make more efficient/combine with above?
@@ -1133,7 +1134,6 @@ app.get('/:board/:pagenumber.html', async (req, res, next) => {
 			whichPage = 1
 		}
 
-
 		let indexPosts = await addFileStatuses(makeRenderSafe(await db.getThreadsWithReplies(req.params.board, cfg.threadsPerPage, cfg.previewReplies, whichPage)), req.params.board)
 		// let allPosts = makeRenderSafe(db.getThreadsWithReplies(req.params.board, cfg.threadsPerPage, cfg.previewReplies))
 
@@ -1142,7 +1142,8 @@ app.get('/:board/:pagenumber.html', async (req, res, next) => {
 		for(let threadPost in indexPosts.threads) {
 			indexPosts.threads[threadPost].replies = indexPosts.replies[threadPost]
 			indexPosts.threads[threadPost].omittedreplies = indexPosts.omittedreplies[threadPost]
-		}
+		  
+        }
 
         const options = await standardRenderOptions(req,res)
 		options.currentBoard = req.params.board
