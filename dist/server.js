@@ -1339,6 +1339,7 @@ app.post('/updateConfig', upload.any(), async (req, res, next) => {
 
         }
         saveConfig()
+        db.setRemoteQuery(cfg.remoteQueryPosts, cfg.remoteQueryFileRefs, cfg.remoteQueryFileChunks)
         console.log('Configuration updated successfully')
     } catch (err) {
       console.log('Failed to update configuration')
@@ -1721,6 +1722,10 @@ app.listen(cfg.browserPort, cfg.browserHost, () => {
 	// });
 
     try {
+
+        db.setModerators(moderators)
+        db.setRemoteQuery(cfg.remoteQueryPosts, cfg.remoteQueryFileRefs, cfg.remoteQueryFileChunks)
+
         let dbOpens = cfg.queryFromPanBoardFilesDbIfFileNotFound ? [db.openFilesDb("", { replicationFactor: cfg.replicationFactor }).then(r => console.log("Successfully opened pan-board files database."))] : []
 
         for (let thisBoard of watchedBoards) {
@@ -1738,8 +1743,6 @@ app.listen(cfg.browserPort, cfg.browserHost, () => {
                     })
             )
         }
-
-        db.setModerators(moderators)
 
         await Promise.all(dbOpens)
 
