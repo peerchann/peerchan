@@ -1,0 +1,119 @@
+h2 Gateway Configuration
+form(action="/updateGatewayConfig" method="POST" class="config-form")
+  table(class="control-panel")
+    tr
+      td
+        label(for="gatewayMode") Gateway Mode
+      td
+        input(type="checkbox" id="gatewayMode" name="gatewayMode" checked=gatewayCfg.gatewayMode)
+    tr
+      td
+        label(for="gatewayTitle") Gateway Title
+      td
+        input(type="text" id="gatewayTitle" name="gatewayTitle" value=gatewayCfg.gatewayTitle)
+    tr
+      td
+        label(for="gatewayText") Gateway Text
+      td
+        textarea(id="gatewayText" name="gatewayText")= gatewayCfg.gatewayText
+    tr
+      td
+        label Can Post
+      td
+        input(type="checkbox" id="canPost" name="can[post]" checked=gatewayCfg.can.post)
+    tr
+      td
+        label Can Post File
+      td
+        input(type="checkbox" id="canPostFile" name="can[postFile]" checked=gatewayCfg.can.postFile)
+    tr
+      td
+        label Can Delete File
+      td
+        input(type="checkbox" id="canDelFile" name="can[delFile]" checked=gatewayCfg.can.delFile)
+    tr
+      td
+        label Can Delete Post
+      td
+        input(type="checkbox" id="canDelPost" name="can[delPost]" checked=gatewayCfg.can.delPost)
+    tr
+      td
+        label Can See File
+      td
+        input(type="checkbox" id="canSeeFile" name="can[seeFile]" checked=gatewayCfg.can.seeFile)
+    tr
+      td
+        label Can Add Board
+      td
+        input(type="checkbox" id="canAddBoard" name="can[addBoard]" checked=gatewayCfg.can.addBoard)
+    tr
+      td
+        label Can Remove Board
+      td
+        input(type="checkbox" id="canRemBoard" name="can[remBoard]" checked=gatewayCfg.can.remBoard)
+    tr
+      td
+        label Can Add Moderator
+      td
+        input(type="checkbox" id="canAddMod" name="can[addMod]" checked=gatewayCfg.can.addMod)
+    tr
+      td
+        label Can See Moderators
+      td
+        input(type="checkbox" id="canSeeMod" name="can[seeMod]" checked=gatewayCfg.can.seeMod)
+    tr
+      td
+        label Can Remove Moderator
+      td
+        input(type="checkbox" id="canRemMod" name="can[remMod]" checked=gatewayCfg.can.remMod)
+    tr
+      td
+        label Can Dial Peer
+      td
+        input(type="checkbox" id="canDialPeer" name="can[dialPeer]" checked=gatewayCfg.can.dialPeer)
+    tr
+      td
+        label Can See Client ID
+      td
+        input(type="checkbox" id="canSeeClientId" name="can[seeClientId]" checked=gatewayCfg.can.seeClientId)
+    tr
+      td
+        label Can Change Theme
+      td
+        input(type="checkbox" id="canChangeTheme" name="can[changeTheme]" checked=gatewayCfg.can.changeTheme)
+    tr
+      td
+        label Can See All Boards
+      td
+        input(type="checkbox" id="canSeeAllBoards" name="can[seeAllBoards]" checked=gatewayCfg.can.seeAllBoards)
+    tr
+      td
+        label Can Change Configuration
+      td
+        input(type="checkbox" id="canChangeConfig" name="can[changeConfig]" checked=gatewayCfg.can.changeConfig)
+    tr
+      td
+        label Can Change Gateway Configuration
+      td
+        input(type="checkbox" id="canChangegatewayCfg" name="can[changegatewayCfg]" checked=gatewayCfg.can.changegatewayCfg)
+    tr
+      td
+        label Can Query
+      td
+        input(type="checkbox" id="canQuery" name="can[query]" checked=gatewayCfg.can.query)
+  button(type="submit", class="sidebarbutton") Update Gateway Configuration
+
+h2 Gateway Account
+form(action="/updateGatewayAccountInfo" method="POST" class="config-form")
+  table(class="control-panel")
+    tr
+      td
+        label(for="adminUser") Admin User
+      td
+        input(type="text" id="adminUser" name="adminUser")
+    tr
+      td
+        label(for="adminPass") Admin Password
+      td
+        input(type="password" id="adminPass" name="adminPass")
+  button(type="submit", class="sidebarbutton") Update Gateway Account

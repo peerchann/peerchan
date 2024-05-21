@@ -152,7 +152,9 @@ input {
   margin-bottom: 5px;
 }
 
-.post-form input, .config-form input {
+.post-form input, .config-form input, .control-panel input {
+  color: #eee;
+  background-color: #000;
   width: 100%;
   display: inline-block;
 }
@@ -180,11 +182,9 @@ input {
 .control-panel input {
   width: 100%;
   display: inline-block;
-  background-color: #444;
-  color: #ddd;
   margin-top: 5px;
   margin-bottom: 5px;
-  border: none;
+/*  border: none;*/
 /*  box-shadow: 0px 0px 0px 2px rgba(255, 255, 255, 0.2);*/
 }
 

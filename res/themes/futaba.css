@@ -174,12 +174,10 @@ input[type="file"] {
 .control-panel input {
   width: 100%;
   display: inline-block;
-  background-color: #444;
-  color: #ddd;
   margin-top: 5px;
   margin-bottom: 5px;
   font-family: serif;
-  border: none;
+/*  border: none;*/
 }
 
 .control-panel select, .control-panel select option {

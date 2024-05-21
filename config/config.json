@@ -38,7 +38,8 @@
 	"queryFromPanBoardFilesDbIfFileNotFound": false,
 	"remoteQueryPosts": true,
 	"remoteQueryFileRefs": true,
-	"remoteQUeryFileChunks": true,
+	"remoteQueryFileChunks": false,
 	"maxFilesPerPostToShow": 3,
-	"postHashLength": 8
+	"postHashLength": 8,
+	"remoteQUeryFileChunks": "on"
 }

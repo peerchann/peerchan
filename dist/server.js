@@ -277,19 +277,23 @@ function loadCssThemes() {
 
 var currentCssTheme = null; 
 
+function updateDefaultTheme(themeName) {
+    loadCssThemes() //todo: possible update this somewhere else or check every time?
+    const lowercaseTheme = themeName.toLowerCase()
+    if (cssThemes.includes(lowercaseTheme)) {
+        currentCssTheme = lowercaseTheme
+        cfg.defaultTheme = lowercaseTheme
+        saveConfig()
+    } else {
+        throw new Error(`Theme ${lowercaseTheme}.css not found.`)
+    }
+}
+
 app.get('/function/changeTheme/:themeName', async (req, res, next) => {
   try {
     gatewayCanDo(req, 'changeTheme') //todo: revisit this if there can be themes in the session cookies
-  	loadCssThemes() //todo: possible update this somewhere else or check every time?
-  	var lowercaseTheme = req.params.themeName.toLowerCase()
-  	if (cssThemes.includes(lowercaseTheme)) {
-  		currentCssTheme = lowercaseTheme
-  		cfg.defaultTheme = lowercaseTheme
-  		saveConfig()
-  	} else {
-  		throw new Error(`Theme ${lowercaseTheme}.css not found.`)
-  	}
-
+  	loadCssThemes()
+    updateDefaultTheme(req.params.themeName)
   } catch (err) {
   	console.log(`Failed to change theme to: ${req.params.themeName}.`)
   	lastError = err
@@ -1048,8 +1052,13 @@ app.get('/overboard.html', async (req, res, next) => {
         let threads = []
         let replies = []
         let omittedreplies = []
+        let threadsPerPage = req.query.threads ? parseInt(req.query.threads) : cfg.threadsPerPage
+        if (!req.session.loggedIn && gatewayCfg.gatewayMode) {
+            threadsPerPage = Math.min(threadsPerPage, gatewayCfg.maxOverboardThreads)
+        }
+        threadsPerPage = Math.max(threadsPerPage, 0)
         for (let whichBoard of boardsToShow) {
-            boardQueries.push(db.getThreadsWithReplies(whichBoard, cfg.threadsPerPage, cfg.previewReplies, 1).then((thisBoardResults) => {
+            boardQueries.push(db.getThreadsWithReplies(whichBoard, threadsPerPage, cfg.previewReplies, 1).then((thisBoardResults) => {
                 threads = threads.concat(thisBoardResults.threads);
                 replies = replies.concat(thisBoardResults.replies)
                 omittedreplies = omittedreplies.concat(thisBoardResults.omittedreplies)
@@ -1063,7 +1072,7 @@ app.get('/overboard.html', async (req, res, next) => {
         }
 
         threads.sort((a, b) => (a.lastbumped > b.lastbumped) ? -1 : ((a.lastbumped < b.lastbumped) ? 1 : 0)) //newest on top
-        threads = threads.slice(0, cfg.threadsPerPage) //todo: other pages?
+        threads = threads.slice(0, threadsPerPage) //todo: other pages?
 
         threads = await addFileStatuses(makeRenderSafe(threads))
 
@@ -1284,6 +1293,99 @@ app.post('/submit', upload.any(), async (req, res, next) => {
 	res.redirect(req.headers.referer);
     // res.send({ reload: true });
 });
+
+
+//todo: consider sanity checking/clamping values eg. postHashLength
+app.post('/updateConfig', upload.any(), async (req, res, next) => {
+    try {
+        gatewayCanDo(req, 'changeConfig')
+        //manually reset the boolean values as unchecked boxes wont be included in req.body
+        for (let thisKey of Object.keys(cfg)) {
+            if (typeof cfg[thisKey]=== 'boolean') {
+                cfg[thisKey] = false //todo: check that this is sufficient and working properly and doesn't need to be generalized to other input types
+            }
+        }
+        for(let thisKey of Object.keys(req.body)) {
+            switch(thisKey) {
+                case 'threadsPerPage':
+                case 'previewReplies':
+                case 'maxFilesPerPostToShow':
+                case 'postHashLength':
+                    cfg[thisKey] = parseInt(req.body[thisKey])
+                    continue
+                case  'embedImageFileExtensions':
+                case 'embedVideoFileExtensions':
+                case 'embedAudioFileExtensions':
+                case 'hyperlinkSchemes':
+                    cfg[thisKey] = req.body[thisKey].split(',')
+                    continue
+                case 'openHomeOnStartup':
+                case 'postPostRandomKey':
+                case 'postFileRandomKey':
+                case 'deletePostRandomKey':
+                case 'deleteFileRandomKey':
+                case 'queryFromPanBoardFilesDbIfFileNotFound':
+                case 'remoteQueryPosts':
+                case 'remoteQueryFileRefs':
+                case 'remoteQueryFileChunks':
+                    cfg[thisKey] = req.body[thisKey] === 'on'
+                    continue
+                case 'defaultTheme':
+                    updateDefaultTheme(req.body[thisKey])
+                    continue
+                default:
+                    cfg[thisKey] = req.body[thisKey]
+            }
+
+        }
+        saveConfig()
+        console.log('Configuration updated successfully')
+    } catch (err) {
+      console.log('Failed to update configuration')
+      console.log(err)
+      lastError = err
+    }
+    res.redirect(req.headers.referer);
+    // res.send({ reload: true });
+});
+
+
+//todo: implement this and also the admin user/pass one
+
+// //todo: consider sanity checking
+// app.post('/updateGatewayConfig', upload.any(), async (req, res, next) => {
+//     try {
+//         gatewayCanDo(req, 'changeGatewayConfig')
+//         //manually reset the boolean values as unchecked boxes wont be included in req.body
+//         for (let thisKey of Object.keys(gatewayCfg)) {
+//             if (typeof gatewayCfg[thisKey]=== 'boolean') {
+//                 gatewayCfg[thisKey] = false //todo: check that this is sufficient and working properly and doesn't need to be generalized to other input types
+//             }
+//         }
+//         for(let thisKey of Object.keys(req.body)) {
+//             switch (typeof gatewayCfg[thisKey]) {
+//                 case 'boolean':
+//                     gatewayCfg[thisKey] = req.body[thisKey] === 'on'
+//                     continue
+//                 case 'object':
+//                     //todo: have to redo this for the ".can" thing
+//                     continue
+//                 default:
+//                     gatewayCfg[thisKey] = req.body[thisKey]
+//             }
+
+//         }
+//         saveGatewayConfig()
+//         console.log('Gateway configuration updated successfully')
+//     } catch (err) {
+//       console.log('Failed to update gateway configuration')
+//       console.log(err)
+//       lastError = err
+//     }
+//     res.redirect(req.headers.referer);
+//     // res.send({ reload: true });
+// });
+
 
 app.get('', async (req, res, next) => { //todo: merge with above functionality or filegateway
 	res.redirect('/home.html')

@@ -14,15 +14,18 @@ div(class=catalogMode ? 'post_catalog' : (item.replyto ? 'post_reply' : 'post'),
     if indexMode && !item.replyto
       span.reply-link
         a(href=`/${item.board}/thread/${item.hash}.html`) [Reply]
+  - var howManyFilesPerPostToShow = cfg.maxFilesPerPostToShow
   if item.files && item.files.length > 0
     if catalogMode
-      - cfg.maxFilesPerPostToShow = 1 
+      - howManyFilesPerPostToShow = 1
+    if !renderFunctions.gatewayCanDo(req,'seeFile',false)
+      howManyFilesPerPostToShow = 0
     div.embedded-files
-      each file in item.files.slice(0, cfg.maxFilesPerPostToShow)
+      each file in item.files.slice(0, howManyFilesPerPostToShow)
         include embeddedfile.pug
-      if item.files.length > cfg.maxFilesPerPostToShow
+      if item.files.length > howManyFilesPerPostToShow
         div.embedded-file
-          p.embedded-info +#{item.files.length - cfg.maxFilesPerPostToShow} file#{item.files.length - cfg.maxFilesPerPostToShow > 1 ? 's' : ''} not shown.
+          p.embedded-info +#{item.files.length - howManyFilesPerPostToShow} file#{item.files.length - howManyFilesPerPostToShow > 1 ? 's' : ''} not shown.
   else
     div.embedded-nothing
 

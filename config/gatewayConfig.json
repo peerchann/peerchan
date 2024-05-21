@@ -19,8 +19,11 @@
 		"seeClientId": false,
 		"changeTheme": false,
 		"seeAllBoards": false,
+		"changeConfig": false,
+		"changeGatewayConfig": false,
 		"query": false
 	},
+	"maxOverboardThreads": 10,
 	"canSeeBoards": [
 		"landing",
 		"help"

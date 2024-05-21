@@ -33,6 +33,15 @@ block content
         input(type="hidden" name="moderatorId" value=moderator)
         button(type="submit", class="delete-link") X
 
+  if renderFunctions.gatewayCanDo(req,'changeConfig',false)
+    include configform.pug
+
+//-  if renderFunctions.gatewayCanDo(req,'changeGatewayConfig',false)
+//-    include gatewayconfigform.pug
+
+  h2
+    a(href="/query.html") Query Interface
+
   h2 Peer Dialing
   label(for="myMultiAddrTextbox") My MultiAddr:
   br
@@ -44,6 +53,3 @@ block content
     br
     br
     button(type="connecttopeer", class="sidebarbutton") Connect to Peer MultiAddr
-
-  h2
-    a(href="/query.html") Query Interface

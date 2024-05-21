@@ -1,0 +1,96 @@
+h2 Configuration
+form(action="/updateConfig" method="POST" class="config-form")
+  table(class="control-panel")
+    tr
+      td
+        label(for="threadsPerPage") Threads per page
+      td
+        input(type="number" id="threadsPerPage" name="threadsPerPage" value=cfg.threadsPerPage)
+    tr
+      td
+        label(for="previewReplies") Replies visible per thread
+      td
+        input(type="number" id="previewReplies" name="previewReplies" value=cfg.previewReplies)
+    tr
+      td
+        label(for="defaultName") Default name
+      td
+        input(type="text" id="defaultName" name="defaultName" value=cfg.defaultName)
+    tr
+      td
+        label(for="openHomeOnStartup") Open home on startup
+      td
+        input(type="checkbox" id="openHomeOnStartup" name="openHomeOnStartup" checked=cfg.openHomeOnStartup)
+    tr
+      td
+        label(for="openOnStartupUrl") Open on startup URL
+      td
+        input(type="text" id="openOnStartupUrl" name="openOnStartupUrl" value=cfg.openOnStartupUrl)
+    tr
+      td
+        label(for="defaultTheme") Default theme
+      td
+        select(id="defaultTheme" name="defaultTheme" class="control-panel")
+          each theme in themes
+            option(value=theme selected=(theme === cssTheme ? 'selected' : null))= theme.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+    tr
+      td
+        label(for="pageTitle") Page title
+      td
+        input(type="text" id="pageTitle" name="pageTitle" value=cfg.pageTitle)
+    tr
+      td
+        label(for="embedImageFileExtensions") Embed image file extensions
+      td
+        input(type="text" id="embedImageFileExtensions" name="embedImageFileExtensions" value=cfg.embedImageFileExtensions.join(","))
+    tr
+      td
+        label(for="embedVideoFileExtensions") Embed video file extensions
+      td
+        input(type="text" id="embedVideoFileExtensions" name="embedVideoFileExtensions" value=cfg.embedVideoFileExtensions.join(","))
+    tr
+      td
+        label(for="embedAudioFileExtensions") Embed audio file extensions
+      td
+        input(type="text" id="embedAudioFileExtensions" name="embedAudioFileExtensions" value=cfg.embedAudioFileExtensions.join(","))
+    tr
+      td
+        label(for="hyperlinkSchemes") Hyperlink schemes
+      td
+        input(type="text" id="hyperlinkSchemes" name="hyperlinkSchemes" value=cfg.hyperlinkSchemes.join(","))
+    tr
+      td
+        label(for="postPostRandomKey") Post post random key
+      td
+        input(type="checkbox" id="postPostRandomKey" name="postPostRandomKey" checked=cfg.postPostRandomKey)
+    tr
+      td
+        label(for="postFileRandomKey") Post file random key
+      td
+        input(type="checkbox" id="postFileRandomKey" name="postFileRandomKey" checked=cfg.postFileRandomKey)
+    tr
+      td
+        label(for="remoteQueryPosts") Remote query posts
+      td
+        input(type="checkbox" id="remoteQueryPosts" name="remoteQueryPosts" checked=cfg.remoteQueryPosts)
+    tr
+      td
+        label(for="remoteQueryFileRefs") Remote query file refs
+      td
+        input(type="checkbox" id="remoteQueryFileRefs" name="remoteQueryFileRefs" checked=cfg.remoteQueryFileRefs)
+    tr
+      td
+        label(for="remoteQUeryFileChunks") Remote query file chunks
+      td
+        input(type="checkbox" id="remoteQUeryFileChunks" name="remoteQUeryFileChunks" checked=cfg.remoteQUeryFileChunks)
+    tr
+      td
+        label(for="maxFilesPerPostToShow") Max files per post to show
+      td
+        input(type="number" id="maxFilesPerPostToShow" name="maxFilesPerPostToShow" value=cfg.maxFilesPerPostToShow)
+    tr
+      td
+        label(for="postHashLength") Post hash length
+      td
+        input(type="number" id="postHashLength" name="postHashLength" value=cfg.postHashLength)
+  button(type="submit", class="sidebarbutton") Update Configuration
