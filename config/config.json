@@ -41,6 +41,5 @@
 	"remoteQueryFileRefs": true,
 	"remoteQueryFileChunks": false,
 	"maxFilesPerPostToShow": 3,
-	"postHashLength": 8,
-	"remoteQUeryFileChunks": "on"
+	"postHashLength": 8
 }
