@@ -1589,6 +1589,7 @@ app.get('/gateway.html', async (req, res, next) => {
 //gateway stuff
 app.get('/gatewayconfig.html', async (req, res, next) => {
     try {
+        gatewayCanDo(req, 'changeGatewayConfig')
         const options = await standardRenderOptions(req,res)
         options.boardStats = {};
         await Promise.all(watchedBoards.map(async (thisBoard) => {
