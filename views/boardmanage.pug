@@ -36,11 +36,12 @@ block content
   if renderFunctions.gatewayCanDo(req,'changeConfig',false)
     include configform.pug
 
-//-  if renderFunctions.gatewayCanDo(req,'changeGatewayConfig',false)
-//-    include gatewayconfigform.pug
-
   h2
     a(href="/query.html") Query Interface
+
+  if renderFunctions.gatewayCanDo(req,'changeGatewayConfig',false)
+    h2
+      a(href="/gatewayconfig.html") Gateway Configuration
 
   h2 Peer Dialing
   label(for="myMultiAddrTextbox") My MultiAddr:

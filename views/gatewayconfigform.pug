@@ -13,7 +13,7 @@ form(action="/updateGatewayConfig" method="POST" class="config-form")
         input(type="text" id="gatewayTitle" name="gatewayTitle" value=gatewayCfg.gatewayTitle)
     tr
       td
-        label(for="gatewayText") Gateway Text
+        label(for="gatewayText") Gateway Text<br>(HTML)
       td
         textarea(id="gatewayText" name="gatewayText")= gatewayCfg.gatewayText
     tr
@@ -103,17 +103,17 @@ form(action="/updateGatewayConfig" method="POST" class="config-form")
         input(type="checkbox" id="canQuery" name="can[query]" checked=gatewayCfg.can.query)
   button(type="submit", class="sidebarbutton") Update Gateway Configuration
 
-h2 Gateway Account
-form(action="/updateGatewayAccountInfo" method="POST" class="config-form")
-  table(class="control-panel")
-    tr
-      td
-        label(for="adminUser") Admin User
-      td
-        input(type="text" id="adminUser" name="adminUser")
-    tr
-      td
-        label(for="adminPass") Admin Password
-      td
-        input(type="password" id="adminPass" name="adminPass")
-  button(type="submit", class="sidebarbutton") Update Gateway Account
+//-h2 Gateway Account
+//-form(action="/updateGatewayAccountInfo" method="POST" class="config-form")
+//-  table(class="control-panel")
+//-    tr
+//-      td
+//-        label(for="adminUser") Admin User
+//-      td
+//-        input(type="text" id="adminUser" name="adminUser")
+//-    tr
+//-      td
+//-        label(for="adminPass") Admin Password
+//-      td
+//-        input(type="password" id="adminPass" name="adminPass")
+//-  button(type="submit", class="sidebarbutton") Update Gateway Account

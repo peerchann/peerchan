@@ -164,6 +164,7 @@ rt['home'] = compileFile('./views/boardmanage.pug');
 rt['board'] = compileFile('./views/board.pug');
 rt['files'] = compileFile('./views/files.pug');
 rt['gatewayHome'] = compileFile('./views/gatewayhome.pug');
+rt['gatewayConfig'] = compileFile('./views/gatewayconfig.pug');
 rt['query'] = compileFile('./views/query.pug');
 
 //todo: consider not making the bigint into a string instead show it without quotes at least for query results
@@ -1341,6 +1342,7 @@ app.post('/updateConfig', upload.any(), async (req, res, next) => {
         saveConfig()
         db.setRemoteQuery(cfg.remoteQueryPosts, cfg.remoteQueryFileRefs, cfg.remoteQueryFileChunks)
         console.log('Configuration updated successfully')
+        console.log(cfg)
     } catch (err) {
       console.log('Failed to update configuration')
       console.log(err)
@@ -1353,39 +1355,56 @@ app.post('/updateConfig', upload.any(), async (req, res, next) => {
 
 //todo: implement this and also the admin user/pass one
 
-// //todo: consider sanity checking
-// app.post('/updateGatewayConfig', upload.any(), async (req, res, next) => {
-//     try {
-//         gatewayCanDo(req, 'changeGatewayConfig')
-//         //manually reset the boolean values as unchecked boxes wont be included in req.body
-//         for (let thisKey of Object.keys(gatewayCfg)) {
-//             if (typeof gatewayCfg[thisKey]=== 'boolean') {
-//                 gatewayCfg[thisKey] = false //todo: check that this is sufficient and working properly and doesn't need to be generalized to other input types
-//             }
-//         }
-//         for(let thisKey of Object.keys(req.body)) {
-//             switch (typeof gatewayCfg[thisKey]) {
-//                 case 'boolean':
-//                     gatewayCfg[thisKey] = req.body[thisKey] === 'on'
-//                     continue
-//                 case 'object':
-//                     //todo: have to redo this for the ".can" thing
-//                     continue
-//                 default:
-//                     gatewayCfg[thisKey] = req.body[thisKey]
-//             }
+//todo: consider sanity checking
+app.post('/updateGatewayConfig', upload.any(), async (req, res, next) => {
+    console.log('req.body', req.body)
+    try {
+        gatewayCanDo(req, 'changeGatewayConfig')
+        //manually reset the boolean values as unchecked boxes wont be included in req.body
+        for (let thisKey of Object.keys(gatewayCfg)) {
+            if (typeof gatewayCfg[thisKey]=== 'boolean') {
+                gatewayCfg[thisKey] = false //todo: check that this is sufficient and working properly and doesn't need to be generalized to other input types
+            }
+        }
+        for (let thisKey of Object.keys(gatewayCfg.can)) {
+            if (typeof gatewayCfg.can[thisKey]=== 'boolean') {
+                gatewayCfg.can[thisKey] = false //todo: check that this is sufficient and working properly and doesn't need to be generalized to other input types
+            }
+        }
+        for(let thisKey of Object.keys(req.body)) {
+            if (thisKey === 'maxOverboardThreads') {
+                gatewayCfg[thisKey] = parseInt(req.body[thisKey])
+            } else if (thisKey === 'can') {
+                for (let thisCanKey of Object.keys(req.body[thisKey])) {
+                   gatewayCfg['can'][thisCanKey] = req.body[thisKey][thisCanKey] === 'on';
+                }
+            } else if (thisKey === 'canSeeBoards') {
+                gatewayCfg[thisKey] = req.body[thisKey].split(',')
+            } else if (thisKey === 'gatewayMode') {
+                if (gatewayCfg.adminUser && gatewayCfg.adminPass) {
+                    gatewayCfg[thisKey] = req.body[thisKey] === 'on'
+                } else {
+                    lastError = 'Admin password and username should be configured in config/gatewayConfig.json before enabling gateway mode (requires restart).' //use the last error but dont actually throw so that the other settings can be updated //todo: revisit doing this differently?
+                    //todo: change this message once UI form in implemented
+                }
+            } else {
+                gatewayCfg[thisKey] = req.body[thisKey]
+            }
 
-//         }
-//         saveGatewayConfig()
-//         console.log('Gateway configuration updated successfully')
-//     } catch (err) {
-//       console.log('Failed to update gateway configuration')
-//       console.log(err)
-//       lastError = err
-//     }
-//     res.redirect(req.headers.referer);
-//     // res.send({ reload: true });
-// });
+        }
+        saveGatewayConfig()
+        console.log('Gateway configuration updated successfully')
+        console.log(gatewayCfg)
+    } catch (err) {
+      console.log('Failed to update gateway configuration')
+      console.log(err)
+      lastError = err
+    }
+    res.redirect(req.headers.referer);
+    // res.send({ reload: true });
+});
+
+//todo: implement the admin user/pass one
 
 
 app.get('', async (req, res, next) => { //todo: merge with above functionality or filegateway
@@ -1562,6 +1581,24 @@ app.get('/gateway.html', async (req, res, next) => {
         res.send(html)
     } catch (err) {
         console.log('Failed to open gateway homepage')
+        console.log(err)
+        lastError = err
+    }
+});
+
+//gateway stuff
+app.get('/gatewayconfig.html', async (req, res, next) => {
+    try {
+        const options = await standardRenderOptions(req,res)
+        options.boardStats = {};
+        await Promise.all(watchedBoards.map(async (thisBoard) => {
+            options.boardStats[thisBoard] = await getBoardStats(thisBoard);
+        }));
+        const html = await rt['gatewayConfig'](options)
+        resetError()
+        res.send(html)
+    } catch (err) {
+        console.log('Failed to open gateway configuration page')
         console.log(err)
         lastError = err
     }

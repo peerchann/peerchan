@@ -15,7 +15,8 @@
 		"jpeg",
 		"png",
 		"gif",
-		"webp"
+		"webp",
+		"avif"
 	],
 	"embedVideoFileExtensions": [
 		"webm",
