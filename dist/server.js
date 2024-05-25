@@ -135,6 +135,25 @@ app.use(express.json());
 // Middleware to parse incoming request bodies
 app.use(bodyParser.urlencoded({ extended: true }));
 
+function getFileExtension(url) {
+    return url.split('.').pop().toLowerCase();
+}
+
+// Middleware to set cache-control headers
+//todo: make cache length etc. configurable
+app.use((req, res, next) => {
+    const ext = getFileExtension(req.url);
+
+    if (cfg.gatewayMode && (cfg.embedImageFileExtensions.includes(ext) || cfg.embedVideoFileExtensions.includes(ext) || cfg.embedAudioFileExtensions.includes(ext))) {
+        // Cache specific file types for 1 week
+        res.setHeader('Cache-Control', 'public, max-age=604800');
+    } else {
+        // No caching for other files
+        res.setHeader('Cache-Control', 'no-store');
+    }
+    next();
+});
+
 app.use(express.static('./res')); //todo: revist to allow static icons and such, also change in home.pug
 
 // Middleware to generate a nonce for each request to make inline script execution comply with CSP.
@@ -774,6 +793,7 @@ const downloadFileHandler = async (req, res, next) => {
         if (cfg.queryFromPanBoardFilesDbIfFileNotFound && !fileData) {
             fileData = await db.getFile(req.params.filehash, '')
         }
+        res.setHeader('Cache-Control', 'public, max-age=604800'); // Cache for one week //todo: make configurable and the same (or different) as static files
         if (fileData) {
             fileStream = new Stream.Readable()
             let i = 0
