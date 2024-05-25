@@ -981,6 +981,16 @@ function convertQueryToBigInt (query) {
     return query;
 };
 
+//splits a string by a given character but returns empty array if the string was empty
+//todo: add to places where appropriate
+function splitBy(inputString = '', splitString = ',') {
+    if (inputString) {
+        return inputString.split(splitString)
+    } else {
+        return []
+    }
+}
+
 app.post('/submitQuery', async (req, res, next) => {
     try {
         gatewayCanDo(req, 'useQueryPage')
@@ -1394,7 +1404,7 @@ app.post('/updateConfig', upload.any(), async (req, res, next) => {
                 case 'embedAudioFileExtensions':
                 case 'hyperlinkSchemes':
                 case 'specialPageLinks':
-                    cfg[thisKey] = req.body[thisKey].split(',')
+                    cfg[thisKey] = splitBy(req.body[thisKey], ',')
                     continue
                 case 'openHomeOnStartup':
                 case 'postPostRandomKey':
