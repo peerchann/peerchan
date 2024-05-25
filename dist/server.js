@@ -794,6 +794,7 @@ const downloadFileHandler = async (req, res, next) => {
             fileData = await db.getFile(req.params.filehash, '')
         }
         res.setHeader('Cache-Control', 'public, max-age=604800'); // Cache for one week //todo: make configurable and the same (or different) as static files
+        res.setHeader('Content-Type', 'application/octet-stream');
         if (fileData) {
             fileStream = new Stream.Readable()
             let i = 0
