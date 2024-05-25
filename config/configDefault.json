@@ -32,6 +32,10 @@
 		"https://",
 		"magnet:?"
 	],
+	"specialPageLinks": [
+		"home.html",
+		"overboard.html"
+	],
 	"postPostRandomKey": true,
 	"deletePostRandomKey": false,
 	"postFileRandomKey": true,

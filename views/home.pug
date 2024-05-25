@@ -13,11 +13,13 @@ html
             each boardId, index in watchedBoards
               | #{index === 0 ? '' : ' / '}
               a(href=`/${boardId}/index.html`) #{boardId}
-            |  ] [ 
-            a(href="/home.html") home
-            |  / 
-            a(href="/overboard.html") overboard
             |  ]
+            if specialPageLinks.length
+              |  [ 
+              each specialPageLink, index in specialPageLinks
+                | #{index === 0 ? '' : ' / '}
+                a(href=`/${specialPageLink}`) #{specialPageLink.slice(0, specialPageLink.lastIndexOf('.')) || specialPageLink}
+              |  ]
           if alert
             .alert #{alert}
           block content

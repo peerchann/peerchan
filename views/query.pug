@@ -10,6 +10,8 @@ block content
     input(type="text" id="boardIds" name="boardIds" value=lastQueryBoards)
     label(for="queryString") Query: &nbsp;
     input(type="text" id="queryString" name="queryString" value=lastQuery)
+    label(for="queryLimit") Limit: &nbsp;
+    input(type="number" id="queryLimit" name="queryLimit" value=lastQueryLimit)
     |  
     button(type="submit", class="sidebarbutton") Execute
   p.message
@@ -17,8 +19,13 @@ block content
   h2 Query Results
   form(class = "post-form")
     label(for="queryResults") Results data:
+    br
     textarea(id="queryResults" name="queryResults")
       | #{JSON.stringify(lastQueryResults)}
+  form(class = "post-form")
     label(for="queryResults") Results hashes:
-    textarea(id="queryResults" name="queryResults")
+    br
+    textarea(id="queryHashes" name="queryHashes")
       | #{JSON.stringify(lastQueryResultsHashes)}
+    br
+    button(type="submit" formaction="/deletePosts" formmethod="post" class="config-form sidebarbutton") Delete All

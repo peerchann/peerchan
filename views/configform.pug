@@ -60,6 +60,11 @@ form(action="/updateConfig" method="POST" class="config-form")
         input(type="text" id="hyperlinkSchemes" name="hyperlinkSchemes" value=cfg.hyperlinkSchemes.join(","))
     tr
       td
+        label(for="specialPageLinks") Special page links
+      td
+        input(type="text" id="specialPageLinks" name="specialPageLinks" value=cfg.specialPageLinks.join(","))   
+    tr
+      td
         label(for="postPostRandomKey") Post post random key
       td
         input(type="checkbox" id="postPostRandomKey" name="postPostRandomKey" checked=cfg.postPostRandomKey)

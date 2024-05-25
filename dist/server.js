@@ -318,6 +318,48 @@ app.get('/:board/deletepost=:posthash', async (req, res, next) => {
 });
 
 
+//todo: add GET version?
+//todo: consider async and/or simultaneous deletes
+app.post('/deletePosts', upload.any(), async (req, res, next) => {
+  try {
+    gatewayCanDo(req, 'delPost')
+    const queryHashes = JSON.parse(req.body.queryHashes)
+    console.log('Deleting posts:', queryHashes);
+    for (let thisBoard of Object.keys(queryHashes)) {
+        for (let thisHash of queryHashes[thisBoard]) {
+            try {
+                await db.delPost(thisHash, thisBoard, cfg.deletePostRandomKey)
+            } catch (delErr) {
+                console.log(`Failed to delete post ${thisHash} from /${thisBoard}/:`, delErr)
+            }
+        }
+    }
+  } catch (err) {
+    console.log(`Failed to delete posts.`)
+    lastError = err
+  }
+    res.redirect(req.headers.referer);
+});
+
+//todo: implement
+//todo: add GET version?
+//todo: consider async and/or simultaneous prunings
+app.post('/prunePosts', upload.any(), async (req, res, next) => {
+  try {
+    gatewayCanDo(req, 'delPost')
+    console.log(`Pruning posts: ${req.body.queryHashes}.`);
+    for (let thisBoard of Object.keys(req.body.queryHashes)) {
+        for (let thisHash of req.body.queryHashes) {
+            throw new Error ('Post pruning is unimplemented.')
+        }
+    }
+  } catch (err) {
+    console.log(`Failed to prune posts.`)
+    lastError = err
+  }
+    res.redirect(req.headers.referer);
+});
+
 app.get('/myreplicationfactors.html', async (req, res, next) => {
   try {
     gatewayCanDo(req, 'seeClientId') //todo: rename maybe throughout
@@ -845,6 +887,10 @@ function convertQueryToPeerbitQuery (queryString) {
 
     let peerbitQuery = []
 
+    if (!queryString) {
+        return peerbitQuery
+    }
+
     const orInds = tokens.reduce((indices, token, index) => (['or', 'OR', '|', '||'].includes(token) && indices.push(index), indices), []);
     if (orInds.length) {
         let startInd = 0
@@ -916,6 +962,7 @@ function convertQueryToPeerbitQuery (queryString) {
 var lastQuery
 var lastQueryBoards
 var lastQueryResults
+var lastQueryLimit = 0
 
 //todo: also add GET API?
 //todo: add timer
@@ -940,6 +987,7 @@ app.post('/submitQuery', async (req, res, next) => {
         // console.log('req.body:', req.body)
         lastQuery = req.body.queryString
         lastQueryBoards = req.body.boardIds
+        lastQueryLimit = parseInt(req.body.queryLimit) || 0
         let boardsToQuery = canSeeBoards()
         if (req.body.boardIds) {
             const specifiedBoards = req.body.boardIds.split(',');
@@ -965,6 +1013,32 @@ app.post('/submitQuery', async (req, res, next) => {
         // console.log(peerbitQuery)
 
         lastQueryResults = makeRenderSafe(await db.queryPosts(boardsToQuery, peerbitQuery))
+
+        //query limit handling
+        //todo: maybe make this occur earlier someehow
+        if (lastQueryLimit) {
+            let remainingPosts = lastQueryLimit;
+            
+            for (let thisBoard of Object.keys(lastQueryResults)) {
+                const posts = lastQueryResults[thisBoard];
+                
+                const postsToInclude = Math.min(posts.length, remainingPosts);
+                lastQueryResults[thisBoard] = posts.slice(0, postsToInclude);
+                
+                remainingPosts -= postsToInclude;
+                
+                if (remainingPosts <= 0) {
+                    break;
+                }
+            }
+            Object.keys(lastQueryResults).forEach(board => {
+                if (lastQueryResults[board].length === 0) {
+                    delete lastQueryResults[board];
+                }
+            });
+        }
+
+
         // console.log("queryResults:")
         // console.log(lastQueryResults)
     } catch (err) {
@@ -988,6 +1062,7 @@ app.get('/query.html', async (req, res, next) => {
         options.lastQuery = lastQuery
         options.lastQueryBoards = lastQueryBoards
         options.lastQueryResults = lastQueryResults
+        options.lastQueryLimit = lastQueryLimit
         if (typeof lastQueryResults === "object") {
             options.lastQueryResultsHashes = {}
             for (let thisBoard of Object.keys(lastQueryResults)) {
@@ -1318,6 +1393,7 @@ app.post('/updateConfig', upload.any(), async (req, res, next) => {
                 case 'embedVideoFileExtensions':
                 case 'embedAudioFileExtensions':
                 case 'hyperlinkSchemes':
+                case 'specialPageLinks':
                     cfg[thisKey] = req.body[thisKey].split(',')
                     continue
                 case 'openHomeOnStartup':
@@ -1552,6 +1628,7 @@ async function standardRenderOptions (req,res) { //todo: make this into a middle
         prefillMessageBox: res.locals.prefillMessageBox,
         nonce: res.locals.nonce,
         boards: watchedBoards,
+        specialPageLinks: cfg.specialPageLinks,
         alert: lastError,
         loggedInAs: req.session.loggedIn,
         watchedBoards: req.session.loggedIn ? watchedBoards : canSeeBoards(), //todo: split visible in top versus visible in gateway manage? nicer way to visualize which are gateway boards or not?
