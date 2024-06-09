@@ -9,6 +9,8 @@ import bodyParser from 'body-parser';
 
 import Stream from 'stream';
 
+import mime from 'mime'
+
 import { DeliveryError } from '@peerbit/stream-interface';
 import { randomBytes } from '@peerbit/crypto';
 import { StringMatch, IntegerCompare, Compare, MissingField, Or, And } from '@peerbit/document'
@@ -793,11 +795,13 @@ const downloadFileHandler = async (req, res, next) => {
         if (cfg.queryFromPanBoardFilesDbIfFileNotFound && !fileData) {
             fileData = await db.getFile(req.params.filehash, '')
         }
-        res.setHeader('Cache-Control', 'public, max-age=604800'); // Cache for one week //todo: make configurable and the same (or different) as static files
-        res.setHeader('Content-Type', 'application/octet-stream');
         if (fileData) {
             fileStream = new Stream.Readable()
             let i = 0
+
+            res.setHeader('Cache-Control', 'public, max-age=604800'); //Cache for one week //todo: make configurable and the same (or different) as static files
+
+            res.setHeader('Content-Type', mime.getType(req.params.fileext || 'bin') || 'application/octet-stream'); //Set MIME type
 
             fileStream._read = function (size) {
                 let pushed = true
@@ -809,6 +813,7 @@ const downloadFileHandler = async (req, res, next) => {
                     this.push(null)
                 }
             }
+
             fileStream.pipe(res)
 
         } else {
@@ -1199,6 +1204,7 @@ app.get('/overboard.html', async (req, res, next) => {
     console.timeEnd('buildOverboardIndex');
 })
 
+//todo: handle catalog pages
 app.get('/:board/catalog.html', async (req, res, next) => {
     try {
         console.time('buildCatalog');
@@ -1265,6 +1271,7 @@ app.get('/:board/:pagenumber.html', async (req, res, next) => {
 		options.currentBoard = req.params.board
         options.posts = indexPosts.threads
 		options.numPages = boardPagesCache[req.params.board]
+        // options.whichPage = whichPage
 		options.indexMode = true
 		console.log(indexPosts.totalpages + " pages total")
 		const html = await rt['board'](options)

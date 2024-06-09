@@ -40,7 +40,7 @@ function deletePost() {
   document.documentElement.style.cursor = deleteMode ? 'crosshair' : 'default';
 
   // Toggle the 'deletion-mode' class on post elements
-  const posts = document.querySelectorAll('.post, .post_reply');
+  const posts = document.querySelectorAll('.post, .post_reply, .post_catalog');
   posts.forEach(post => {
       post.classList.toggle('deletion-mode', deleteMode === 'post');
   });
@@ -78,12 +78,12 @@ function exitDeletionModeOnce(event) {
     });
 
     // Toggle the 'deletion-mode' class off all post elements
-    const allPosts = document.querySelectorAll('.post, .post_reply');
+    const allPosts = document.querySelectorAll('.post, .post_reply, .post_catalog');
     allPosts.forEach(post => {
       post.classList.remove('deletion-mode');
     });
 
-    // Remove the click event listener from the document body after a brief delayg
+    // Remove the click event listener from the document body after a brief delay
     setTimeout(() => {
       document.body.removeEventListener('click', exitDeletionModeOnce);
     }, 100);
@@ -126,7 +126,7 @@ document.addEventListener("DOMContentLoaded", function() {
       });
     }
   });
-  const allPosts = document.querySelectorAll('.post, .post_reply');
+  const allPosts = document.querySelectorAll('.post, .post_reply, .post_catalog');
   allPosts.forEach(thisOne => {
     thisOne.addEventListener('click', function() {
       handlePostClick(thisOne.getAttribute('board'),thisOne.getAttribute('id'));

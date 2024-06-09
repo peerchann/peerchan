@@ -368,7 +368,7 @@ input[type="file"] {
 /*  margin-right: 500px;*/
 }
 
-.post.deletion-mode:hover::after, .post_reply.deletion-mode:hover::after, .embedded-file.deletion-mode:hover::after {
+.post.deletion-mode:hover::after, .post_reply.deletion-mode:hover::after, .post_catalog.deletion-mode:hover::after, .embedded-file.deletion-mode:hover::after {
   content: "";
   position: absolute;
   top: 0;
@@ -381,11 +381,11 @@ input[type="file"] {
   pointer-events: none;
 }
 
-.post.deletion-mode:hover, .post_reply.deletion-mode:hover, .embedded-file.deletion-mode:hover {
+.post.deletion-mode:hover, .post_reply.deletion-mode:hover, .post_catalog.deletion-mode:hover, .embedded-file.deletion-mode:hover {
   position: relative;
 }
 
-.post.deletion-mode *, .post_reply.deletion-mode *, .embedded-file.deletion-mode * {
+.post.deletion-mode *, .post_reply.deletion-mode *, .post_catalog.deletion-mode *, .embedded-file.deletion-mode * {
   pointer-events: none;
 }
 

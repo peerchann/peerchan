@@ -322,48 +322,26 @@ p {
   max-height: 100%;
 }
 
-.post.deletion-mode:hover::after {
-  content: ""; 
-  position: absolute; 
+.post.deletion-mode:hover::after, .post_reply.deletion-mode:hover::after, .post_catalog.deletion-mode:hover::after, .embedded-file.deletion-mode:hover::after {
+  content: "";
+  position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(255, 0, 0, 0.5); 
-  border: 2px solid red; 
+  background-color: rgba(255, 0, 0, 0.5);
+  border: 2px solid #d32f2f;
   box-sizing: border-box;
-  pointer-events: none; 
+  pointer-events: none;
 }
 
-.post.deletion-mode:hover {
-  position: relative; 
+.post.deletion-mode:hover, .post_reply.deletion-mode:hover, .post_catalog.deletion-mode:hover, .embedded-file.deletion-mode:hover {
+  position: relative;
 }
 
-.post.deletion-mode * {
-  pointer-events: none; 
+.post.deletion-mode *, .post_reply.deletion-mode *, .post_catalog.deletion-mode *, .embedded-file.deletion-mode * {
+  pointer-events: none;
 }
-
-.post_reply.deletion-mode:hover::after {
-  content: ""; 
-  position: absolute; 
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(255, 0, 0, 0.5); 
-  border: 2px solid red; 
-  box-sizing: border-box;
-  pointer-events: none; 
-}
-
-.post_reply.deletion-mode:hover {
-  position: relative; 
-}
-
-.post_reply.deletion-mode * {
-  pointer-events: none; 
-}
-
 
 .embedded-file.deletion-mode:hover::after {
   content: ""; 
