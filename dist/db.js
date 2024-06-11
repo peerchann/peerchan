@@ -306,6 +306,7 @@ export async function getThreadsWithReplies(whichBoard, numThreads = 10, numPrev
     })
         .slice(numToSkip, numThreads + numToSkip);
     sortedThreadsWithReplies.forEach((t) => { t.thread.board = whichBoard; });
+    sortedThreadsWithReplies.forEach((t) => { t.thread.board = whichBoard; t.replies.forEach((r) => r.board = whichBoard); });
     return {
         threads: sortedThreadsWithReplies.map((t) => t.thread),
         replies: sortedThreadsWithReplies.map((t) => t.replies),

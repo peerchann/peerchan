@@ -341,7 +341,7 @@ export async function getThreadsWithReplies(whichBoard: string, numThreads: numb
     if (!whichBoard) {
         throw new Error('No board specified.');
     }
-   
+
     const [threadPosts, replyPosts] = await Promise.all([
         openedBoards[whichBoard].documents.index.search(new SearchRequest({ query: [new MissingField({ key: 'replyto' })] }), { local: true, remote: remoteQueryPosts }),
         openedBoards[whichBoard].documents.index.search(new SearchRequest({ query: [] }), { local: true, remote: remoteQueryPosts })
@@ -368,6 +368,7 @@ export async function getThreadsWithReplies(whichBoard: string, numThreads: numb
 	    .slice(numToSkip, numThreads + numToSkip);
 
 	sortedThreadsWithReplies.forEach((t: any) => {t.thread.board = whichBoard})
+	sortedThreadsWithReplies.forEach((t: any) => {t.thread.board = whichBoard; t.replies.forEach((r: any) => r.board = whichBoard)})
 
     return {
     	threads: sortedThreadsWithReplies.map((t: any) => t.thread),
