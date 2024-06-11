@@ -2,7 +2,7 @@
 // const secrets = require(__dirname+'/../configs/secrets.js') //todo: address these
 // 	, { migrateVersion } = require(__dirname+'/../package.json');
 import { Peerbit } from "peerbit";
-import { SearchRequest, StringMatch, MissingField } from "@peerbit/document";
+import { SearchRequest, StringMatch } from "@peerbit/document";
 import { webSockets } from '@libp2p/websockets';
 import { all } from '@libp2p/websockets/filters';
 import { tcp } from "@libp2p/tcp";
@@ -282,67 +282,45 @@ export async function getThreadsWithReplies(whichBoard, numThreads = 10, numPrev
     if (!whichBoard) {
         throw new Error('No board specified.');
     }
-    const [threadPosts, replyPosts] = await Promise.all([
-        openedBoards[whichBoard].documents.index.search(new SearchRequest({ query: [new MissingField({ key: 'replyto' })] }), { local: true, remote: remoteQueryPosts }),
-        openedBoards[whichBoard].documents.index.search(new SearchRequest({ query: [] }), { local: true, remote: remoteQueryPosts })
-    ]);
-    const threadsWithReplies = threadPosts.map((thread) => ({
-        thread,
-        replies: replyPosts.filter((reply) => reply.replyto === thread.hash)
-    }));
-    var numToSkip = (whichPage - 1) * numThreads;
-    const sortedThreadsWithReplies = threadsWithReplies
-        .map((threadWithReplies) => ({
-        thread: threadWithReplies.thread,
-        replies: threadWithReplies.replies,
-        maxDate: threadWithReplies.replies.reduce((max, reply) => reply.date > max ? reply.date : max, threadWithReplies.thread.date)
-    }))
-        .sort((a, b) => {
+    const allPosts = await openedBoards[whichBoard].documents.index.search(new SearchRequest({ query: [] }), { local: true, remote: remoteQueryPosts });
+    const threadPosts = [];
+    const repliesByThread = {};
+    for (const post of allPosts) {
+        if (post.replyto) {
+            if (!repliesByThread[post.replyto])
+                repliesByThread[post.replyto] = [];
+            repliesByThread[post.replyto].push(post);
+        }
+        else {
+            threadPosts.push(post);
+        }
+    }
+    const numToSkip = (whichPage - 1) * numThreads;
+    const sortedThreadsWithReplies = threadPosts.map(thread => {
+        const replies = repliesByThread[thread.hash] || [];
+        const maxDate = replies.reduce((max, reply) => reply.date > max ? reply.date : max, thread.date);
+        thread.lastbumped = maxDate;
+        return { thread, replies, maxDate };
+    }).sort((a, b) => {
         if (a.maxDate > b.maxDate)
             return -1;
         if (a.maxDate < b.maxDate)
             return 1;
         return 0;
-    })
-        .slice(numToSkip, numThreads + numToSkip);
-    sortedThreadsWithReplies.forEach((t) => { t.thread.board = whichBoard; });
-    sortedThreadsWithReplies.forEach((t) => { t.thread.board = whichBoard; t.replies.forEach((r) => r.board = whichBoard); });
+    }).slice(numToSkip, numThreads + numToSkip);
+    for (const t of sortedThreadsWithReplies) {
+        t.thread.board = whichBoard;
+        for (const r of t.replies) {
+            r.board = whichBoard;
+        }
+    }
     return {
         threads: sortedThreadsWithReplies.map((t) => t.thread),
-        replies: sortedThreadsWithReplies.map((t) => t.replies),
+        replies: sortedThreadsWithReplies.map((t) => numPreviewPostsPerThread ? t.replies.slice(-numPreviewPostsPerThread) : []),
         omittedreplies: sortedThreadsWithReplies.map((t) => Math.max(0, t.replies.length - numPreviewPostsPerThread)),
         totalpages: Math.max(1, Math.ceil(threadPosts.length / numThreads)) //still have an index page even if its empty
     };
 }
-// //todo: add sage
-// //todo: optimize
-// export async function getThreadsWithReplies_prev(whichBoard: string, numThreads: number = 10, numPreviewPostsPerThread: number = 5, whichPage: number = 1) {
-//     if (!whichBoard) {
-//         throw new Error('No board specified.');
-//     }
-// 	let	threads = await openedBoards[whichBoard].documents.index.search(new SearchRequest({query: [new MissingField({ key: 'replyto' })]}), { local: true, remote: remoteQueryPosts })
-//     const totalpages = Math.max(1,Math.ceil(threads.length / numThreads)); //still have an index page even if its empty
-// 	let lastbumps = new Array(threads.length)
-// 	let replies = new Array(threads.length)
-//     let omittedreplies = new Array(threads.length)
-// 	for (let i = 0; i < threads.length; i++) {
-// 		let thesereplies = await openedBoards[whichBoard].documents.index.search(new SearchRequest({query: [new StringMatch({ key: 'replyto', value: threads[i]['hash'] })]}), { local: true, remote: remoteQueryPosts })
-// 		threads[i].lastbumped = thesereplies.reduce((max: bigint, reply: any) => reply.date > max ? reply.date : max, threads[i].date);
-// 		threads[i].index = i
-// 		omittedreplies[i] = Math.max(0, thesereplies.length - numPreviewPostsPerThread);
-// 		thesereplies.sort((a: any, b: any) => (a.date < b.date) ? -1 : ((a.date > b.date) ? 1 : 0)) //newest on bottom
-// 		replies[i] = numPreviewPostsPerThread ? thesereplies.slice(-numPreviewPostsPerThread) : [];
-// 	}
-//     threads.sort((a: any, b: any) => (a.lastbumped > b.lastbumped) ? -1 : ((a.lastbumped < b.lastbumped) ? 1 : 0)) //newest on top
-//     // Return only the numThreads newest results
-//     var numToSkip = (whichPage - 1) * numThreads
-//     threads = threads.slice(numToSkip, numThreads + numToSkip);
-//     threads.forEach((t: any) => {t.board = whichBoard})
-// 	omittedreplies = threads.map((t: any) => omittedreplies[t.index]);
-// 	replies = threads.map((t: any) => replies[t.index]);
-// 	replies.forEach((theseR: any) => theseR.forEach((thisR: any) => {thisR.board = whichBoard}))
-//     return { threads, replies, omittedreplies, totalpages }
-// }
 //todo: revisit remote
 //todo: revisit async
 export async function getSpecificPost(whichBoard, whichPost) {

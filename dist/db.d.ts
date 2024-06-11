@@ -31,9 +31,9 @@ export declare function delPost(whichPost: string, whichBoard: string, randomKey
 export declare function getAllPosts(query?: any): Promise<any>;
 export declare function getPosts(whichBoard: string): Promise<any>;
 export declare function getThreadsWithReplies(whichBoard: string, numThreads?: number, numPreviewPostsPerThread?: number, whichPage?: number): Promise<{
-    threads: any;
-    replies: any;
-    omittedreplies: any;
+    threads: any[];
+    replies: any[];
+    omittedreplies: number[];
     totalpages: number;
 }>;
 export declare function getSpecificPost(whichBoard: string, whichPost: string): Promise<any>;
