@@ -316,7 +316,15 @@ export async function getThreadsWithReplies(whichBoard, numThreads = 10, numPrev
     }
     return {
         threads: sortedThreadsWithReplies.map((t) => t.thread),
-        replies: sortedThreadsWithReplies.map((t) => numPreviewPostsPerThread ? t.replies.slice(-numPreviewPostsPerThread) : []),
+        replies: sortedThreadsWithReplies.map((t) => numPreviewPostsPerThread ? t.replies
+            .sort((a, b) => {
+            if (a.date > b.date)
+                return 1;
+            if (a.date < b.date)
+                return -1;
+            return 0;
+        })
+            .slice(-numPreviewPostsPerThread) : []),
         omittedreplies: sortedThreadsWithReplies.map((t) => Math.max(0, t.replies.length - numPreviewPostsPerThread)),
         totalpages: Math.max(1, Math.ceil(threadPosts.length / numThreads)) //still have an index page even if its empty
     };
