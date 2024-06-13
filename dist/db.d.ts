@@ -24,6 +24,7 @@ export declare function getBoardStats(whichBoard: string): Promise<{
 }>;
 export declare function bootstrap(): Promise<void>;
 export declare function closePostsDb(postsDbId?: string): Promise<void>;
+export declare function dropPostsDb(postsDbId?: string): Promise<void>;
 export declare function openFilesDb(filesDbId: string | undefined, options: any): Promise<void>;
 export declare function makeNewPost(postDocument: Post, whichBoard: string, randomKey: true): Promise<void>;
 export declare function listPeers(): Promise<import("@multiformats/multiaddr").Multiaddr[]>;

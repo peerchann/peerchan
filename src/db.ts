@@ -181,14 +181,21 @@ export async function closePostsDb (postsDbId = "my_post_db") {
 			await thisBoard.fileDb.close()
 		}
 		await thisBoard.close()
-		// await Promise.all([
-	    //     thisBoard.fileDb && thisBoard.fileDb.chunks ? thisBoard.fileDb.chunks.close() : Promise.resolve(),
-        //     thisBoard.fileDb ? thisBoard.fileDb.close() : Promise.resolve(),
-		// 	thisBoard.close(),
-		// ])
 	}
-	//Posts = await client.open(new PostDatabase({ id: sha256Sync(Buffer.from(postsDbId)) }))
 
+}
+
+export async function dropPostsDb (postsDbId = "my_post_db") {
+	let thisBoard = openedBoards[postsDbId]
+	if (thisBoard) {
+		if (thisBoard.fileDb) {
+			if (thisBoard.fileDb.chunks) {
+				await thisBoard.fileDb.chunks.drop()
+			}	
+			await thisBoard.fileDb.drop()
+		}
+		await thisBoard.drop()
+	}
 }
 
 // //only one for now

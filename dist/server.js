@@ -566,6 +566,58 @@ app.get('/function/addBoard/:boardId',  async (req, res, next) => {
   }
 });
 
+//todo: add GET equivalent for this
+//todo: gateway considerations
+app.post('/resetBoard', async (req, res, next) => {
+  try {
+    gatewayCanDo(req, 'remBoard') //todo: maybe a separate perm for this?
+    const boardId = req.body.boardId
+    validateBoardId(boardId)
+
+    //only difference from reloading (aside from gateway permissions)
+    // await db.closePostsDb(boardId)
+    await db.dropPostsDb(boardId) 
+    
+    await db.openPostsDb(boardId, { replicationFactor: cfg.replicationFactor })
+      .then(() => {
+        console.log(`Successfully reset /${boardId}/.`)
+      })
+      .catch(async (err) => {
+        console.error(`Error resetting /${boardId}/:`, err)
+        // console.log('posts:', db.openedBoards[boardId])
+        // console.log('file references:', db.openedBoards[boardId]?.fileDb)
+        // console.log('file chunks:', db.openedBoards[boardId]?.fileDb?.chunks)
+        await db.closePostsDb(boardId)
+        throw err;
+      });
+
+  } catch (err) {
+    console.error(`Error resetting /${req.body.boardId}/:`, err);
+    lastError = err
+  }
+  res.redirect(req.headers.referer);
+})
+
+app.get('/function/addBoard/:boardId',  async (req, res, next) => {
+  try {
+    gatewayCanDo(req, 'addBoard')
+    validateBoardId(req.params.boardId)
+    const boardId = req.params.boardId;
+    if (watchedBoards.indexOf(boardId) === -1) {
+        watchedBoards.push(boardId);
+        await db.openPostsDb(boardId, {replicationFactor: cfg.replicationFactor})
+        saveWatchedBoards();
+        res.send(`Successfully opened /${req.params.boardId}/.`)
+    } else {
+        res.send(`/${req.params.boardId}/ was already in watched boards.`)
+    }
+  } catch (err) {
+        console.error('Error adding watched board:', err);
+        lastError = err
+        res.send(err)
+  }
+});
+
 app.get('/function/removeBoard/:boardId', async (req, res, next) => {
   try {
     gatewayCanDo(req, 'remBoard')
@@ -821,10 +873,10 @@ const downloadFileHandler = async (req, res, next) => {
         }
 
     } catch (error) {
-        console.log('Failed to get file ' + req.params.filehash)
+        console.log(`$Failed to get file ${req.params.filehash} on /${req.params.whichBoard}/`)
         console.log(error)
         if (fileStream) {
-            fileStream.destroy(); // Close the file stream if it's initialized
+            fileStream.destroy(); //Close the file stream if it's initialized
         }
         res.send(null);
     }
@@ -1273,7 +1325,7 @@ app.get('/:board/:pagenumber.html', async (req, res, next) => {
 		options.numPages = boardPagesCache[req.params.board]
         // options.whichPage = whichPage
 		options.indexMode = true
-		console.log(indexPosts.totalpages + " pages total")
+		console.log(`/${req.params.board}/ page ${req.params.pagenumber}, ${indexPosts.totalpages} pages total`)
 		const html = await rt['board'](options)
 		resetError()
         res.send(html)

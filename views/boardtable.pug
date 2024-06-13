@@ -5,6 +5,7 @@ table.board-stats-table
       th Status
       th Replication
       th Reload
+      th Reset
       th Unwatch
   tbody
     each board in watchedBoards
@@ -19,6 +20,10 @@ table.board-stats-table
           form(action="/reloadBoard" method="POST" style="display:inline-block;")
             input(type="hidden" name="boardId" value=board)
             button(type="submit" class="delete-link") 🔄
+        td
+          form(action="/resetBoard" method="POST" style="display:inline-block;")
+            input(type="hidden" name="boardId" value=board)
+            button(type="submit" class="delete-link") ✂️
         td
           form(action="/removeWatchedBoard" method="POST" style="display:inline-block;")
             input(type="hidden" name="boardId" value=board)
