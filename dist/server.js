@@ -1721,9 +1721,11 @@ async function standardRenderOptions (req,res) { //todo: make this into a middle
         specialPageLinks: cfg.specialPageLinks,
         alert: lastError,
         loggedInAs: req.session.loggedIn,
-        watchedBoards: req.session.loggedIn ? watchedBoards : canSeeBoards(), //todo: split visible in top versus visible in gateway manage? nicer way to visualize which are gateway boards or not?
-        themes: cssThemes,
-        cssTheme: currentCssTheme,
+        watchedBoards: watchedBoards,
+	gatewayBoards: canSeeBoards(),
+	hiddenBoards: req.session.loggedIn ? watchedBoards.filter(b => !canSeeBoards().includes(b)) : [],
+	themes: cssThemes,
+	cssTheme: currentCssTheme,
         defaultName: cfg.defaultName, //todo: consolidate cfg where possible
         moderators: moderators,
         renderFunctions: renderFunctions,

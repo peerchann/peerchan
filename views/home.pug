@@ -9,11 +9,23 @@ html
       .wrapper
         .content
           div.watched-boards
-            | [ 
-            each boardId, index in watchedBoards
-              | #{index === 0 ? '' : ' / '}
-              a(href=`/${boardId}/index.html`) #{boardId}
-            |  ]
+            if loggedInAs
+              | [ 
+              each boardId, index in gatewayBoards
+                | #{index === 0 ? '' : ' / '}
+                a(href=`/${boardId}/index.html`) #{boardId}
+              |  ]
+              |  [ 
+              each boardId, index in hiddenBoards
+                | #{index === 0 ? '' : ' / '}
+                a(href=`/${boardId}/index.html`) #{boardId}
+              |  ]
+            else
+              | [ 
+              each boardId, index in gatewayBoards
+                | #{index === 0 ? '' : ' / '}
+                a(href=`/${boardId}/index.html`) #{boardId}
+              |  ]
             if specialPageLinks.length
               |  [ 
               each specialPageLink, index in specialPageLinks
