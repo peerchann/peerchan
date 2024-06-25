@@ -485,7 +485,7 @@ app.post('/addWatchedBoard', upload.any(), async (req, res, next) => {
     // Add the board ID to the watchedBoards array
     if (watchedBoards.indexOf(boardId) === -1) {
     	watchedBoards.push(boardId);
-	    await db.openPostsDb(boardId, {replicationFactor: cfg.replicationFactor})
+	    await openBoardDbs(boardId)
 	    // Invoke the saveWatchedBoards function to save the updated watchedBoards array
 	    console.log("watchedBoards:")
 	    console.log(watchedBoards)
@@ -507,7 +507,7 @@ app.post('/removeWatchedBoard', upload.any(), async (req, res, next) => {
     const boardId = req.body.boardId;
     const index = watchedBoards.indexOf(boardId);
     if (index !== -1) {
-		await db.closePostsDb(boardId)
+		await closeBoardDbs(boardId)
 		watchedBoards.splice(index, 1);
 		saveWatchedBoards();
 	}
@@ -525,17 +525,14 @@ app.post('/reloadBoard', async (req, res, next) => {
     gatewayCanDo(req, 'addBoard') //todo: maybe a separate perm for this?
     const boardId = req.body.boardId
     validateBoardId(boardId)
-    await db.closePostsDb(boardId)
-    await db.openPostsDb(boardId, { replicationFactor: cfg.replicationFactor })
+    await closeBoardDbs(boardId)
+    await openBoardDbs(boardId)
       .then(() => {
         console.log(`Successfully re-opened /${boardId}/.`)
       })
       .catch(async (err) => {
         console.error(`Error re-opening /${boardId}/:`, err)
-        // console.log('posts:', db.openedBoards[boardId])
-        // console.log('file references:', db.openedBoards[boardId]?.fileDb)
-        // console.log('file chunks:', db.openedBoards[boardId]?.fileDb?.chunks)
-        await db.closePostsDb(boardId)
+        await closeBoardDbs(boardId)
         throw err;
       });
 
@@ -553,7 +550,7 @@ app.get('/function/addBoard/:boardId',  async (req, res, next) => {
     const boardId = req.params.boardId;
     if (watchedBoards.indexOf(boardId) === -1) {
     	watchedBoards.push(boardId);
-	    await db.openPostsDb(boardId, {replicationFactor: cfg.replicationFactor})
+        await openBoardDbs(boardId)
 	    saveWatchedBoards();
         res.send(`Successfully opened /${req.params.boardId}/.`)
     } else {
@@ -576,18 +573,14 @@ app.post('/resetBoard', async (req, res, next) => {
 
     //only difference from reloading (aside from gateway permissions)
     // await db.closePostsDb(boardId)
-    await db.dropPostsDb(boardId) 
-    
-    await db.openPostsDb(boardId, { replicationFactor: cfg.replicationFactor })
+    await dropBoardDbs(boardId)
+    await openBoardDbs(boardId)
       .then(() => {
         console.log(`Successfully reset /${boardId}/.`)
       })
       .catch(async (err) => {
         console.error(`Error resetting /${boardId}/:`, err)
-        // console.log('posts:', db.openedBoards[boardId])
-        // console.log('file references:', db.openedBoards[boardId]?.fileDb)
-        // console.log('file chunks:', db.openedBoards[boardId]?.fileDb?.chunks)
-        await db.closePostsDb(boardId)
+        await closeBoardDbs(boardId)
         throw err;
       });
 
@@ -605,7 +598,7 @@ app.get('/function/addBoard/:boardId',  async (req, res, next) => {
     const boardId = req.params.boardId;
     if (watchedBoards.indexOf(boardId) === -1) {
         watchedBoards.push(boardId);
-        await db.openPostsDb(boardId, {replicationFactor: cfg.replicationFactor})
+        await openBoardDbs(boardId)
         saveWatchedBoards();
         res.send(`Successfully opened /${req.params.boardId}/.`)
     } else {
@@ -625,7 +618,7 @@ app.get('/function/removeBoard/:boardId', async (req, res, next) => {
     const boardId = req.params.boardId;
     const index = watchedBoards.indexOf(boardId);
     if (index !== -1) {
-		await db.closePostsDb(boardId)
+		await closeBoardDbs(boardId)
 		watchedBoards.splice(index, 1);
 		console.log("watchedBoards:")
 		console.log(watchedBoards)
@@ -693,6 +686,17 @@ app.get('/function/removeGatewayBoard/:boardId', async (req, res, next) => {
   }
 });
 
+app.get('/function/eventListeners', async (req, res, next) => {
+  try {
+        gatewayCanDo(req, 'seeAllBoards')
+        console.log(eventListeners)
+        res.json(eventListeners)
+  } catch (err) {
+        lastError = err
+        res.send('Error viewing event listeners:', err);
+  }
+});
+
 //todo: consolidate duplicated functionality
 app.post('/addGatewayBoard', upload.any(), async (req, res, next) => {
   try {
@@ -732,6 +736,22 @@ app.post('/removeGatewayBoard', upload.any(), async (req, res, next) => {
   }
   res.redirect(req.headers.referer);
 });
+
+//todo: consider ways to somehow preserve the scrolled-to location or at least the #div link of the url if feasible
+app.get('/function/toggleSidebar', async (req, res, next) => {
+  try {
+    if (req.session.hideSidebar) {
+        req.session.hideSidebar = false
+    } else {
+        req.session.hideSidebar = true
+    }
+  } catch (err) {
+        console.log('Error toggling sidebar visibility:', err);
+        lastError = err
+  }
+  res.redirect(req.headers.referer);
+});
+
 
 const moderators = loadModerators()
 
@@ -1813,11 +1833,64 @@ app.get('/:board', async (req, res, next) => {
     
 })
 
+
+async function openBoardDbs (board) {
+    await db.openPostsDb(board, {replicationFactor: cfg.replicationFactor})
+    await addEventListeners(board)
+}
+
+async function closeBoardDbs (board) {
+    await db.closePostsDb(board)
+    await removeEventListeners(board)
+}
+
+async function dropBoardDbs (board) {
+    await db.dropPostsDb(board)
+    await removeEventListeners(board)
+}
+
+
+//add event listeners
+function addEventListeners(board) {
+    const eventTriggersPath = `../${configDir}/events.js`
+    import(eventTriggersPath).then(EventTriggers => {
+        const whichBoard = db.openedBoards[board]
+
+        // Store and add event handler functions
+        eventListeners[board] = {
+            posts: (event) => EventTriggers.default.onChange(event, board),
+            fileRefs: (event) => EventTriggers.default.onChange(event, board),
+            fileChunks: (event) => EventTriggers.default.onChange(event, board),
+        };
+
+        whichBoard.documents.events.addEventListener("change", eventListeners[board].posts)
+        whichBoard.fileDb.files.events.addEventListener("change", eventListeners[board].fileRefs)
+        whichBoard.fileDb.chunks.documents.events.addEventListener("change", eventListeners[board].fileChunks)
+    })
+}
+
+//remove event listeners
+function removeEventListeners(board) {
+    const whichBoard = db.openedBoards[board];
+    const handlers = eventListeners[board];
+
+    if (handlers) {
+        whichBoard.documents.events.removeEventListener("change", handlers.documents);
+        whichBoard.fileDb.files.events.removeEventListener("change", handlers.files);
+        whichBoard.fileDb.chunks.documents.events.removeEventListener("change", handlers.chunks);
+        delete eventListeners[board];
+    } else {
+        console.log(`No event listeners to delete for /${board}/`);
+    }
+}
+
+//store references to event listeners so they can be deleted upon board closing
+const eventListeners = {};
+
 // Start the Server
 app.listen(cfg.browserPort, cfg.browserHost, () => {
 	console.log(`Starting Server at ${cfg.browserPort}:${cfg.browserHost}`);
 });
-
 
 (async () => {
 
@@ -1938,7 +2011,7 @@ app.listen(cfg.browserPort, cfg.browserHost, () => {
                 db.openPostsDb(thisBoard, { replicationFactor: cfg.replicationFactor })
                     .then(() => {
                         console.log("Successfully opened database for \/" + thisBoard + "\/.")
-                        addEventListeners(thisBoard)
+                        addEventListeners(thisBoard) //todo: use openBoardDbs here
                     }) 
                     .catch((err) => {
                         console.log("Failed to open database for \/" + thisBoard + "\/:", err)
@@ -1954,23 +2027,6 @@ app.listen(cfg.browserPort, cfg.browserHost, () => {
     } catch (err) {
         console.log("Error opening databases:")
         console.log(err)
-    }
-
-    // Function to add event listeners
-    function addEventListeners(board) {
-        const eventTriggersPath = `../${configDir}/events.js`
-        import(eventTriggersPath).then(EventTriggers => {
-            const whichBoard = db.openedBoards[board]
-            whichBoard.documents.events.addEventListener("change", (event) => {
-                EventTriggers.default.onChange(event.detail, board)
-            })
-            whichBoard.fileDb.files.events.addEventListener("change", (event) => {
-                EventTriggers.default.onChange(event.detail, board)
-            })
-            whichBoard.fileDb.chunks.documents.events.addEventListener("change", (event) => {
-                EventTriggers.default.onChange(event.detail, board)
-            })
-        })
     }
 
 //open the configured homepage

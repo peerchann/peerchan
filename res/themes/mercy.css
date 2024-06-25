@@ -64,6 +64,7 @@ p {
 
 .post, .post_reply, .post_catalog {
   flex: 1;
+/*  position: relative;*/
 /*  background-color: #EEAA88;*/
 /*  color: #800000;*/
 /*  border-top: 1px solid #50c;*/
@@ -73,7 +74,7 @@ p {
   padding: 10px;
   margin-bottom: 5px;
   margin-top: 5px;
-  max-width: 100%;
+  max-width: 100vw;
 }
 
 .post a, .post_reply a {
@@ -104,28 +105,69 @@ p {
 
 .wrapper {
   display: flex;
+  flex: 1;
+  min-height: 100%;
+  height: 100vh;
+  overflow: auto;
 }
 
 .content {
-/*  flex: 1;*/
+  flex: 1;
 /*  width: calc(100vw - var(--sidebar-width);*/
 /*  max-width: calc(100vw - (var(--sidebar-width) + 20px));*/
 /*  width: 100%;*/
   padding: 10px 20px;
+/*    height: 100%;*/
+/*    flex-direction: column;*/
+/*    overflow: auto;*/
 /*  color: #ddd;*/
-  margin-right: calc(var(--sidebar-width) + 40px);
+/*  margin-right: calc(var(--sidebar-width) + 40px);*/
 }
 
 .sidebar {
-  width: var(--sidebar-width);
-  padding: 20px;
+  display: flex;
+/*flex: 1;*/
+    padding: 0px;
   border-left: 1px solid #888;
   background-color: #000;
-  position: fixed;
+  overflow-y: auto;
+  height: 100vh;
+
+  position: sticky;
   top: 0;
   right: 0;
-  bottom: 0;
+/*  bottom: 0;*/
 }
+
+.sidebar-tab {
+/*  padding-left: 0px;*/
+/*  padding-right: 10px;*/
+  margin: 5px;
+/*  margin-left: 15px;*/
+/*text-align: center;*/
+/*    align-content: center;*/
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 5px;
+  position: var(--sidebar-width);
+/*  margin-right: 0px;*/
+/*    padding: 0px 5px 0px 5px;*/
+  align-self: center;
+}
+
+.sidebar-content {
+/*  padding: 15px;*/
+    margin: 15px;
+    margin-right: 5px;
+/*    flex: 1;*/
+/*    padding-top: 10px;*/
+/*    margin-left: 0px;*/
+/*    height: 100%;*/
+/*    padding-left: 0px;*/
+    width: var(--sidebar-width);
+}
+
 
 .sidebar-header {
 /*  background-color: #eeaa88;*/

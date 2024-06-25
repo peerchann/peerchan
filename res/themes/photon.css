@@ -89,23 +89,42 @@ p {
 }
 
 .wrapper {
+  display: flex;
+  flex: 1;
+  min-height: 100%;
+  height: 100vh;
+  overflow: auto;
 }
 
 .content {
+  flex: 1;
   padding: 10px 20px;
-  margin-right: calc(var(--sidebar-width) + 40px);
   color: #333;
 }
 
 .sidebar {
-  width: var(--sidebar-width);
-  padding: 20px;
+  display: flex;
   background-color: #ddd;
-  position: fixed;
+  position: sticky;
   top: 0;
   right: 0;
   bottom: 0;
   overflow: auto;
+}
+
+.sidebar-tab {
+  margin: 5px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 5px;
+  align-self: center;
+}
+
+.sidebar-content {
+    margin: 15px;
+    margin-right: 5px;
+    width: var(--sidebar-width);
 }
 
 .sidebar-header {
