@@ -1721,7 +1721,7 @@ async function standardRenderOptions (req,res) { //todo: make this into a middle
         specialPageLinks: cfg.specialPageLinks,
         alert: lastError,
         loggedInAs: req.session.loggedIn,
-        watchedBoards: watchedBoards,
+        watchedBoards: req.session.loggedIn ? watchedBoards : canSeeBoards(),
 	gatewayBoards: canSeeBoards(),
 	hiddenBoards: req.session.loggedIn ? watchedBoards.filter(b => !canSeeBoards().includes(b)) : [],
 	themes: cssThemes,
