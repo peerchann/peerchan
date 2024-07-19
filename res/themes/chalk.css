@@ -381,6 +381,50 @@ p {
   pointer-events: none;
 }
 
+.post.selection-mode:hover::after, .post_reply.selection-mode:hover::after, .post_catalog.selection-mode:hover::after, .embedded-file.selection-mode:hover::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+/*  background-color: rgba(255, 0, 0, 0.5);*/
+  border: 2px solid #1976d2;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.post.selection-mode:hover, .post_reply.selection-mode:hover, .post_catalog.selection-mode:hover, .embedded-file.selection-mode:hover {
+  position: relative;
+}
+
+.post.selection-mode *, .post_reply.selection-mode *, .post_catalog.selection-mode *, .embedded-file.selection-mode * {
+  pointer-events: none;
+}
+
+.post.selected::after,
+.post_reply.selected::after,
+.post_catalog.selected::after,
+.embedded-file.selected::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 255, 0.5);
+  border: 2px solid #1976d2;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.post.selected,
+.post_reply.selected,
+.post_catalog.selected,
+.embedded-file.selected {
+  position: relative;
+}
+
 .watched-boards {
   overflow-wrap: anywhere;
   width: 100%;

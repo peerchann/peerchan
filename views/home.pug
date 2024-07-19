@@ -32,12 +32,20 @@ html
               if renderFunctions.gatewayCanDo(req,'post',false)
                 include postform.pug
 
-              if renderFunctions.gatewayCanDo(req,'delPost',false) || renderFunctions.gatewayCanDo(req,'delFile',false)
+              if renderFunctions.gatewayCanDo(req, 'delPost', false) || renderFunctions.gatewayCanDo(req, 'delFile', false)
                 h3.sidebar-header Moderation
-                if renderFunctions.gatewayCanDo(req,'delPost',false)
+                if renderFunctions.gatewayCanDo(req, 'delPost', false)
                   button(id="delete-post-button", class="sidebarbutton") Delete Post
-                if renderFunctions.gatewayCanDo(req,'delFile',false)
-                  button(id="delete-file-button", class="sidebarbutton") Block File
+                if renderFunctions.gatewayCanDo(req, 'delFile', false)
+                  button(id="delete-file-button", class="sidebarbutton") Delete File
+                if renderFunctions.gatewayCanDo(req, 'delPost', false)
+                  button(id="select-post-button", class="sidebarbutton") Select Posts
+                if renderFunctions.gatewayCanDo(req, 'delFile', false)
+                  button(id="select-file-button", class="sidebarbutton") Select Files
+                button(id="delete-selected-button", class="sidebarbutton") Delete Selected
+                if renderFunctions.gatewayCanDo(req, 'delPost', false) && renderFunctions.gatewayCanDo(req, 'delFile', false)
+                  button(id="delete-selected-with-files-button", class="sidebarbutton") Delete Selected And Files
+                button(id="clear-selection-button", class="sidebarbutton") Clear Selection
 
               if renderFunctions.gatewayCanDo(req,'changeTheme',false)
                 .control-panel

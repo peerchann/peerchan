@@ -737,6 +737,58 @@ app.post('/removeGatewayBoard', upload.any(), async (req, res, next) => {
   res.redirect(req.headers.referer);
 });
 
+//todo: ensure the res response/redirect works properly in all cases
+//todo: async considerations
+app.post('/deleteSelected', async (req, res, next) => {
+  try {
+    console.log("Selection to delete:", req.body)
+    if (Object.keys(req.body.posts).length) {
+        gatewayCanDo(req, 'delPost')
+        if (req.body.recursiveFileDelete) {
+            gatewayCanDo(req, 'delFile')
+        }
+        for (let thisBoard of Object.keys(req.body.posts)) {
+            for (let thisHash of req.body.posts[thisBoard]) {
+                try {
+                    if (req.body.recursiveFileDelete) {
+                        const thisPost = await db.getSpecificPost(thisBoard, thisHash)
+                        console.log(thisPost, thisPost.length)
+                        if (thisPost.length) {
+                            for (let thisPostFile of thisPost[0].files) {
+                                try {
+                                    await db.delFile(thisPostFile.hash, thisBoard, cfg.deleteFileRandomKey)
+                                } catch (delPostFileErr) {
+                                    console.log(`Failed to delete file ${thisHash} from /${thisBoard}/:`, delPostFileErr)
+                                }
+                            }
+                        }
+                    }
+                    await db.delPost(thisHash, thisBoard, cfg.deletePostRandomKey)
+                } catch (delErr) {
+                    console.log(`Failed to delete post ${thisHash} from /${thisBoard}/:`, delErr)
+                }
+            }
+        }
+    }
+    if (Object.keys(req.body.files).length) {
+        gatewayCanDo(req, 'delFile')
+        for (let thisBoard of Object.keys(req.body.files)) {
+            for (let thisHash of req.body.files[thisBoard]) {
+                try {
+                    await db.delFile(thisHash, thisBoard, cfg.deleteFileRandomKey)
+                } catch (delErr) {
+                    console.log(`Failed to delete file ${thisHash} from /${thisBoard}/:`, delErr)
+                }
+            }
+        }
+    }
+  } catch (err) {
+    console.log('Error deleting selection:', err)
+    // res.redirect(req.headers.referer);
+  }
+  res.json({ redirectUrl: req.headers.referer });
+});
+
 //todo: consider ways to somehow preserve the scrolled-to location or at least the #div link of the url if feasible
 app.get('/function/toggleSidebar', async (req, res, next) => {
   try {
@@ -1192,20 +1244,6 @@ app.get('/query.html', async (req, res, next) => {
     console.timeEnd('buildQueryPage');
 })
 
-
-
-app.get('/test.html', async (req, res, next) => {
-    try {
-        console.log("test")
-        for (let i of [1,2,3]) {
-            console.log("test trial:", i)
-            await db.queryPosts(["test"], new IntegerCompare({key: "date", value: BigInt("1713929645458"), compare: Compare.Greater}))
-        }
-    } catch (err) {
-        console.log(err)
-    }
-})
-
 app.get('/overboard.html', async (req, res, next) => {
     try {
         console.time('buildOverboardIndex');
@@ -1372,7 +1410,7 @@ app.get('/:board/thread/:thread.html', async (req, res, next) => {
 	    	throw new Error(`Board /${req.params.board}/ not in watched board list.`)
 	    }
 		// let allPosts = makeRenderSafe(await db.getPosts(req.params.board))
-		let threadPost = await await db.getSpecificPost(req.params.board, req.params.thread)
+		let threadPost = await db.getSpecificPost(req.params.board, req.params.thread)
 		// threadPost.replies = []
 		if(threadPost.length) {
 			threadPost[0].replies = await db.getRepliesToSpecificPost(req.params.board, req.params.thread)
@@ -1832,7 +1870,6 @@ app.get('/:board', async (req, res, next) => {
     }
     
 })
-
 
 async function openBoardDbs (board) {
     await db.openPostsDb(board, {replicationFactor: cfg.replicationFactor})
