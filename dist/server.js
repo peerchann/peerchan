@@ -327,6 +327,7 @@ app.get('/function/changeTheme/:themeName', async (req, res, next) => {
 app.get('/:board/deletepost=:posthash', async (req, res, next) => {
   try {
     gatewayCanDo(req, 'delPost')
+    gatewayCanSeeBoard(req, req.params.board)
   	console.log(`Deleting post: ${req.params.posthash} on /${req.params.board}/.`);
 	await db.delPost(req.params.posthash, req.params.board, cfg.deletePostRandomKey)
 
@@ -347,6 +348,7 @@ app.post('/deletePosts', upload.any(), async (req, res, next) => {
     const queryHashes = JSON.parse(req.body.queryHashes)
     console.log('Deleting posts:', queryHashes);
     for (let thisBoard of Object.keys(queryHashes)) {
+        gatewayCanSeeBoard(req, thisBoard)
         for (let thisHash of queryHashes[thisBoard]) {
             try {
                 await db.delPost(thisHash, thisBoard, cfg.deletePostRandomKey)
@@ -370,6 +372,7 @@ app.post('/prunePosts', upload.any(), async (req, res, next) => {
     gatewayCanDo(req, 'delPost')
     console.log(`Pruning posts: ${req.body.queryHashes}.`);
     for (let thisBoard of Object.keys(req.body.queryHashes)) {
+        gatewayCanSeeBoard(req, thisBoard)
         for (let thisHash of req.body.queryHashes) {
             throw new Error ('Post pruning is unimplemented.')
         }
@@ -413,6 +416,7 @@ app.get('/mymultiaddr.json', async (req, res, next) => {
 app.get('/:board/deletefile=:filehash', async (req, res, next) => {
   try {
     gatewayCanDo(req, 'delFile')
+    gatewayCanSeeBoard(req, req.params.board)
   	const fileHash = req.params.filehash
   	console.log(`Deleting file: ${fileHash}.`);
     if (cfg.queryFromPanBoardFilesDbIfFileNotFound) {
@@ -428,7 +432,6 @@ app.get('/:board/deletefile=:filehash', async (req, res, next) => {
   	console.log(`Failed to delete file: ${params.params.fileHash}.`)
   	lastError = err
   }
-
 	res.redirect(req.headers.referer); //todo: check propriety
 });
 
@@ -543,18 +546,18 @@ app.post('/reloadBoard', async (req, res, next) => {
   res.redirect(req.headers.referer);
 })
 
-app.get('/function/addBoard/:boardId',  async (req, res, next) => {
+app.get('/function/addBoard/:board',  async (req, res, next) => {
   try {
     gatewayCanDo(req, 'addBoard')
-    validateBoardId(req.params.boardId)
-    const boardId = req.params.boardId;
+    validateBoardId(req.params.board)
+    const boardId = req.params.board;
     if (watchedBoards.indexOf(boardId) === -1) {
     	watchedBoards.push(boardId);
         await openBoardDbs(boardId)
 	    saveWatchedBoards();
-        res.send(`Successfully opened /${req.params.boardId}/.`)
+        res.send(`Successfully opened /${req.params.board}/.`)
     } else {
-        res.send(`/${req.params.boardId}/ was already in watched boards.`)
+        res.send(`/${req.params.board}/ was already in watched boards.`)
     }
   } catch (err) {
 	    console.error('Error adding watched board:', err);
@@ -591,18 +594,18 @@ app.post('/resetBoard', async (req, res, next) => {
   res.redirect(req.headers.referer);
 })
 
-app.get('/function/addBoard/:boardId',  async (req, res, next) => {
+app.get('/function/addBoard/:board',  async (req, res, next) => {
   try {
     gatewayCanDo(req, 'addBoard')
-    validateBoardId(req.params.boardId)
-    const boardId = req.params.boardId;
+    validateBoardId(req.params.board)
+    const boardId = req.params.board;
     if (watchedBoards.indexOf(boardId) === -1) {
         watchedBoards.push(boardId);
         await openBoardDbs(boardId)
         saveWatchedBoards();
-        res.send(`Successfully opened /${req.params.boardId}/.`)
+        res.send(`Successfully opened /${req.params.board}/.`)
     } else {
-        res.send(`/${req.params.boardId}/ was already in watched boards.`)
+        res.send(`/${req.params.board}/ was already in watched boards.`)
     }
   } catch (err) {
         console.error('Error adding watched board:', err);
@@ -611,11 +614,11 @@ app.get('/function/addBoard/:boardId',  async (req, res, next) => {
   }
 });
 
-app.get('/function/removeBoard/:boardId', async (req, res, next) => {
+app.get('/function/removeBoard/:board', async (req, res, next) => {
   try {
     gatewayCanDo(req, 'remBoard')
-    validateBoardId(req.params.boardId)
-    const boardId = req.params.boardId;
+    validateBoardId(req.params.board)
+    const boardId = req.params.board;
     const index = watchedBoards.indexOf(boardId);
     if (index !== -1) {
 		await closeBoardDbs(boardId)
@@ -623,9 +626,9 @@ app.get('/function/removeBoard/:boardId', async (req, res, next) => {
 		console.log("watchedBoards:")
 		console.log(watchedBoards)
 		saveWatchedBoards();
-        res.send(`Successfully closed /${req.params.boardId}/.`)
+        res.send(`Successfully closed /${req.params.board}/.`)
 	} else {
-        res.send(`/${req.params.boardId}/ was already not in watched boards.`)
+        res.send(`/${req.params.board}/ was already not in watched boards.`)
     }
   } catch (err) {
         console.error('Error removing watched board:', err);
@@ -634,12 +637,12 @@ app.get('/function/removeBoard/:boardId', async (req, res, next) => {
   }
 });
 
-app.get('/function/pruneBoard/:boardId', async (req, res, next) => {
+app.get('/function/pruneBoard/:board', async (req, res, next) => {
   try {
     gatewayCanDo(req, 'remBoard')
-    validateBoardId(req.params.boardId)
-    await db.pruneBoard(req.params.boardId)
-    res.send(`Successfully pruned data from /${req.params.boardId}/.`)
+    validateBoardId(req.params.board)
+    await db.pruneBoard(req.params.board)
+    res.send(`Successfully pruned data from /${req.params.board}/.`)
   } catch (err) {
         console.error('Error pruning data from board:', err);
         lastError = err
@@ -649,17 +652,17 @@ app.get('/function/pruneBoard/:boardId', async (req, res, next) => {
 
 
 //todo: consolidate duplicated functionality
-app.get('/function/addGatewayBoard/:boardId',  async (req, res, next) => {
+app.get('/function/addGatewayBoard/:board',  async (req, res, next) => {
   try {
     gatewayCanDo(req, 'addBoard')
-    validateBoardId(req.params.boardId)
+    validateBoardId(req.params.board)
     const boardId = req.body.boardId;
     if (gatewayCfg.canSeeBoards.indexOf(boardId) === -1) {
         gatewayCfg.canSeeBoards.push(boardId);
         saveGatewayConfig();
-        res.send(`Successfully added /${req.params.boardId}/ to gateway boards.`)
+        res.send(`Successfully added /${req.params.board}/ to gateway boards.`)
     } else {
-        res.send(`/${req.params.boardId}/ was already in gateway boards.`)
+        res.send(`/${req.params.board}/ was already in gateway boards.`)
     }
   } catch (err) {
         lastError = err
@@ -667,18 +670,18 @@ app.get('/function/addGatewayBoard/:boardId',  async (req, res, next) => {
   }
 });
 
-app.get('/function/removeGatewayBoard/:boardId', async (req, res, next) => {
+app.get('/function/removeGatewayBoard/:board', async (req, res, next) => {
   try {
     gatewayCanDo(req, 'remBoard')
-    validateBoardId(req.params.boardId)
+    validateBoardId(req.params.board)
     const boardId = req.body.boardId;
     const index = gatewayCfg.canSeeBoards.indexOf(boardId)
     if (index !== -1) {
         gatewayCfg.canSeeBoards.splice(index, 1);
         saveGatewayConfig();
-        res.send(`Successfully removed /${req.params.boardId}/ from gateway boards.`)
+        res.send(`Successfully removed /${req.params.board}/ from gateway boards.`)
     } else {
-        res.send(`/${req.params.boardId}/ was already not in gateway boards.`)
+        res.send(`/${req.params.board}/ was already not in gateway boards.`)
     }
   } catch (err) {
         lastError = err
@@ -748,6 +751,7 @@ app.post('/deleteSelected', async (req, res, next) => {
             gatewayCanDo(req, 'delFile')
         }
         for (let thisBoard of Object.keys(req.body.posts)) {
+            gatewayCanSeeBoard(req, thisBoard)
             for (let thisHash of req.body.posts[thisBoard]) {
                 try {
                     if (req.body.recursiveFileDelete) {
@@ -773,6 +777,7 @@ app.post('/deleteSelected', async (req, res, next) => {
     if (Object.keys(req.body.files).length) {
         gatewayCanDo(req, 'delFile')
         for (let thisBoard of Object.keys(req.body.files)) {
+            gatewayCanSeeBoard(req, thisBoard)
             for (let thisHash of req.body.files[thisBoard]) {
                 try {
                     await db.delFile(thisHash, thisBoard, cfg.deleteFileRandomKey)
@@ -1636,16 +1641,16 @@ app.get('', async (req, res, next) => { //todo: merge with above functionality o
 });
 
 //todo: revisit this
-app.get('/function/findThreadContainingPost/:boardId/:postHash', async (req, res, next) => {
+app.get('/function/findThreadContainingPost/:board/:postHash', async (req, res, next) => {
     try {
-        gatewayCanSeeBoard(req, req.params.boardId)
-        const specificPost = await db.getSpecificPost(req.params.boardId, req.params.postHash)
+        gatewayCanSeeBoard(req, req.params.board)
+        const specificPost = await db.getSpecificPost(req.params.board, req.params.postHash)
         const hashRefIndex = req.params.postHash.indexOf('#');
         if (specificPost.length) { //post was found
             if (specificPost[0].replyto) { //post is a reply
-                res.redirect(`/${req.params.boardId}/thread/${specificPost[0].replyto}.html${hashRefIndex === -1 ? '' : req.params.postHash.substring(hashRefIndex)}`)
+                res.redirect(`/${req.params.board}/thread/${specificPost[0].replyto}.html${hashRefIndex === -1 ? '' : req.params.postHash.substring(hashRefIndex)}`)
             } else { //post is a thread OP
-                res.redirect(`/${req.params.boardId}/thread/${req.params.postHash}.html`) //todo: do we need hash reference here?
+                res.redirect(`/${req.params.board}/thread/${req.params.postHash}.html`) //todo: do we need hash reference here?
             }
         } else { //post not found
             throw new Error(`Thread containing post with hash '${req.params.postHash}' not found.`) //todo: maybe don't make this an error or something, or pre-check the links?
@@ -1750,6 +1755,7 @@ function gatewayCanDo(req, whichPerm, throwErr = true) { //todo: revisit the nam
 }
 
 //todo: make into middleware
+//todo: consolidate with gatewayCanDo()
 function gatewayCanSeeBoard(req, whichBoard) {
     if (req.session.loggedIn) {
         return true
