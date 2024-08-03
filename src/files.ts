@@ -3,8 +3,8 @@ import { Peerbit, createLibp2pExtended } from "peerbit"
 import { Program, } from "@peerbit/program"
 //import { createBlock, getBlockValue } from "@peerbit/libp2p-direct-block"
 import { Ed25519Keypair, sha256Sync, toBase64, toHexString, PublicSignKey } from "@peerbit/crypto"
-import { Documents, DocumentIndex, SearchRequest, StringMatch, Results, PutOperation, DeleteOperation, RoleOptions } from "@peerbit/document" //todo: remove address redundancy
-import { currentModerators, remoteQueryFileChunks } from './db.js'
+import { Documents, DocumentIndex, SearchRequest, StringMatch } from "@peerbit/document" //todo: remove address redundancy
+import { currentModerators, remoteQueryFileChunks, OpenArgs } from './db.js'
 
 import Validate from "./validation.js"
 
@@ -32,13 +32,11 @@ function isModerator(theSigner: PublicSignKey, theIdentity: PublicSignKey, moder
 	return false
 }
 
-type OpenArgs = { role?: RoleOptions };
-
 @variant('FileChunks')
 export class FileChunkDatabase extends Program<OpenArgs>{
 
 	@field({ type: Documents })
-	documents: Documents<FileChunk>
+	documents: Documents<FileChunk, IndexedFileChunk>
 
 	constructor(properties?: { id?: Uint8Array }) {
 		super()
@@ -61,50 +59,43 @@ export class FileChunkDatabase extends Program<OpenArgs>{
 	async open(properties?: OpenArgs) {
 		await this.documents.open({
 			type: FileChunk,
-			index: { key: 'hash',
-				fields: async (chunkDocument, context) => { //custom behavior because we don't want to store the actual chunk data in the index
-					return {
-						"hash": chunkDocument.hash,
-						"fileHash": chunkDocument.fileHash,
-						"chunkIndex": chunkDocument.chunkIndex,
-						"chunkSize": chunkDocument.chunkSize
-						// "chunkData": chunkDocument.chunkData //omitted to save memory
-					}
-
+			index: {
+				idProperty: 'hash',
+				type: IndexedFileChunk,
+				transform: (fileChunk, context) => {
+					return new IndexedFileChunk(fileChunk)
 				}
 			},
-			role: properties?.role,
-			canPerform: async (operation, { entry }) => {
-				const signers = await entry.getPublicKeys();
-				if (operation instanceof PutOperation) {
+			replicate: properties?.replicate,
+			canPerform: async (operation) => {
+				if (operation.type === 'put') {
 					//Get the file chunk and do some checks on it.
 					//todo: size validation
 					try {
-						if (operation.value) {
-							// if (operation.value.chunkCids.length > 16) {
-							// 	throw new Error('Expected file size greater than configured maximum of ' + 16 * fileChunkingSize + ' bytes.')
-							// }
-							let newCopy = new FileChunk(
-									operation.value.fileHash,
-									operation.value.chunkIndex,
-									operation.value.chunkSize,
-									operation.value.chunkData
-								)
-							if (newCopy.hash != operation.value.hash) {
-								console.log('File chunk document hash didn\'t match expected.')
-								console.log(newCopy)
-								console.log(operation.value)
-								return false
-							}
-							return true	
-						} 
-						//todo: remove (or dont write in the first place) blocks of invalid file
-
+						// if (operation.value.chunkCids.length > 16) {
+						// 	throw new Error('Expected file size greater than configured maximum of ' + 16 * fileChunkingSize + ' bytes.')
+						// }
+						const file = operation.value
+						let newCopy = new FileChunk(
+								file.fileHash,
+								file.chunkIndex,
+								file.chunkSize,
+								file.chunkData
+							)
+						if (newCopy.hash != file.hash) {
+							console.log('File chunk document hash didn\'t match expected.')
+							console.log(newCopy)
+							console.log(file)
+							return false
+						}
+						return true	
+					//todo: remove (or dont write in the first place) blocks of invalid file
 					} catch (err) {
 						console.log(err)
 						return false
 					}
-				} else if (operation instanceof DeleteOperation) {
+				} else if (operation.type === 'delete') {
+					const signers = operation.entry.signatures.map(s => s.publicKey);
 					for (var signer of signers) {
 						if (isModerator(signer, this.node.identity.publicKey, currentModerators)) {//todo: board specific, more granularcontrol, etc.
 							return true;
@@ -112,8 +103,8 @@ export class FileChunkDatabase extends Program<OpenArgs>{
 					}
 				}
 				return false
+			},
 
-			}
 		})
 		// this.documents.events.addEventListener('change',(change)=> {
 		//	  for (let fileChunk of change.detail.added) {
@@ -148,18 +139,14 @@ export class FileDatabase extends Program<OpenArgs>{
 		// 	await this.chunks.open();
 		await this.files.open({
 			type: File,
-			index: { key: 'hash' },
-			role: properties?.role,
-			canPerform: async (operation, { entry }) => {
-				const signers = await entry.getPublicKeys();
-				if (operation instanceof PutOperation) {
+			index: { idProperty: 'hash' },
+			replicate: properties?.replicate,
+			canPerform: async (operation) => {
+				if (operation.type === 'put') {
 					//Get the file and do some checks on it.
 					//todo: revisit this/simplify since hashes are used?
 					//todo: fix up/ensure working robustly
 					try {
-						if (!operation.value) {
-							throw new Error('Put operation value undefined.') //todo: revisit this
-						}
 						Validate.file(operation.value) //todo: consider necessity
 						//todo: validate file hash as with posts?
 
@@ -174,25 +161,17 @@ export class FileDatabase extends Program<OpenArgs>{
 						// }
 						return true
 						//todo: remove (or dont write in the first place) blocks of invalid file
-
 					} catch (err) {
 						console.log(err)
 						return false
 					}
-				}
-				if (operation instanceof DeleteOperation) {
+				} else if (operation.type === 'delete') {
+					const signers = operation.entry.signatures.map(s => s.publicKey);
 					for (var signer of signers) {
 						if (isModerator(signer, this.node.identity.publicKey, currentModerators)) {//todo: board specific, more granularcontrol, etc.
 							return true;
 						}
 					}
-					// for (var signer of signers) {
-					//  for (var rootKey of this.rootKeys) {
-					//	  if (signer.equals(rootKey)) {
-					//		  return true
-					//	  }
-					//  }
-					// }
 				}
 				return false
 
@@ -383,6 +362,33 @@ export class FileChunk extends BaseFileChunkDocument {
 		this.chunkSize = chunkSize
 		this.chunkData = chunkData
 		this.hash = toHexString(sha256Sync(serialize(this)))
+
+	}
+}
+
+@variant(1)
+export class IndexedFileChunk extends BaseFileChunkDocument {
+	@field({ type: 'string' })
+	hash: string = ''
+	@field({ type: 'string' })
+	fileHash: string
+	// @field({type: 'string'}) //todo: revisit these names
+	// chunkCid: string
+	@field({ type: 'u32' })
+	chunkIndex: number
+	@field({ type: 'u32' })
+	chunkSize: number
+	// @field({ type: Uint8Array }) //todo: consider type (buffer or uint8array?)
+	// chunkData: Uint8Array
+
+	constructor(originalFileChunk: FileChunk) {
+		super()
+		this.fileHash = originalFileChunk.fileHash
+		// this.chunkCid = toHexString(sha256Sync(chunkData))
+		this.chunkIndex = originalFileChunk.chunkIndex
+		this.chunkSize = originalFileChunk.chunkSize
+		// this.chunkData = chunkData
+		this.hash = originalFileChunk.hash
 
 	}
 }

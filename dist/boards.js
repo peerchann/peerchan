@@ -7,20 +7,24 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 };
 import { field, variant, vec, serialize } from "@dao-xyz/borsh";
 import { Program } from "@peerbit/program";
-import { Documents, PutOperation, DeleteOperation } from "@peerbit/document"; //todo: remove address redundancy
+import { Documents } from "@peerbit/document"; //todo: remove address redundancy
 // import { nanoid } from 'nanoid'
-import { sha256Sync, toHexString } from "@peerbit/crypto";
+import { sha256Sync, toBase64, toHexString } from "@peerbit/crypto";
+import { currentModerators } from './db.js';
 // import {
 // 	updateOne,
 // 	insertOne,
 // 	findOne
 // } from "./index.js" //todo: consider not importing everything 
 //todo: consolidate/move to validation file along with files.ts one
-function isModerator(theSigner, theIdentity) {
+function isModerator(theSigner, theIdentity, moderators = []) {
     if (theSigner && theIdentity) {
         if (theSigner.equals(theIdentity)) {
             return true;
         }
+    }
+    if (moderators.includes(toBase64(sha256Sync(theSigner.bytes)))) {
+        return true;
     }
     return false;
 }
@@ -77,27 +81,38 @@ let BoardDatabase = class BoardDatabase extends Program {
         this.documents = new Documents({ id: properties?.id }); //
         // this.documents = new Documents({ index: new DocumentIndex({ indexBy: '_id' }) })
     }
-    async open() {
+    async open(properties) {
         await this.documents.open({
             type: Board,
-            index: { key: 'hash' },
-            canPerform: async (operation, { entry }) => {
-                const signers = await entry.getPublicKeys();
-                if (operation instanceof PutOperation) {
+            index: { idProperty: 'hash' },
+            // canPerform: async (operation) => {
+            // 	const signers = await entry.getPublicKeys();
+            // 	if (props.type === 'put') {
+            // 		try {
+            // 			const board = operation.value
+            // 			let new
+            // 		} catch (err) {
+            // 			console.log(err)
+            // 			return false
+            // 		}
+            // 	} 
+            // }
+            replicate: properties?.replicate,
+            canPerform: async (operation) => {
+                if (operation.type === 'put') {
                     try {
-                        if (operation.value) {
-                            // if (operation.value.chunkCids.length > 16) {
-                            // 	throw new Error('Expected file size greater than configured maximum of ' + 16 * fileChunkingSize + ' bytes.')
-                            // }
-                            let newCopy = new Board(operation.value.id, operation.value.title, operation.value.desc, operation.value.tags);
-                            if (newCopy.hash != operation.value.hash) {
-                                console.log('Board document hash didn\'t match expected.');
-                                console.log(newCopy);
-                                console.log(operation.value);
-                                return false;
-                            }
-                            return true;
+                        const board = operation.value;
+                        // if (operation.value.chunkCids.length > 16) {
+                        // 	throw new Error('Expected file size greater than configured maximum of ' + 16 * fileChunkingSize + ' bytes.')
+                        // }
+                        let newCopy = new Board(board.id, board.title, board.desc, board.tags);
+                        if (newCopy.hash != board.hash) {
+                            console.log('Board document hash didn\'t match expected.');
+                            console.log(newCopy);
+                            console.log(board);
+                            return false;
                         }
+                        return true;
                         //todo: remove (or dont write in the first place) blocks of invalid file
                     }
                     catch (err) {
@@ -105,9 +120,10 @@ let BoardDatabase = class BoardDatabase extends Program {
                         return false;
                     }
                 }
-                else if (operation instanceof DeleteOperation) {
+                else if (operation.type === 'delete') {
+                    const signers = operation.entry.signatures.map(s => s.publicKey);
                     for (var signer of signers) {
-                        if (isModerator(signer, this.node.identity.publicKey)) { //todo: more granularcontrol, etc.
+                        if (isModerator(signer, this.node.identity.publicKey, currentModerators)) { //todo: board specific, more granularcontrol, etc.
                             return true;
                         }
                     }

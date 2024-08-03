@@ -8,7 +8,7 @@ import { field, variant, vec, serialize } from "@dao-xyz/borsh";
 import { Program, } from "@peerbit/program";
 //import { createBlock, getBlockValue } from "@peerbit/libp2p-direct-block"
 import { Ed25519Keypair, sha256Sync, toBase64, toHexString } from "@peerbit/crypto";
-import { Documents, SearchRequest, StringMatch, PutOperation, DeleteOperation } from "@peerbit/document"; //todo: remove address redundancy
+import { Documents, SearchRequest, StringMatch } from "@peerbit/document"; //todo: remove address redundancy
 import { currentModerators, remoteQueryFileChunks } from './db.js';
 import Validate from "./validation.js";
 //todo: consider removing receivedHash check
@@ -55,37 +55,31 @@ let FileChunkDatabase = class FileChunkDatabase extends Program {
     async open(properties) {
         await this.documents.open({
             type: FileChunk,
-            index: { key: 'hash',
-                fields: async (chunkDocument, context) => {
-                    return {
-                        "hash": chunkDocument.hash,
-                        "fileHash": chunkDocument.fileHash,
-                        "chunkIndex": chunkDocument.chunkIndex,
-                        "chunkSize": chunkDocument.chunkSize
-                        // "chunkData": chunkDocument.chunkData //omitted to save memory
-                    };
+            index: {
+                idProperty: 'hash',
+                type: IndexedFileChunk,
+                transform: (fileChunk, context) => {
+                    return new IndexedFileChunk(fileChunk);
                 }
             },
-            role: properties?.role,
-            canPerform: async (operation, { entry }) => {
-                const signers = await entry.getPublicKeys();
-                if (operation instanceof PutOperation) {
+            replicate: properties?.replicate,
+            canPerform: async (operation) => {
+                if (operation.type === 'put') {
                     //Get the file chunk and do some checks on it.
                     //todo: size validation
                     try {
-                        if (operation.value) {
-                            // if (operation.value.chunkCids.length > 16) {
-                            // 	throw new Error('Expected file size greater than configured maximum of ' + 16 * fileChunkingSize + ' bytes.')
-                            // }
-                            let newCopy = new FileChunk(operation.value.fileHash, operation.value.chunkIndex, operation.value.chunkSize, operation.value.chunkData);
-                            if (newCopy.hash != operation.value.hash) {
-                                console.log('File chunk document hash didn\'t match expected.');
-                                console.log(newCopy);
-                                console.log(operation.value);
-                                return false;
-                            }
-                            return true;
+                        // if (operation.value.chunkCids.length > 16) {
+                        // 	throw new Error('Expected file size greater than configured maximum of ' + 16 * fileChunkingSize + ' bytes.')
+                        // }
+                        const file = operation.value;
+                        let newCopy = new FileChunk(file.fileHash, file.chunkIndex, file.chunkSize, file.chunkData);
+                        if (newCopy.hash != file.hash) {
+                            console.log('File chunk document hash didn\'t match expected.');
+                            console.log(newCopy);
+                            console.log(file);
+                            return false;
                         }
+                        return true;
                         //todo: remove (or dont write in the first place) blocks of invalid file
                     }
                     catch (err) {
@@ -93,7 +87,8 @@ let FileChunkDatabase = class FileChunkDatabase extends Program {
                         return false;
                     }
                 }
-                else if (operation instanceof DeleteOperation) {
+                else if (operation.type === 'delete') {
+                    const signers = operation.entry.signatures.map(s => s.publicKey);
                     for (var signer of signers) {
                         if (isModerator(signer, this.node.identity.publicKey, currentModerators)) { //todo: board specific, more granularcontrol, etc.
                             return true;
@@ -101,7 +96,7 @@ let FileChunkDatabase = class FileChunkDatabase extends Program {
                     }
                 }
                 return false;
-            }
+            },
         });
         // this.documents.events.addEventListener('change',(change)=> {
         //	  for (let fileChunk of change.detail.added) {
@@ -136,18 +131,14 @@ let FileDatabase = class FileDatabase extends Program {
         // 	await this.chunks.open();
         await this.files.open({
             type: File,
-            index: { key: 'hash' },
-            role: properties?.role,
-            canPerform: async (operation, { entry }) => {
-                const signers = await entry.getPublicKeys();
-                if (operation instanceof PutOperation) {
+            index: { idProperty: 'hash' },
+            replicate: properties?.replicate,
+            canPerform: async (operation) => {
+                if (operation.type === 'put') {
                     //Get the file and do some checks on it.
                     //todo: revisit this/simplify since hashes are used?
                     //todo: fix up/ensure working robustly
                     try {
-                        if (!operation.value) {
-                            throw new Error('Put operation value undefined.'); //todo: revisit this
-                        }
                         Validate.file(operation.value); //todo: consider necessity
                         //todo: validate file hash as with posts?
                         // let fileData = await operation.value.getFile(this.chunks) //todo: revisit/check eg. for dynamic/variable chunking sizes
@@ -167,19 +158,13 @@ let FileDatabase = class FileDatabase extends Program {
                         return false;
                     }
                 }
-                if (operation instanceof DeleteOperation) {
+                else if (operation.type === 'delete') {
+                    const signers = operation.entry.signatures.map(s => s.publicKey);
                     for (var signer of signers) {
                         if (isModerator(signer, this.node.identity.publicKey, currentModerators)) { //todo: board specific, more granularcontrol, etc.
                             return true;
                         }
                     }
-                    // for (var signer of signers) {
-                    //  for (var rootKey of this.rootKeys) {
-                    //	  if (signer.equals(rootKey)) {
-                    //		  return true
-                    //	  }
-                    //  }
-                    // }
                 }
                 return false;
             }
@@ -378,6 +363,41 @@ FileChunk = __decorate([
     variant(0)
 ], FileChunk);
 export { FileChunk };
+let IndexedFileChunk = class IndexedFileChunk extends BaseFileChunkDocument {
+    hash = '';
+    fileHash;
+    // @field({type: 'string'}) //todo: revisit these names
+    // chunkCid: string
+    chunkIndex;
+    chunkSize;
+    // @field({ type: Uint8Array }) //todo: consider type (buffer or uint8array?)
+    // chunkData: Uint8Array
+    constructor(originalFileChunk) {
+        super();
+        this.fileHash = originalFileChunk.fileHash;
+        // this.chunkCid = toHexString(sha256Sync(chunkData))
+        this.chunkIndex = originalFileChunk.chunkIndex;
+        this.chunkSize = originalFileChunk.chunkSize;
+        // this.chunkData = chunkData
+        this.hash = originalFileChunk.hash;
+    }
+};
+__decorate([
+    field({ type: 'string' })
+], IndexedFileChunk.prototype, "hash", void 0);
+__decorate([
+    field({ type: 'string' })
+], IndexedFileChunk.prototype, "fileHash", void 0);
+__decorate([
+    field({ type: 'u32' })
+], IndexedFileChunk.prototype, "chunkIndex", void 0);
+__decorate([
+    field({ type: 'u32' })
+], IndexedFileChunk.prototype, "chunkSize", void 0);
+IndexedFileChunk = __decorate([
+    variant(1)
+], IndexedFileChunk);
+export { IndexedFileChunk };
 // import { Peerbit } from 'peerbit'
 // describe('tests', () => {
 // 	let client: Peerbit;

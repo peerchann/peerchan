@@ -1,5 +1,6 @@
 import { Program } from "@peerbit/program";
-import { Documents, RoleOptions } from "@peerbit/document";
+import { Documents } from "@peerbit/document";
+import { OpenArgs } from './db.js';
 import { FileDatabase } from './files.js';
 export declare class BasePostDocument {
 }
@@ -21,9 +22,6 @@ export declare class Post extends BasePostDocument {
     files: PostFile[];
     constructor(date: bigint, replyto: string | undefined, name: string | undefined, subject: string | undefined, email: string | undefined, message: string | undefined, files: PostFile[]);
 }
-type OpenArgs = {
-    role?: RoleOptions;
-};
 export declare class PostDatabase extends Program<OpenArgs> {
     documents: Documents<Post>;
     fileDb: FileDatabase;
@@ -32,4 +30,3 @@ export declare class PostDatabase extends Program<OpenArgs> {
     });
     open(properties?: OpenArgs): Promise<void>;
 }
-export {};

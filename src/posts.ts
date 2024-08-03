@@ -2,9 +2,9 @@
 import { Peerbit } from "peerbit"
 import { field, variant, vec, option, serialize, deserialize } from "@dao-xyz/borsh"
 import { Program, OpenOptions } from "@peerbit/program"
-import { Documents, DocumentIndex, 	SearchRequest, StringMatch, IntegerCompare, Compare, Results, PutOperation, DeleteOperation, RoleOptions } from "@peerbit/document" //todo: remove address redundancy
+import { Documents, DocumentIndex, 	SearchRequest, StringMatch, IntegerCompare, Compare } from "@peerbit/document" //todo: remove address redundancy
 // import { nanoid } from 'nanoid'
-import { currentModerators } from './db.js'
+import { currentModerators, OpenArgs } from './db.js'
 
 
 import { sha256Sync, toBase64, toHexString, PublicSignKey } from "@peerbit/crypto"
@@ -167,8 +167,6 @@ export class Post extends BasePostDocument {
 
 }
 
-type OpenArgs = { role?: RoleOptions }; //todo: move this to db?
-
 //todo: consistency with the document type 
 @variant("postdatabase") //todo: consider renaming/modifying as appropriate
 export class PostDatabase extends Program<OpenArgs> {
@@ -189,46 +187,36 @@ export class PostDatabase extends Program<OpenArgs> {
 	async open(properties?: OpenArgs) {
 		await this.documents.open({
 			type: Post,
-			index: { key: 'hash' },
-			role: properties?.role,
-			canPerform: async (operation, { entry }) => {
-				const signers = await entry.getPublicKeys();
-				if (operation instanceof PutOperation) {
+			index: { idProperty: 'hash' },
+			replicate: properties?.replicate,
+			canPerform: async (operation) => {
+				if (operation.type === 'put') {
 					try {
-						if (operation.value) {
-							// if (operation.value.chunkCids.length > 16) {
-							// 	throw new Error('Expected file size greater than configured maximum of ' + 16 * fileChunkingSize + ' bytes.')
-							// }
-							try {
-								Validate.post(operation.value)
-								let newCopy = new Post(
-									operation.value.date,
-									operation.value.replyto,
-									operation.value.name,
-									operation.value.subject,
-									operation.value.email,
-									operation.value.message,
-									operation.value.files
-									)
-								if (newCopy.hash != operation.value.hash) {
-									console.log('Post document hash didn\'t match expected.')
-									console.log(newCopy)
-									console.log(operation.value)
-									return false
-								}
-								return true
-							} catch (err) {
-								return false
-							}
-
-						} 
-						//todo: remove (or dont write in the first place) blocks of invalid file
-
+						const post = operation.value
+						Validate.post(post)
+						let newCopy = new Post(
+							post.date,
+							post.replyto,
+							post.name,
+							post.subject,
+							post.email,
+							post.message,
+							post.files
+							)
+						if (newCopy.hash != post.hash) {
+							console.log('Post document hash didn\'t match expected.')
+							console.log(newCopy)
+							console.log(post)
+							return false
+						}
+						return true
+					//todo: remove (or dont write in the first place) blocks of invalid file
 					} catch (err) {
 						console.log(err)
 						return false
 					}
-				} else if (operation instanceof DeleteOperation) {
+				} else if (operation.type === 'delete') {
+					const signers = operation.entry.signatures.map(s => s.publicKey);
 					for (var signer of signers) {
 						if (isModerator(signer, this.node.identity.publicKey, currentModerators)) {//todo: board specific, more granularcontrol, etc.
 							return true;
@@ -236,7 +224,6 @@ export class PostDatabase extends Program<OpenArgs> {
 					}
 				}
 				return false
-
 			}
 		})
 

@@ -13,7 +13,7 @@ import mime from 'mime'
 
 import { DeliveryError } from '@peerbit/stream-interface';
 import { randomBytes } from '@peerbit/crypto';
-import { StringMatch, IntegerCompare, Compare, MissingField, Or, And } from '@peerbit/document'
+import { StringMatch, IntegerCompare, Compare, IsNull, Or, And } from '@peerbit/document'
 
 const app = express();
 
@@ -999,7 +999,7 @@ function convertQueryToPeerbitQuery (queryString) {
     function queryExpToPeerbitQueryExp(tokenArray) {
         //we get the type of the Peerbit query based on the third element of the array
         if (tokenArray[2] == 'empty' && tokenArray[1] == '=') {
-            return new Or([new StringMatch({key: tokenArray[0], value: ''}), new MissingField({key: tokenArray[0]})])
+            return new Or([new StringMatch({key: tokenArray[0], value: ''}), new IsNull({key: tokenArray[0]})])
         } else if (tokenArray[2].startsWith('"') && tokenArray[2].endsWith('"') && tokenArray[1] == '=') {
             //todo: partial matches, case sensitivity, etc
             return new StringMatch({key: tokenArray[0], value: tokenArray[2].slice(1, -1)})

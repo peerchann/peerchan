@@ -70,35 +70,33 @@ export async function openPostsDb(postsDbId = "my_post_db", options) {
     if (options?.replicationFactor) {
         if (openedBoards[postsDbId].fileDb.chunks.closed) {
             await client.open(openedBoards[postsDbId].fileDb.chunks, {
+                // replicate: {factor: options.replicationFactor},
                 args: {
-                    role: {
-                        type: "replicator",
+                    replicate: {
                         factor: options.replicationFactor
                     },
+                    existing: "reuse"
                 },
-                existing: "reuse"
             });
         }
         if (openedBoards[postsDbId].fileDb.closed) {
             await client.open(openedBoards[postsDbId].fileDb, {
                 args: {
-                    role: {
-                        type: "replicator",
+                    replicate: {
                         factor: options.replicationFactor
-                    }
+                    },
+                    existing: "reuse"
                 },
-                existing: "reuse"
             });
         }
         if (openedBoards[postsDbId].closed) {
             await client.open(openedBoards[postsDbId], {
                 args: {
-                    role: {
-                        type: "replicator",
+                    replicate: {
                         factor: options.replicationFactor
-                    }
+                    },
+                    existing: "reuse"
                 },
-                existing: "reuse"
             });
         }
     }
@@ -132,7 +130,8 @@ export async function getBoardStats(whichBoard) {
     let rfStatus = [null, null, null];
     //if the board is opened, we get the replication factors, corresponding to posts, files, and fileChunks
     if (boardStatus == 2) {
-        rfStatus = [thisBoard.documents.log.role.segments[0].factor, thisBoard.fileDb.files.log.role.segments[0].factor, thisBoard.fileDb.chunks.documents.log.role.segments[0].factor];
+        rfStatus = [(await thisBoard.documents.log.getMyReplicationSegments())[0]?.widthNormalized || 0, (await thisBoard.fileDb.files.log.getMyReplicationSegments())[0]?.widthNormalized || 0, (await thisBoard.fileDb.chunks.documents.log.getMyReplicationSegments())[0]?.widthNormalized || 0];
+        // rfStatus = [thisBoard.documents.log.role.segments[0].factor, thisBoard.fileDb.files.log.role.segments[0].factor, thisBoard.fileDb.chunks.documents.log.role.segments[0].factor]
     }
     return { boardStatus, rfStatus };
 }
@@ -176,18 +175,18 @@ export async function openFilesDb(filesDbId = "", options) {
         console.log(`Opening files database...`, options);
         await client.open(Files.chunks, {
             args: {
-                role: {
-                    type: "replicator",
+                replicate: {
                     factor: options.replicationFactor
-                }
+                },
+                existing: 'reuse'
             }
         });
         await client.open(Files, {
             args: {
-                role: {
-                    type: "replicator",
+                replicate: {
                     factor: options.replicationFactor
-                }
+                },
+                existing: 'reuse'
             }
         });
     }

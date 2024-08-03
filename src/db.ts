@@ -5,7 +5,7 @@
 import { Peerbit, createLibp2pExtended } from "peerbit"
 import { Program } from "@peerbit/program"
 import { createLibp2p, Libp2p} from 'libp2p'
-import { Documents, DocumentIndex, SearchRequest, StringMatch, MissingField, Results, ResultWithSource } from "@peerbit/document"
+import { Documents, DocumentIndex, SearchRequest, StringMatch, IsNull } from "@peerbit/document"
 import { webSockets } from '@libp2p/websockets'
 import { all } from '@libp2p/websockets/filters'
 import { tcp } from "@libp2p/tcp"
@@ -18,6 +18,7 @@ import { GossipSub } from '@chainsafe/libp2p-gossipsub'
 import { Ed25519Keypair, toBase64, fromBase64, sha256Sync, toHexString, PublicSignKey, Ed25519PublicKey, Secp256k1PublicKey } from "@peerbit/crypto"
 import { field, variant, vec, option, serialize, deserialize } from "@dao-xyz/borsh"
 import { multiaddr } from '@multiformats/multiaddr'
+import { type ReplicationOptions } from "@peerbit/shared-log";
 
 import Validate from "./validation.js"
 
@@ -86,6 +87,13 @@ export async function clientId () {
 	return client.identity.publicKey.hashcode()
 }
 
+
+// export type OpenArgs = { replicate: ReplicationOptions };
+export type OpenArgs = {
+	replicate: {factor: any},
+	existing: any
+}
+
 //todo: move the config to a different spot
 //todo: consider finding a way to open files, chunks, posts async
 export async function openPostsDb(postsDbId = "my_post_db", options: any) {
@@ -96,35 +104,33 @@ export async function openPostsDb(postsDbId = "my_post_db", options: any) {
     if (options?.replicationFactor) {
         if (openedBoards[postsDbId].fileDb.chunks.closed) {
             await client.open(openedBoards[postsDbId].fileDb.chunks, {
+                // replicate: {factor: options.replicationFactor},
                 args: {
-                    role: {
-                        type: "replicator",
+                    replicate: {
                         factor: options.replicationFactor
                     },
+                    existing: "reuse"
                 },
-                existing: "reuse"
             });
         }
         if (openedBoards[postsDbId].fileDb.closed) {
              await client.open(openedBoards[postsDbId].fileDb, {
                 args: {
-                    role: {
-                        type: "replicator",
+                    replicate: {
                         factor: options.replicationFactor
-                    }
+                    },
+                    existing: "reuse"
                 },
-                existing: "reuse"
             });
         }
         if (openedBoards[postsDbId].closed) {
             await client.open(openedBoards[postsDbId], {
                 args: {
-                    role: {
-                        type: "replicator",
+                    replicate: {
                         factor: options.replicationFactor
-                    }
+                    },
+                    existing: "reuse"
                 },
-                existing: "reuse"
             });
         }
     }
@@ -158,7 +164,8 @@ export async function getBoardStats (whichBoard: string) {
 	let rfStatus = [null, null, null]
 	//if the board is opened, we get the replication factors, corresponding to posts, files, and fileChunks
 	if (boardStatus == 2) {
-		 rfStatus = [thisBoard.documents.log.role.segments[0].factor, thisBoard.fileDb.files.log.role.segments[0].factor, thisBoard.fileDb.chunks.documents.log.role.segments[0].factor]
+	        rfStatus = [(await thisBoard.documents.log.getMyReplicationSegments())[0]?.widthNormalized || 0, (await thisBoard.fileDb.files.log.getMyReplicationSegments())[0]?.widthNormalized || 0, (await thisBoard.fileDb.chunks.documents.log.getMyReplicationSegments())[0]?.widthNormalized || 0]
+		 // rfStatus = [thisBoard.documents.log.role.segments[0].factor, thisBoard.fileDb.files.log.role.segments[0].factor, thisBoard.fileDb.chunks.documents.log.role.segments[0].factor]
 	}
 
 	return {boardStatus, rfStatus}
@@ -206,27 +213,25 @@ export async function dropPostsDb (postsDbId = "my_post_db") {
 
 // }
 
-
 //only used for pan-boards files db, the others board-specific ones are openend in openPostsDb
 export async function openFilesDb (filesDbId = "", options: any ) {
-
 	Files = new FileDatabase({ id: sha256Sync(Buffer.from(filesDbId)) })
 	if (options.replicationFactor) {
 		console.log(`Opening files database...`, options)
 		await client.open(Files.chunks, {
 			args: {
-				role: {
-					type: "replicator",
+				replicate: {
 					factor: options.replicationFactor
-				}
+				},
+				existing: 'reuse'
 			}
 		})
 		await client.open(Files, {
 			args: {
-				role: {
-					type: "replicator",
+				replicate: {
 					factor: options.replicationFactor
-				}
+				},
+				existing: 'reuse'
 			}
 		})
 	} else {
