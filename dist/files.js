@@ -63,6 +63,7 @@ let FileChunkDatabase = class FileChunkDatabase extends Program {
                 }
             },
             replicate: properties?.replicate,
+            compatibility: properties?.compatibility,
             canPerform: async (operation) => {
                 if (operation.type === 'put') {
                     //Get the file chunk and do some checks on it.
@@ -133,6 +134,7 @@ let FileDatabase = class FileDatabase extends Program {
             type: File,
             index: { idProperty: 'hash' },
             replicate: properties?.replicate,
+            compatibility: properties?.compatibility,
             canPerform: async (operation) => {
                 if (operation.type === 'put') {
                     //Get the file and do some checks on it.

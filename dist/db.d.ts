@@ -18,10 +18,11 @@ export declare let remoteQueryFileChunks: boolean;
 export declare function pbInitClient(listenPort?: number): Promise<void>;
 export declare function clientId(): Promise<string>;
 export type OpenArgs = {
-    replicate: {
+    replicate?: {
         factor: any;
     };
     existing: any;
+    compatibility: any;
 };
 export declare function openPostsDb(postsDbId: string | undefined, options: any): Promise<void>;
 export declare function getBoardStats(whichBoard: string): Promise<{

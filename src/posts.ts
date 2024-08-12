@@ -189,6 +189,7 @@ export class PostDatabase extends Program<OpenArgs> {
 			type: Post,
 			index: { idProperty: 'hash' },
 			replicate: properties?.replicate,
+			compatibility: properties?.compatibility,
 			canPerform: async (operation) => {
 				if (operation.type === 'put') {
 					try {

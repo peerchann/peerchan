@@ -183,6 +183,7 @@ let PostDatabase = class PostDatabase extends Program {
             type: Post,
             index: { idProperty: 'hash' },
             replicate: properties?.replicate,
+            compatibility: properties?.compatibility,
             canPerform: async (operation) => {
                 if (operation.type === 'put') {
                     try {

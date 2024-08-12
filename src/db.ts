@@ -90,8 +90,9 @@ export async function clientId () {
 
 // export type OpenArgs = { replicate: ReplicationOptions };
 export type OpenArgs = {
-	replicate: {factor: any},
-	existing: any
+	replicate?: {factor: any},
+	existing: any,
+	compatibility: any
 }
 
 //todo: move the config to a different spot
@@ -109,7 +110,8 @@ export async function openPostsDb(postsDbId = "my_post_db", options: any) {
                     replicate: {
                         factor: options.replicationFactor
                     },
-                    existing: "reuse"
+                    existing: "reuse",
+                    compatibility: 6
                 },
             });
         }
@@ -119,7 +121,8 @@ export async function openPostsDb(postsDbId = "my_post_db", options: any) {
                     replicate: {
                         factor: options.replicationFactor
                     },
-                    existing: "reuse"
+                    existing: "reuse",
+                    compatibility: 6
                 },
             });
         }
@@ -129,20 +132,36 @@ export async function openPostsDb(postsDbId = "my_post_db", options: any) {
                     replicate: {
                         factor: options.replicationFactor
                     },
-                    existing: "reuse"
+                    existing: "reuse",
+                    compatibility: 6
                 },
             });
         }
     }
     else {
         if (openedBoards[postsDbId].fileDb.chunks.closed) {
-            await client.open(openedBoards[postsDbId].fileDb.chunks, { existing: "reuse" });
+            await client.open(openedBoards[postsDbId].fileDb.chunks, {
+            	args: {
+            		existing: "reuse",
+            		compatibility: 6	
+            	}  
+            });
         }
         if (openedBoards[postsDbId].fileDb.closed) {
-            await client.open(openedBoards[postsDbId].fileDb, { existing: "reuse" });
+            await client.open(openedBoards[postsDbId].fileDb, {
+            	args: {
+            		existing: "reuse",
+            		compatibility: 6	
+            	}  
+            });
         }
         if (openedBoards[postsDbId].closed) {
-            await client.open(openedBoards[postsDbId], { existing: "reuse" });
+            await client.open(openedBoards[postsDbId], {
+            	args: {
+            		existing: "reuse",
+            		compatibility: 6	
+            	}  
+            });
         }
         // await client.open(openedBoards[postsDbId].fileDb.chunks)
         // await client.open(openedBoards[postsDbId].fileDb)
@@ -223,7 +242,8 @@ export async function openFilesDb (filesDbId = "", options: any ) {
 				replicate: {
 					factor: options.replicationFactor
 				},
-				existing: 'reuse'
+				existing: 'reuse',
+				compatibility: 6
 			}
 		})
 		await client.open(Files, {
@@ -231,13 +251,23 @@ export async function openFilesDb (filesDbId = "", options: any ) {
 				replicate: {
 					factor: options.replicationFactor
 				},
-				existing: 'reuse'
+				existing: 'reuse',
+				compatibility: 6
 			}
 		})
 	} else {
-		await client.open(Files.chunks)
-		await client.open(Files)
-
+		await client.open(Files.chunks, {
+        	args: {
+        		existing: "reuse",
+        		compatibility: 6	
+        	}  
+        });
+		await client.open(Files, {
+        	args: {
+        		existing: "reuse",
+        		compatibility: 6	
+        	}  
+        });
 	}
 
 }

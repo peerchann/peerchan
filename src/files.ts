@@ -67,6 +67,7 @@ export class FileChunkDatabase extends Program<OpenArgs>{
 				}
 			},
 			replicate: properties?.replicate,
+			compatibility: properties?.compatibility,
 			canPerform: async (operation) => {
 				if (operation.type === 'put') {
 					//Get the file chunk and do some checks on it.
@@ -141,6 +142,7 @@ export class FileDatabase extends Program<OpenArgs>{
 			type: File,
 			index: { idProperty: 'hash' },
 			replicate: properties?.replicate,
+			compatibility: properties?.compatibility,
 			canPerform: async (operation) => {
 				if (operation.type === 'put') {
 					//Get the file and do some checks on it.
