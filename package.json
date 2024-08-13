@@ -18,5 +18,9 @@
     "open": "^10.0.4",
     "peerbit": "4.0.7",
     "pug": "^3.0.2"
+  },
+  "resolutions": {
+    "@peerbit/crypto": "2.2.0",
+    "@peerbit/blocks": "2.0.32"
   }
 }
