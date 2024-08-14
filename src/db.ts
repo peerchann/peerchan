@@ -53,6 +53,8 @@ export let remoteQueryPosts: boolean = false
 export let remoteQueryFileRefs: boolean = false
 export let remoteQueryFileChunks: boolean = false 
 
+export const searchResultsLimit = 0xffffffff //large number; get all results
+
 export async function pbInitClient (listenPort = 8500) {
 
 	// setMaxListeners(0) //todo: revisit
@@ -86,7 +88,6 @@ export async function pbInitClient (listenPort = 8500) {
 export async function clientId () {
 	return client.identity.publicKey.hashcode()
 }
-
 
 // export type OpenArgs = { replicate: ReplicationOptions };
 export type OpenArgs = {
@@ -316,7 +317,7 @@ export async function delPost (whichPost: string, whichBoard: string, randomKey:
     if (!whichBoard) {
         throw new Error('No board specified.');
     }
-	let theseReplies = await openedBoards[whichBoard].documents.index.search(new SearchRequest({query: [new StringMatch({ key: 'replyto', value: whichPost })]}), { local: true, remote: remoteQueryPosts })
+	let theseReplies = await openedBoards[whichBoard].documents.index.search(new SearchRequest({query: [new StringMatch({ key: 'replyto', value: whichPost })], fetch: searchResultsLimit }), { local: true, remote: remoteQueryPosts })
 	//delete post itself
 
 	if (randomKey) {
@@ -347,7 +348,7 @@ export async function getAllPosts (query: any = {}) {
 	//todo: add query?
 	let results: any = []
 	for (let thisBoard of Object.keys(openedBoards)) {
-		results = results.concat(await openedBoards[thisBoard].documents.index.search(new SearchRequest, { local: true, remote: remoteQueryPosts }))
+		results = results.concat(await openedBoards[thisBoard].documents.index.search(new SearchRequest({ fetch: searchResultsLimit }), { local: true, remote: remoteQueryPosts }))
 	}
 
     // Sort the results by the 'date' property in descending order
@@ -366,13 +367,12 @@ export async function getPosts (whichBoard: string) {
     }
 
 	//todo: add query?
-	let	results = await openedBoards[whichBoard].documents.index.search(new SearchRequest, { local: true, remote: remoteQueryPosts })
+	let	results = await openedBoards[whichBoard].documents.index.search(new SearchRequest({ fetch: searchResultsLimit }), { local: true, remote: remoteQueryPosts })
 
     // Sort the results by the 'date' property in descending order
     results.sort((a: any, b: any) => (a.date < b.date) ? -1 : ((a.date > b.date) ? 1 : 0)) //newest on top
 
 	return results
-	//return await Posts.documents.index.search(new SearchRequest, { local: true, remote: remoteQueryPosts });
 }
 
 
@@ -384,7 +384,7 @@ export async function getThreadsWithReplies(whichBoard: string, numThreads: numb
         throw new Error('No board specified.');
     }
 
-    const allPosts = await openedBoards[whichBoard].documents.index.search(new SearchRequest({ query: [] }), { local: true, remote: remoteQueryPosts })
+    const allPosts = await openedBoards[whichBoard].documents.index.search(new SearchRequest({ query: [], fetch: searchResultsLimit }), { local: true, remote: remoteQueryPosts })
 
     const threadPosts: any[] = [];
     const repliesByThread: Record<string, any[]> = {};
@@ -463,7 +463,7 @@ export async function getRepliesToSpecificPost (whichBoard: string, whichThread:
     }
 
 	//todo: add query?
-	let	results = await openedBoards[whichBoard].documents.index.search(new SearchRequest({query: [new StringMatch({ key: 'replyto', value: whichThread })]}), { local: true, remote: remoteQueryPosts })
+	let	results = await openedBoards[whichBoard].documents.index.search(new SearchRequest({query: [new StringMatch({ key: 'replyto', value: whichThread })], fetch: searchResultsLimit }), { local: true, remote: remoteQueryPosts })
 	results.sort((a: any, b: any) => (a.date < b.date) ? -1 : ((a.date > b.date) ? 1 : 0)) //newest on bottom
 	results.forEach((r: any) => {r.board = whichBoard})
 	return results
@@ -490,7 +490,7 @@ export async function queryPosts(whichBoards: string[], queryObj: any) {
     for (let thisBoard of whichBoards) {
     	// console.log("DEBUG 078:", thisBoard)
         //todo: optimize
-        let thisBoardResults = await openedBoards[thisBoard].documents.index.search(new SearchRequest({ query: queryObj }), { local: true, remote: remoteQueryPosts })
+        let thisBoardResults = await openedBoards[thisBoard].documents.index.search(new SearchRequest({ query: queryObj, fetch: searchResultsLimit }), { local: true, remote: remoteQueryPosts })
     	if (thisBoardResults.length) {
 	    	results[thisBoard] = thisBoardResults	
     	}
@@ -501,7 +501,7 @@ export async function queryPosts(whichBoards: string[], queryObj: any) {
 
 //todo: revisit in light of per-board fileDbs
 export async function getAllFileDocuments () {
-		return await Files.files.index.search(new SearchRequest({ query: [] }), { local: true, remote: remoteQueryFileRefs })
+		return await Files.files.index.search(new SearchRequest({ query: [], fetch: searchResultsLimit  }), { local: true, remote: remoteQueryFileRefs })
 
 }
 

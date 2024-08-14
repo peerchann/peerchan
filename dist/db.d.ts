@@ -15,6 +15,7 @@ export declare let openedBoards: any;
 export declare let remoteQueryPosts: boolean;
 export declare let remoteQueryFileRefs: boolean;
 export declare let remoteQueryFileChunks: boolean;
+export declare const searchResultsLimit = 4294967295;
 export declare function pbInitClient(listenPort?: number): Promise<void>;
 export declare function clientId(): Promise<string>;
 export type OpenArgs = {

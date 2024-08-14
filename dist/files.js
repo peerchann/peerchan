@@ -9,7 +9,7 @@ import { Program, } from "@peerbit/program";
 //import { createBlock, getBlockValue } from "@peerbit/libp2p-direct-block"
 import { Ed25519Keypair, sha256Sync, toBase64, toHexString } from "@peerbit/crypto";
 import { Documents, SearchRequest, StringMatch } from "@peerbit/document"; //todo: remove address redundancy
-import { currentModerators, remoteQueryFileChunks } from './db.js';
+import { currentModerators, remoteQueryFileChunks, searchResultsLimit } from './db.js';
 import Validate from "./validation.js";
 //todo: consider removing receivedHash check
 //todo: reconsider how to handle when number of chunks doesn't match
@@ -247,7 +247,7 @@ let File = class File extends BaseFileDocument {
         // let chunkCidIndex = 0
         for (let chunkCidIndex = 0; chunkCidIndex < this.chunkCids.length; chunkCidIndex++) {
             // chunkCidIndex = parseInt(chunkCidIndex)
-            chunkReads.push(fileChunks.documents.index.search(new SearchRequest({ query: [new StringMatch({ key: 'hash', value: this.chunkCids[chunkCidIndex] })] }), { local: true, remote: remoteQueryFileChunks })
+            chunkReads.push(fileChunks.documents.index.search(new SearchRequest({ query: [new StringMatch({ key: 'hash', value: this.chunkCids[chunkCidIndex] })], fetch: searchResultsLimit }), { local: true, remote: remoteQueryFileChunks })
                 .then(result => {
                 if (result && result.length) {
                     if (result[0].chunkData.length > fileChunkingSize) {
