@@ -1,19 +1,20 @@
+// @ts-nocheck
 import express from 'express';
 import session from 'express-session';
 import { compileFile } from 'pug';
 import fs from 'fs';
 import open from 'open';
-
 import multer from 'multer';
 import bodyParser from 'body-parser';
-
+import * as db from './db.js'
 import Stream from 'stream';
-
 import mime from 'mime'
-
 import { DeliveryError } from '@peerbit/stream-interface';
 import { randomBytes } from '@peerbit/crypto';
 import { StringMatch, IntegerCompare, Compare, IsNull, Or, And } from '@peerbit/document'
+
+import { setMaxListeners } from 'events'
+setMaxListeners(Infinity)
 
 const app = express();
 
@@ -23,7 +24,7 @@ const configDir = 'config'
 if (!fs.existsSync(configDir)) {
 	fs.mkdirSync(configDir, { recursive: true });
 }
-let db
+
 const localhostIps = []
 //todo: another form of authentication (for bypassing gateway mode permissions)
 // const localhostIps = ['127.0.0.1', '::1']
@@ -205,6 +206,31 @@ function makeRenderSafe(inputObj) {
             );
         }
     }
+}
+
+//todo: make more efficient/combine with above?
+async function addFileStatuses (inputObj = {}, whichBoard) {
+
+    let promises = []
+    for (let thisKey of Object.keys(inputObj)) {
+        if (thisKey == 'files') {
+            for (let thisFile of inputObj[thisKey]) {
+                promises.push((async () => {
+                    thisFile.fileStatus = await db.fileExists(thisFile.hash, whichBoard || inputObj['board'])
+                    if (cfg.queryFromPanBoardFilesDbIfFileNotFound && !thisFile.fileStatus) {
+                        thisFile.fileStatus = await db.fileExists(thisFile.hash, '')
+                    }
+                })())
+            }
+        } else if (typeof inputObj[thisKey] === 'object') {
+            promises.push((async () => {
+                inputObj[thisKey] = await addFileStatuses(inputObj[thisKey], whichBoard)
+            }))
+        } 
+    }
+
+    await Promise.all(promises)
+
     return inputObj;
 }
 
@@ -231,7 +257,6 @@ async function addFileStatuses(inputObj = {}, whichBoard) {
     await Promise.all(fileStatusChecks)
     return inputObj;
 }
-
 
 //todo: use enums
 function convertStringFormat(inputHex, format) {
@@ -1280,9 +1305,9 @@ app.get('/overboard.html', async (req, res, next) => {
         }
 
         let boardQueries = []
-        let threads = []
-        let replies = []
-        let omittedreplies = []
+        let threads: any[] = []
+        let replies: any[] = []
+        let omittedreplies: any[] = []
         let threadsPerPage = req.query.threads ? parseInt(req.query.threads) : cfg.threadsPerPage
         if (!req.session.loggedIn && gatewayCfg.gatewayMode) {
             threadsPerPage = Math.min(threadsPerPage, gatewayCfg.maxOverboardThreads)
@@ -1297,10 +1322,14 @@ app.get('/overboard.html', async (req, res, next) => {
         }
         await Promise.all(boardQueries)
 
+        let x = 0;
         for(let threadPostIndex in threads) {
             threads[threadPostIndex].replies = replies[threadPostIndex]
             threads[threadPostIndex].omittedreplies = omittedreplies[threadPostIndex]
+            x += threads[threadPostIndex].replies.length
         }
+
+        console.log("Total replies: " + x)
 
         threads.sort((a, b) => (a.lastbumped > b.lastbumped) ? -1 : ((a.lastbumped < b.lastbumped) ? 1 : 0)) //newest on top
         threads = threads.slice(0, threadsPerPage) //todo: other pages?
@@ -1375,8 +1404,12 @@ app.get('/:board/:pagenumber.html', async (req, res, next) => {
 			whichPage = 1
 		}
 
+        const fff = 'getThreadsWithReplies /' + req.params.board + '/ page ' + whichPage
+        console.time(fff);
 		let indexPosts = await addFileStatuses(makeRenderSafe(await db.getThreadsWithReplies(req.params.board, cfg.threadsPerPage, cfg.previewReplies, whichPage)), req.params.board)
-		// let allPosts = makeRenderSafe(db.getThreadsWithReplies(req.params.board, cfg.threadsPerPage, cfg.previewReplies))
+        console.timeEnd(fff);
+
+        // let allPosts = makeRenderSafe(db.getThreadsWithReplies(req.params.board, cfg.threadsPerPage, cfg.previewReplies))
 
 		boardPagesCache[req.params.board] = indexPosts.totalpages
 
@@ -1942,8 +1975,6 @@ app.listen(cfg.browserPort, cfg.browserHost, () => {
 (async () => {
 
 	process.setMaxListeners(0);
-
-	db = await import('./db.js');
 
     process.on('uncaughtException', (error) => {
         if (error instanceof DeliveryError) {
