@@ -14,7 +14,6 @@ import { yamux } from "@chainsafe/libp2p-yamux";
 import { peerIdFromKeys } from "@libp2p/peer-id";
 import { supportedKeys } from "@libp2p/crypto/keys";
 import { noise } from '@dao-xyz/libp2p-noise'
-import { GossipSub } from '@chainsafe/libp2p-gossipsub'
 import { Ed25519Keypair, toBase64, fromBase64, sha256Sync, toHexString, PublicSignKey, Ed25519PublicKey, Secp256k1PublicKey } from "@peerbit/crypto"
 import { field, variant, vec, option, serialize, deserialize } from "@dao-xyz/borsh"
 import { multiaddr } from '@multiformats/multiaddr'
@@ -383,8 +382,9 @@ export async function getThreadsWithReplies(whichBoard: string, numThreads: numb
     if (!whichBoard) {
         throw new Error('No board specified.');
     }
-
+    console.time(`getThreadsWithReplies ${whichBoard}`);
     const allPosts = await openedBoards[whichBoard].documents.index.search(new SearchRequest({ query: [], fetch: searchResultsLimit }), { local: true, remote: remoteQueryPosts })
+	console.timeEnd(`getThreadsWithReplies ${whichBoard}`)
 
     const threadPosts: any[] = [];
     const repliesByThread: Record<string, any[]> = {};
