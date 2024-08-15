@@ -58,26 +58,26 @@ div(class=catalogMode ? 'post_catalog' : (item.replyto ? 'post_reply' : 'post'),
     - var currentSection = ''
     - var pType = ''
     each line in item.message.split('\r\n')
-      // if the line starts with > but not a post quote
+      //- if the line starts with > but not a post quote
       if line.startsWith('>') && !line.match(/^>>([0-9a-fA-F]{64})/)
-        // if we were not in a message section, we don't need to make a new section
+        //- if we were not in a message section, we don't need to make a new section
         if pType != 'message'
           - currentSection += line + '\n'
           - pType = 'message-quote'
         else
-          // if we are changing from a message section to a message-quote section, we need to render the previous section as a message and start a new message-quote section
+          //- if we are changing from a message section to a message-quote section, we need to render the previous section as a message and start a new message-quote section
           + renderSection(currentSection.trim(), pType)
           - pType = 'message-quote'
           - currentSection = line + '\n'
       else
-        // if we were not in a message-quote section, we don't need to make a new section
+        //- if we were not in a message-quote section, we don't need to make a new section
         if pType != 'message-quote'
           - currentSection += line + '\n'
           - pType = 'message'
         else
-          // if we are changing from a message quote section to a message section, we need to render the previous section as a message-quote and start a new message section
+          //- if we are changing from a message quote section to a message section, we need to render the previous section as a message-quote and start a new message section
           + renderSection(currentSection.trim(), pType)
           - pType = 'message'
           - currentSection = line + '\n'
-    // finally, we render the remaining section
+    //- finally, we render the remaining section
     + renderSection(currentSection.trim(), pType)
