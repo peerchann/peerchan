@@ -208,23 +208,6 @@ function makeRenderSafe(inputObj) {
     return inputObj;
 }
 
-//todo: consider not making the bigint into a string instead show it without quotes at least for query results
-function makeRenderSafe(inputObj) {
-    if (typeof inputObj === 'bigint') {
-        return inputObj.toString();
-    }
-    if (typeof inputObj === 'object' && inputObj !== null) {
-        if (Array.isArray(inputObj)) {
-            return inputObj.map(makeRenderSafe);
-        } else {
-            return Object.fromEntries(
-                Object.entries(inputObj).map(([key, value]) => [key, makeRenderSafe(value)])
-            );
-        }
-    }
-    return inputObj;
-}
-
 async function addFileStatuses(inputObj = {}, whichBoard) {
     let fileStatusChecks = []
     const processFile = async (thisFile, board) => {
