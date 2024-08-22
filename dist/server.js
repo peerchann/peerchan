@@ -193,46 +193,41 @@ rt['query'] = compileFile('./views/query.pug');
 
 //todo: consider not making the bigint into a string instead show it without quotes at least for query results
 function makeRenderSafe(inputObj) {
-    switch (typeof inputObj) {
-        case "object":
-            if (Array.isArray(inputObj)) {
-                let outputArr = []
-                for (let thisArrayElement of inputObj) {
-                    outputArr.push(makeRenderSafe(thisArrayElement))
-                }
-                return outputArr
-            } else {
-                let outputObj = {}
-                for (let thisKey of Object.keys(inputObj)) {
-                    outputObj[thisKey] = makeRenderSafe(inputObj[thisKey])
-                }
-                return outputObj
-            }
-        case "bigint":
-            return inputObj.toString()
-        default:
-            return inputObj
+    if (typeof inputObj === 'bigint') {
+        return inputObj.toString();
     }
+    if (typeof inputObj === 'object' && inputObj !== null) {
+        if (Array.isArray(inputObj)) {
+            return inputObj.map(makeRenderSafe);
+        } else {
+            return Object.fromEntries(
+                Object.entries(inputObj).map(([key, value]) => [key, makeRenderSafe(value)])
+            );
+        }
+    }
+    return inputObj;
 }
 
-//todo: make more efficient/combine with above?
-async function addFileStatuses (inputObj = {}, whichBoard) {
-    console.log(inputObj)
+async function addFileStatuses(inputObj = {}, whichBoard) {
     let fileStatusChecks = []
-    for (let thisKey of Object.keys(inputObj)) {
-        if (thisKey == 'files') {
-            for (let thisFile of inputObj[thisKey]) {
-                fileStatusChecks.push((async () => {
-                    thisFile.fileStatus = await db.fileExists(thisFile.hash, whichBoard || inputObj['board'])
-                    if (cfg.queryFromPanBoardFilesDbIfFileNotFound && !thisFile.fileStatus) {
-                        thisFile.fileStatus = await db.fileExists(thisFile.hash, '')
-                    }
-                })())
-            }
-        } else if (typeof inputObj[thisKey] === 'object') {
-            inputObj[thisKey] = await addFileStatuses(inputObj[thisKey], whichBoard)
-        } 
+    const processFile = async (thisFile, board) => {
+        thisFile.fileStatus = await db.fileExists(thisFile.hash, board)
+        if (cfg.queryFromPanBoardFilesDbIfFileNotFound && !thisFile.fileStatus) {
+            thisFile.fileStatus = await db.fileExists(thisFile.hash, '')
+        }
     }
+    const processObject = async (obj, board) => {
+        for (let [key, value] of Object.entries(obj)) {
+            if (key === 'files' && Array.isArray(value)) {
+                for (let file of value) {
+                    fileStatusChecks.push(processFile(file, board || obj['board']))
+                }
+            } else if (typeof value === 'object' && value !== null) {
+                fileStatusChecks.push(processObject(value, board))
+            }
+        }
+    }
+    await processObject(inputObj, whichBoard)
     await Promise.all(fileStatusChecks)
     return inputObj;
 }
