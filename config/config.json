@@ -41,8 +41,8 @@
 	"postFileRandomKey": true,
 	"deleteFileRandomKey": false,
 	"queryFromPanBoardFilesDbIfFileNotFound": false,
-	"remoteQueryPosts": true,
-	"remoteQueryFileRefs": true,
+	"remoteQueryPosts": false,
+	"remoteQueryFileRefs": false,
 	"remoteQueryFileChunks": false,
 	"maxFilesPerPostToShow": 3,
 	"postHashLength": 8

@@ -28,6 +28,9 @@ const localhostIps = []
 //todo: another form of authentication (for bypassing gateway mode permissions)
 // const localhostIps = ['127.0.0.1', '::1']
 
+import { setMaxListeners } from 'events'
+setMaxListeners(Infinity)
+
 //todo: automatically fix configs with missing fields
 function loadConfig() {
     const configFile = configDir+'/config.json';
@@ -214,18 +217,23 @@ function makeRenderSafe(inputObj) {
 
 //todo: make more efficient/combine with above?
 async function addFileStatuses (inputObj = {}, whichBoard) {
+    console.log(inputObj)
+    let fileStatusChecks = []
     for (let thisKey of Object.keys(inputObj)) {
         if (thisKey == 'files') {
             for (let thisFile of inputObj[thisKey]) {
-                thisFile.fileStatus = await db.fileExists(thisFile.hash, whichBoard || inputObj['board'])
-                if (cfg.queryFromPanBoardFilesDbIfFileNotFound && !thisFile.fileStatus) {
-                    thisFile.fileStatus = await db.fileExists(thisFile.hash, '')
-                }
+                fileStatusChecks.push((async () => {
+                    thisFile.fileStatus = await db.fileExists(thisFile.hash, whichBoard || inputObj['board'])
+                    if (cfg.queryFromPanBoardFilesDbIfFileNotFound && !thisFile.fileStatus) {
+                        thisFile.fileStatus = await db.fileExists(thisFile.hash, '')
+                    }
+                })())
             }
         } else if (typeof inputObj[thisKey] === 'object') {
             inputObj[thisKey] = await addFileStatuses(inputObj[thisKey], whichBoard)
         } 
     }
+    await Promise.all(fileStatusChecks)
     return inputObj;
 }
 
