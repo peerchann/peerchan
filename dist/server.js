@@ -216,24 +216,24 @@ function makeRenderSafe(inputObj) {
 }
 
 //todo: make more efficient/combine with above?
-async function addFileStatuses (inputObj = {}, whichBoard) {
-    console.log(inputObj)
-    let fileStatusChecks = []
+async function addFileStatuses(inputObj = {}, whichBoard) {
+    let fileStatusChecks = [];
+    let fileHashesToCheck = [];
     for (let thisKey of Object.keys(inputObj)) {
-        if (thisKey == 'files') {
+        if (thisKey === 'files') {
             for (let thisFile of inputObj[thisKey]) {
                 fileStatusChecks.push((async () => {
-                    thisFile.fileStatus = await db.fileExists(thisFile.hash, whichBoard || inputObj['board'])
+                    thisFile.fileStatus = await db.fileExists(thisFile.hash, whichBoard || inputObj['board']);
                     if (cfg.queryFromPanBoardFilesDbIfFileNotFound && !thisFile.fileStatus) {
-                        thisFile.fileStatus = await db.fileExists(thisFile.hash, '')
+                        thisFile.fileStatus = await db.fileExists(thisFile.hash, '');
                     }
-                })())
+                })());
             }
         } else if (typeof inputObj[thisKey] === 'object') {
-            inputObj[thisKey] = await addFileStatuses(inputObj[thisKey], whichBoard)
-        } 
+            fileStatusChecks.push(addFileStatuses(inputObj[thisKey], whichBoard));
+        }
     }
-    await Promise.all(fileStatusChecks)
+    await Promise.all(fileStatusChecks);
     return inputObj;
 }
 
