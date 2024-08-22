@@ -217,6 +217,7 @@ function makeRenderSafe(inputObj) {
 
 //todo: make more efficient/combine with above?
 async function addFileStatuses (inputObj = {}, whichBoard) {
+    console.log(inputObj)
     let fileStatusChecks = []
     for (let thisKey of Object.keys(inputObj)) {
         if (thisKey == 'files') {
@@ -229,9 +230,7 @@ async function addFileStatuses (inputObj = {}, whichBoard) {
                 })())
             }
         } else if (typeof inputObj[thisKey] === 'object') {
-            fileStatusChecks.push((async () => {
-                inputObj[thisKey] = await addFileStatuses(inputObj[thisKey], whichBoard)
-            }))
+            inputObj[thisKey] = await addFileStatuses(inputObj[thisKey], whichBoard)
         } 
     }
     await Promise.all(fileStatusChecks)
