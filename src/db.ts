@@ -54,7 +54,7 @@ export async function pbInitClient (listenPort = 8500) {
 	client = await Peerbit.create({
 //todo: need identity
 //		identity: keypair,
-		directory: directory,
+		directory: process.env.TRANSIENT ? undefined : directory,
 		libp2p: {
 			connectionManager: { //todo: revisit this
 				maxConnections: Infinity,
