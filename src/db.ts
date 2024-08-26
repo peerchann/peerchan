@@ -11,11 +11,8 @@ import { all } from '@libp2p/websockets/filters'
 import { tcp } from "@libp2p/tcp"
 // import { mplex } from "@libp2p/mplex";
 import { yamux } from "@chainsafe/libp2p-yamux";
-import { peerIdFromKeys } from "@libp2p/peer-id";
-import { supportedKeys } from "@libp2p/crypto/keys";
 import { noise } from '@dao-xyz/libp2p-noise'
-import { GossipSub } from '@chainsafe/libp2p-gossipsub'
-import { Ed25519Keypair, toBase64, fromBase64, sha256Sync, toHexString, PublicSignKey, Ed25519PublicKey, Secp256k1PublicKey } from "@peerbit/crypto"
+import { Ed25519Keypair, toBase64, fromBase64, sha256Sync } from "@peerbit/crypto"
 import { field, variant, vec, option, serialize, deserialize } from "@dao-xyz/borsh"
 import { multiaddr } from '@multiformats/multiaddr'
 import { type ReplicationOptions } from "@peerbit/shared-log";
@@ -164,10 +161,7 @@ export async function openPostsDb(postsDbId = "my_post_db", options: any) {
             	}  
             });
         }
-        // await client.open(openedBoards[postsDbId].fileDb.chunks)
-        // await client.open(openedBoards[postsDbId].fileDb)
     }
-    //Posts = await client.open(new PostDatabase({ id: sha256Sync(Buffer.from(postsDbId)) }))
 }
 
 //todo: use enums or whatever
@@ -192,10 +186,7 @@ export async function getBoardStats (whichBoard: string) {
 }
 
 export async function bootstrap () {
-
 	await client.bootstrap()
-	//Posts = await client.open(new PostDatabase({ id: sha256Sync(Buffer.from(postsDbId)) }))
-
 }
 
 export async function closePostsDb (postsDbId = "my_post_db") {
@@ -224,14 +215,6 @@ export async function dropPostsDb (postsDbId = "my_post_db") {
 		await thisBoard.drop()
 	}
 }
-
-// //only one for now
-// export async function openBoardsDb (boardsDbId = "") {
-
-// 	Boards = await client.open(new BoardDatabase({ id: sha256Sync(Buffer.from(boardsDbId)) }))
-// 	//Posts = await client.open(new PostDatabase({ id: sha256Sync(Buffer.from(postsDbId)) }))
-
-// }
 
 //only used for pan-boards files db, the others board-specific ones are openend in openPostsDb
 export async function openFilesDb (filesDbId = "", options: any ) {
@@ -273,13 +256,6 @@ export async function openFilesDb (filesDbId = "", options: any ) {
 
 }
 
-// //only one db for now
-// //todo: remove?
-// export async function openFileChunksDb (fileChunksDbId = "") {
-// 	FileChunks = await client.open(new FileChunkDatabase({ id: sha256Sync(Buffer.from(fileChunksDbId)) }))
-// }
-
-//todo: allow arbitrary post dbs to be posted to
 //todo: store the signing keys locally and make them selectable for posting post, deleting post, putting file, deleting file, etc.
 export async function makeNewPost (postDocument: Post, whichBoard: string, randomKey: true) {
 	
@@ -302,8 +278,6 @@ export async function makeNewPost (postDocument: Post, whichBoard: string, rando
 
 export async function listPeers () {
 	let peerMultiAddrs = client.libp2p.getMultiaddrs()
-	//todo: remove debug
-	// console.log(openedBoards['test'], openedBoards['test'].fileDb, openedBoards['test'].fileDb.chunks)
 	//todo: fix this to actually list peers
 	console.log(peerMultiAddrs)
 	return peerMultiAddrs
@@ -340,7 +314,7 @@ export async function delPost (whichPost: string, whichBoard: string, randomKey:
 
 }
 
-//todo: allow arbitrary post dbs to be posted to
+//todo: allow selectivity in post dbs to be queried from
 //todo: revisit remote
 //todo: revisit async
 export async function getAllPosts (query: any = {}) {
@@ -517,7 +491,7 @@ export async function putFile (fileData: Uint8Array, whichBoard: string, randomK
 		    } else {
 		    	await openedBoards[whichBoard].fileDb.files.put(fileDocument);
 		    }
-			await openedBoards[whichBoard].fileDb.files.put(fileDocument)
+			// await openedBoards[whichBoard].fileDb.files.put(fileDocument)
 		} else {
 			await fileDocument.writeChunks(Files.chunks, fileData, randomKey)
 		    if (randomKey) {
@@ -526,7 +500,7 @@ export async function putFile (fileData: Uint8Array, whichBoard: string, randomK
 		    } else {
 		    	await Files.files.put(fileDocument);
 		    }
-			await Files.files.put(fileDocument)
+			// await Files.files.put(fileDocument)
 		}
 
 		// await Promise.all([ //todo: can move out of await
