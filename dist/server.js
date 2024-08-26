@@ -1964,12 +1964,14 @@ app.listen(cfg.browserPort, cfg.browserHost, () => {
 		await db.pbInitClient(cfg.peerbitPort)
 		console.log("Successfully initialized Peerbit node.")
 		console.log(await db.clientId())
-        try {
-            await db.bootstrap()
-        } catch (bootstrapErr) {
-            console.log("Failed to bootstrap:", bootstrapErr)
-        }
 
+        if (cfg.bootstrapOnStartup) {
+            try {
+                await db.bootstrap()
+            } catch (bootstrapErr) {
+                console.log("Failed to bootstrap:", bootstrapErr)
+            }
+        }
 
 		// console.log(db.client)
 		// console.log(db.client.libp2p)
@@ -1983,10 +1985,7 @@ app.listen(cfg.browserPort, cfg.browserHost, () => {
 		//     	console.log(thisKey)
 		//     	console.log(peerMultiHash.detail[thisKey])
 		//     }
-
-		//     // Add your logic here to handle the peer connection
 		// });
-
 
 	    // db.client.libp2p.addEventListener('peer:discovery', async peerMultiHash => {
 		    // // Recursive function to log properties
@@ -1999,9 +1998,7 @@ app.listen(cfg.browserPort, cfg.browserHost, () => {
 		    //         }
 		    //     }
 		    // };
-		    // console.log('hi test peer:discovery')
 		    // console.log(peerMultiHash.detail.id.toString());
-		    // console.log('beep')
 		    // console.log(await db.client.libp2p.peerStore.get(peerMultiHash.detail.id))
 	 	// })
 

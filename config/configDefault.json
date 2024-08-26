@@ -10,6 +10,7 @@
 	"openOnStartupUrl": "home.html",
 	"defaultTheme": "chalk",
 	"pageTitle": "Gladden",
+	"bootstrapOnStartup": true,
 	"embedImageFileExtensions": [
 		"jpg",
 		"jpeg",
