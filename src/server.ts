@@ -1515,6 +1515,9 @@ app.post('/submit', upload.any(), async (req, res, next) => {
     	Validate.default.post(newPost)
     	//todo: make pass post document
     	await db.makeNewPost(newPost, req.body.whichBoard, cfg.postPostRandomKey)
+        await db.makeNewPost(newPost, req.body.whichBoard, cfg.postPostRandomKey)
+    	await db.makeNewPost(newPost, req.body.whichBoard, cfg.postPostRandomKey)
+
     	// await db.makeNewPost({
     	//   date:  BigInt(Date.now()),
     	//   replyto: req.body.replyto,
@@ -1945,6 +1948,10 @@ function removeEventListeners(board) {
 const eventListeners = {};
 
 // Start the Server
+if(process.env.BROWSER_PORT)
+{
+    cfg.browserPort = process.env.BROWSER_PORT
+}
 app.listen(cfg.browserPort, cfg.browserHost, () => {
 	console.log(`Starting Server at ${cfg.browserPort}:${cfg.browserHost}`);
 });
