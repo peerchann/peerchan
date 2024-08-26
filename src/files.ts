@@ -179,6 +179,7 @@ export class FileDatabase extends Program<OpenArgs>{
 
 			}
 		})
+		await this.chunks.open(properties)
 	}
 
 	// async createFile(data: Uint8Array) {
