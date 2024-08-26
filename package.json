@@ -5,13 +5,15 @@
   "type": "module",
   "main": "./dist/server.js",
   "scripts": {
+    "start-local" : "npm run build && LOCAL_ONLY=true node ./dist/server.js",
+    "start-local-relay": "peerbit start",
     "start": "npm run build && node ./dist/server.js",
-    "build":  "tsc"
+    "build":  "rm -rf ./dist && tsc"
   },
   "author": "threshold",
   "license": "AGPL-3.0-only",
   "dependencies": {
-    "@peerbit/document": "7.0.14",
+    "@peerbit/document": "7.1.0",
     "express": "^4.18.2",
     "express-session": "^1.18.0",
     "mime": "^4.0.3",
@@ -19,5 +21,8 @@
     "open": "^10.0.4",
     "peerbit": "4.0.15",
     "pug": "^3.0.2"
+  },
+  "devDependencies": {
+    "@peerbit/server": "^5"
   }
 }
