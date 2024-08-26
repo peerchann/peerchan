@@ -6,7 +6,9 @@
   "main": "./dist/server.js",
   "scripts": {
     "start-local" : "npm run build && LOCAL_ONLY=true node ./dist/server.js",
-    "start-local-transient" : "npm run build && LOCAL_ONLY=true TRANSIENT=true node ./dist/server.js",
+    "start-local-transient-1" : "npm run build && LOCAL_ONLY=true TRANSIENT=true BROWSER_PORT=8000 node ./dist/server.js",
+    "start-local-transient-2" : "npm run build && LOCAL_ONLY=true TRANSIENT=true BROWSER_PORT=8005 node ./dist/server.js",
+
     "start-local-relay": "peerbit start",
     "start": "npm run build && node ./dist/server.js",
     "build":  "rm -rf ./dist && tsc"
