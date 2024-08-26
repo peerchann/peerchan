@@ -47,7 +47,7 @@ export async function pbInitClient(listenPort = 8500) {
             transports: [tcp(), webSockets({ filter: all })],
             streamMuxers: [yamux()],
             // peerId: peerId, //todo: revisit this
-            connectionEncryption: [noise()],
+            connectionEncryption: [noise()], // Make connections encrypted
             addresses: {
                 listen: [
                     '/ip4/127.0.0.1/tcp/' + listenPort,
@@ -112,10 +112,7 @@ export async function openPostsDb(postsDbId = "my_post_db", options) {
         if (openedBoards[postsDbId].closed) {
             await client.open(openedBoards[postsDbId], { existing: "reuse" });
         }
-        // await client.open(openedBoards[postsDbId].fileDb.chunks)
-        // await client.open(openedBoards[postsDbId].fileDb)
     }
-    //Posts = await client.open(new PostDatabase({ id: sha256Sync(Buffer.from(postsDbId)) }))
 }
 //todo: use enums or whatever
 export async function getBoardStats(whichBoard) {
@@ -138,7 +135,6 @@ export async function getBoardStats(whichBoard) {
 }
 export async function bootstrap() {
     await client.bootstrap();
-    //Posts = await client.open(new PostDatabase({ id: sha256Sync(Buffer.from(postsDbId)) }))
 }
 export async function closePostsDb(postsDbId = "my_post_db") {
     let thisBoard = openedBoards[postsDbId];
@@ -164,11 +160,6 @@ export async function dropPostsDb(postsDbId = "my_post_db") {
         await thisBoard.drop();
     }
 }
-// //only one for now
-// export async function openBoardsDb (boardsDbId = "") {
-// 	Boards = await client.open(new BoardDatabase({ id: sha256Sync(Buffer.from(boardsDbId)) }))
-// 	//Posts = await client.open(new PostDatabase({ id: sha256Sync(Buffer.from(postsDbId)) }))
-// }
 //only used for pan-boards files db, the others board-specific ones are openend in openPostsDb
 export async function openFilesDb(filesDbId = "", options) {
     Files = new FileDatabase({ id: sha256Sync(Buffer.from(filesDbId)) });
@@ -196,12 +187,6 @@ export async function openFilesDb(filesDbId = "", options) {
         await client.open(Files);
     }
 }
-// //only one db for now
-// //todo: remove?
-// export async function openFileChunksDb (fileChunksDbId = "") {
-// 	FileChunks = await client.open(new FileChunkDatabase({ id: sha256Sync(Buffer.from(fileChunksDbId)) }))
-// }
-//todo: allow arbitrary post dbs to be posted to
 //todo: store the signing keys locally and make them selectable for posting post, deleting post, putting file, deleting file, etc.
 export async function makeNewPost(postDocument, whichBoard, randomKey) {
     if (!whichBoard) {
@@ -221,8 +206,6 @@ export async function makeNewPost(postDocument, whichBoard, randomKey) {
 }
 export async function listPeers() {
     let peerMultiAddrs = client.libp2p.getMultiaddrs();
-    //todo: remove debug
-    // console.log(openedBoards['test'], openedBoards['test'].fileDb, openedBoards['test'].fileDb.chunks)
     //todo: fix this to actually list peers
     console.log(peerMultiAddrs);
     return peerMultiAddrs;
@@ -255,7 +238,7 @@ export async function delPost(whichPost, whichBoard, randomKey) {
     }
     //todo: need to return ids of what was deleted?
 }
-//todo: allow arbitrary post dbs to be posted to
+//todo: allow selectivity in post dbs to be queried from
 //todo: revisit remote
 //todo: revisit async
 export async function getAllPosts(query = {}) {
@@ -409,7 +392,7 @@ export async function putFile(fileData, whichBoard, randomKey) {
         else {
             await openedBoards[whichBoard].fileDb.files.put(fileDocument);
         }
-        await openedBoards[whichBoard].fileDb.files.put(fileDocument);
+        // await openedBoards[whichBoard].fileDb.files.put(fileDocument)
     }
     else {
         await fileDocument.writeChunks(Files.chunks, fileData, randomKey);
@@ -420,7 +403,7 @@ export async function putFile(fileData, whichBoard, randomKey) {
         else {
             await Files.files.put(fileDocument);
         }
-        await Files.files.put(fileDocument);
+        // await Files.files.put(fileDocument)
     }
     // await Promise.all([ //todo: can move out of await
     // 	// fileDocument.writeChunks(fileData, fileDocument.hash),

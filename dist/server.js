@@ -1965,7 +1965,7 @@ app.listen(cfg.browserPort, cfg.browserHost, () => {
 		console.log("Successfully initialized Peerbit node.")
 		console.log(await db.clientId())
         try {
-            await db.bootstrap()            
+            await db.bootstrap()
         } catch (bootstrapErr) {
             console.log("Failed to bootstrap:", bootstrapErr)
         }
