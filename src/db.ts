@@ -47,8 +47,10 @@ export let remoteQueryFileChunks: boolean = false
 
 export const searchResultsLimit = 0xffffffff //large number; get all results
 
-export async function pbInitClient (listenPort = 8500) {
+export async function pbInitClient (listenPort =   8500) {
 
+	const isLocal = process.env.LOCAL_ONLY;
+	
 	// setMaxListeners(0) //todo: revisit
 
 	client = await Peerbit.create({
@@ -66,7 +68,10 @@ export async function pbInitClient (listenPort = 8500) {
 			// peerId: peerId, //todo: revisit this
 			connectionEncryption: [noise()], // Make connections encrypted
 			addresses: {
-				listen: [
+				listen: isLocal ? [
+					'/ip4/127.0.0.1/tcp/0',
+					'/ip4/127.0.0.1/tcp/0/ws'
+				] : [
 					'/ip4/127.0.0.1/tcp/'+listenPort,
 					'/ip4/127.0.0.1/tcp/'+(listenPort+1)+'/ws'
 				]
