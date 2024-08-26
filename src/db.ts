@@ -2,23 +2,17 @@
 
 // const secrets = require(__dirname+'/../configs/secrets.js') //todo: address these
 // 	, { migrateVersion } = require(__dirname+'/../package.json');
-import { Peerbit, createLibp2pExtended } from "peerbit"
-import { Program } from "@peerbit/program"
-import { createLibp2p, Libp2p} from 'libp2p'
-import { Documents, DocumentIndex, SearchRequest, StringMatch, IsNull } from "@peerbit/document"
+import { Peerbit } from "peerbit"
+import { SearchRequest, StringMatch } from "@peerbit/document"
 import { webSockets } from '@libp2p/websockets'
 import { all } from '@libp2p/websockets/filters'
 import { tcp } from "@libp2p/tcp"
+
 // import { mplex } from "@libp2p/mplex";
 import { yamux } from "@chainsafe/libp2p-yamux";
-import { peerIdFromKeys } from "@libp2p/peer-id";
-import { supportedKeys } from "@libp2p/crypto/keys";
 import { noise } from '@dao-xyz/libp2p-noise'
-import { Ed25519Keypair, toBase64, fromBase64, sha256Sync, toHexString, PublicSignKey, Ed25519PublicKey, Secp256k1PublicKey } from "@peerbit/crypto"
-import { field, variant, vec, option, serialize, deserialize } from "@dao-xyz/borsh"
+import { Ed25519Keypair,  sha256Sync } from "@peerbit/crypto"
 import { multiaddr } from '@multiformats/multiaddr'
-import { type ReplicationOptions } from "@peerbit/shared-log";
-
 import Validate from "./validation.js"
 
 import fs from "fs"
@@ -31,7 +25,6 @@ import { File, FileDatabase, FileChunk, FileChunkDatabase } from './files.js'
 // import { PeerchanAccount, PeerchanAccountDatabase } from './accounts.js'
 
 
-export let node: Libp2p
 export let keypair: Ed25519Keypair
 export let client: Peerbit
 export let Posts: PostDatabase //todo: consider renaming here and throughout
@@ -43,7 +36,7 @@ export let Files: FileDatabase
 
 export let currentModerators: string[] = []
 
-export let openedBoards: any = {}
+export let openedBoards: { [key: string]:PostDatabase} = {}
 
 // export let PostSubmissionService: PeerchanPostSubmissionService
 
@@ -103,30 +96,7 @@ export async function openPostsDb(postsDbId = "my_post_db", options: any) {
     	openedBoards[postsDbId] = new PostDatabase({ id: sha256Sync(Buffer.from(postsDbId)) });
     }
     if (options?.replicationFactor) {
-        if (openedBoards[postsDbId].fileDb.chunks.closed) {
-            await client.open(openedBoards[postsDbId].fileDb.chunks, {
-                // replicate: {factor: options.replicationFactor},
-                args: {
-                    replicate: {
-                        factor: options.replicationFactor
-                    },
-                    existing: "reuse",
-                    compatibility: 6
-                },
-            });
-        }
-        if (openedBoards[postsDbId].fileDb.closed) {
-             await client.open(openedBoards[postsDbId].fileDb, {
-                args: {
-                    replicate: {
-                        factor: options.replicationFactor
-                    },
-                    existing: "reuse",
-                    compatibility: 6
-                },
-            });
-        }
-        if (openedBoards[postsDbId].closed) {
+		if (openedBoards[postsDbId].closed) {
             await client.open(openedBoards[postsDbId], {
                 args: {
                     replicate: {
@@ -139,25 +109,12 @@ export async function openPostsDb(postsDbId = "my_post_db", options: any) {
         }
     }
     else {
-        if (openedBoards[postsDbId].fileDb.chunks.closed) {
-            await client.open(openedBoards[postsDbId].fileDb.chunks, {
-            	args: {
-            		existing: "reuse",
-            		compatibility: 6	
-            	}  
-            });
-        }
-        if (openedBoards[postsDbId].fileDb.closed) {
-            await client.open(openedBoards[postsDbId].fileDb, {
-            	args: {
-            		existing: "reuse",
-            		compatibility: 6	
-            	}  
-            });
-        }
         if (openedBoards[postsDbId].closed) {
             await client.open(openedBoards[postsDbId], {
             	args: {
+					replicate: {
+						factor: 0
+					},
             		existing: "reuse",
             		compatibility: 6	
             	}  
@@ -180,7 +137,7 @@ export async function getBoardStats (whichBoard: string) {
 			boardStatus = 2 //2 means the board is opened successfully
 		}
 	}
-	let rfStatus = [null, null, null]
+	let rfStatus: [number| null ,number| null ,number| null ] = [null, null, null]
 	//if the board is opened, we get the replication factors, corresponding to posts, files, and fileChunks
 	if (boardStatus == 2) {
 	        rfStatus = [(await thisBoard.documents.log.getMyReplicationSegments())[0]?.widthNormalized || 0, (await thisBoard.fileDb.files.log.getMyReplicationSegments())[0]?.widthNormalized || 0, (await thisBoard.fileDb.chunks.documents.log.getMyReplicationSegments())[0]?.widthNormalized || 0]
@@ -192,7 +149,20 @@ export async function getBoardStats (whichBoard: string) {
 
 export async function bootstrap () {
 
-	await client.bootstrap()
+	if(process.env.LOCAL_ONLY)
+	{
+		const localRelayAddress =  "/ip4/127.0.0.1/tcp/8002/ws/p2p/" + (await (
+			await fetch(
+				"http://localhost:8082/peer/id"
+			)
+		).text())
+		console.log("Connecting to local relay", localRelayAddress)
+		await client.dial(localRelayAddress)
+	}
+	else {
+		console.log("Connecting to online peers")
+		await client.bootstrap()
+	}
 	//Posts = await client.open(new PostDatabase({ id: sha256Sync(Buffer.from(postsDbId)) }))
 
 }

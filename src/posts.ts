@@ -173,6 +173,7 @@ export class PostDatabase extends Program<OpenArgs> {
 
 	@field({ type: Documents })
 	documents: Documents<Post>
+
 	@field({ type: FileDatabase })
 	fileDb: FileDatabase
 
@@ -227,6 +228,7 @@ export class PostDatabase extends Program<OpenArgs> {
 				return false
 			}
 		})
+		await this.fileDb.open(properties);
 
 	}
 }

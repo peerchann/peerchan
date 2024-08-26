@@ -12,8 +12,8 @@ import mime from 'mime'
 import { DeliveryError } from '@peerbit/stream-interface';
 import { randomBytes } from '@peerbit/crypto';
 import { StringMatch, IntegerCompare, Compare, IsNull, Or, And } from '@peerbit/document'
-
 import { setMaxListeners } from 'events'
+
 setMaxListeners(Infinity)
 
 const app = express();
@@ -206,34 +206,10 @@ function makeRenderSafe(inputObj) {
             );
         }
     }
-}
-
-//todo: make more efficient/combine with above?
-async function addFileStatuses (inputObj = {}, whichBoard) {
-
-    let promises = []
-    for (let thisKey of Object.keys(inputObj)) {
-        if (thisKey == 'files') {
-            for (let thisFile of inputObj[thisKey]) {
-                promises.push((async () => {
-                    thisFile.fileStatus = await db.fileExists(thisFile.hash, whichBoard || inputObj['board'])
-                    if (cfg.queryFromPanBoardFilesDbIfFileNotFound && !thisFile.fileStatus) {
-                        thisFile.fileStatus = await db.fileExists(thisFile.hash, '')
-                    }
-                })())
-            }
-        } else if (typeof inputObj[thisKey] === 'object') {
-            promises.push((async () => {
-                inputObj[thisKey] = await addFileStatuses(inputObj[thisKey], whichBoard)
-            }))
-        } 
-    }
-
-    await Promise.all(promises)
-
     return inputObj;
 }
 
+//todo: make more efficient/combine with above?
 async function addFileStatuses(inputObj = {}, whichBoard) {
     let fileStatusChecks = []
     const processFile = async (thisFile, board) => {
@@ -1422,6 +1398,7 @@ app.get('/:board/:pagenumber.html', async (req, res, next) => {
         const options = await standardRenderOptions(req,res)
 		options.currentBoard = req.params.board
         options.posts = indexPosts.threads
+        console.log("POSTS",options.posts)
 		options.numPages = boardPagesCache[req.params.board]
         // options.whichPage = whichPage
 		options.indexMode = true
