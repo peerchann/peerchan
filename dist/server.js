@@ -1501,10 +1501,10 @@ app.post('/submit', upload.any(), async (req, res, next) => {
     		postFiles
     	)
     	const Validate = await import('./validation.js')
-    	// console.log(Validate)
     	Validate.default.post(newPost)
-    	//todo: make pass post document
-    	await db.makeNewPost(newPost, req.body.whichBoard, cfg.postPostRandomKey)
+        
+        await db.makeNewPost(newPost, req.body.whichBoard, cfg.postPostRandomKey)            
+
     	// await db.makeNewPost({
     	//   date:  BigInt(Date.now()),
     	//   replyto: req.body.replyto,
@@ -1965,12 +1965,14 @@ app.listen(cfg.browserPort, cfg.browserHost, () => {
 		await db.pbInitClient(cfg.peerbitPort)
 		console.log("Successfully initialized Peerbit node.")
 		console.log(await db.clientId())
+
+        
+
         try {
             await db.bootstrap()
         } catch (bootstrapErr) {
             console.log("Failed to bootstrap:", bootstrapErr)
         }
-
 
 		// console.log(db.client)
 		// console.log(db.client.libp2p)
