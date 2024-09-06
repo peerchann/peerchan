@@ -334,7 +334,6 @@ export async function getThreadsWithReplies(whichBoard: string, numThreads: numb
 	);
 
 	//todo: avoid infinite loop?
-	var totalThreadsGotten = 0
 	var totalThreadCount = 0 //there are two variables with the same functionality because totalThreadCount could ideally be obtained more simply and then not every post would need to be iterated over
 
 	const allPosts: Post[] = []
@@ -347,12 +346,10 @@ export async function getThreadsWithReplies(whichBoard: string, numThreads: numb
 			break
 		}
 		if (!currentPost.replyto) {
-			totalThreadsGotten += 1
 			totalThreadCount += 1
 		}
-		allPosts.push(currentPost)
-		if (iterator.done()) { //todo: revisit?
-			break
+		if (totalThreadCount <= totalThreadsToGet) {
+			allPosts.push(currentPost)
 		}
 	} while (!iterator.done())
 
@@ -379,11 +376,11 @@ export async function getThreadsWithReplies(whichBoard: string, numThreads: numb
         return { thread, replies, maxDate };
     })
     .slice(numToSkip, numThreads + numToSkip)
-    // .sort((a, b) => { //posts were already retreived in sorted order
-    //     if (a.maxDate > b.maxDate) return -1;
-    //     if (a.maxDate < b.maxDate) return 1;
-    //     return 0;
-    // })
+    .sort((a, b) => {
+        if (a.maxDate > b.maxDate) return -1;
+        if (a.maxDate < b.maxDate) return 1;
+        return 0;
+    })
 
     for (const t of sortedThreadsWithReplies) {
         t.thread.board = whichBoard;

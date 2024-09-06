@@ -282,7 +282,6 @@ export async function getThreadsWithReplies(whichBoard, numThreads = 10, numPrev
         ]
     }), { local: true, remote: remoteQueryPosts });
     //todo: avoid infinite loop?
-    var totalThreadsGotten = 0;
     var totalThreadCount = 0; //there are two variables with the same functionality because totalThreadCount could ideally be obtained more simply and then not every post would need to be iterated over
     const allPosts = [];
     // todo: somehow get the thread count without iterating though the whole thing
@@ -293,12 +292,10 @@ export async function getThreadsWithReplies(whichBoard, numThreads = 10, numPrev
             break;
         }
         if (!currentPost.replyto) {
-            totalThreadsGotten += 1;
             totalThreadCount += 1;
         }
-        allPosts.push(currentPost);
-        if (iterator.done()) { //todo: revisit?
-            break;
+        if (totalThreadCount <= totalThreadsToGet) {
+            allPosts.push(currentPost);
         }
     } while (!iterator.done());
     await iterator.close();
@@ -321,12 +318,14 @@ export async function getThreadsWithReplies(whichBoard, numThreads = 10, numPrev
         thread.lastbumped = maxDate;
         return { thread, replies, maxDate };
     })
-        .slice(numToSkip, numThreads + numToSkip);
-    // .sort((a, b) => { //posts were already retreived in sorted order
-    //     if (a.maxDate > b.maxDate) return -1;
-    //     if (a.maxDate < b.maxDate) return 1;
-    //     return 0;
-    // })
+        .slice(numToSkip, numThreads + numToSkip)
+        .sort((a, b) => {
+        if (a.maxDate > b.maxDate)
+            return -1;
+        if (a.maxDate < b.maxDate)
+            return 1;
+        return 0;
+    });
     for (const t of sortedThreadsWithReplies) {
         t.thread.board = whichBoard;
         for (const r of t.replies) {
@@ -337,8 +336,8 @@ export async function getThreadsWithReplies(whichBoard, numThreads = 10, numPrev
         threads: sortedThreadsWithReplies.map((t) => t.thread),
         replies: sortedThreadsWithReplies.map((t) => numPreviewPostsPerThread ? t.replies
             .slice(-numPreviewPostsPerThread)
-            .reverse()
-            : []), //replies were already retreived in sorted order but it needs to be reversed
+            .reverse() //replies were already retreived in sorted order but it needs to be reversed
+            : []),
         omittedreplies: sortedThreadsWithReplies.map((t) => Math.max(0, t.replies.length - numPreviewPostsPerThread)),
         totalpages: Math.max(1, Math.ceil(totalThreadCount / numThreads)) //still have an index page even if its empty
     };
