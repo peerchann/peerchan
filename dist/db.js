@@ -2,7 +2,7 @@
 // const secrets = require(__dirname+'/../configs/secrets.js') //todo: address these
 // 	, { migrateVersion } = require(__dirname+'/../package.json');
 import { Peerbit } from "peerbit";
-import { SearchRequest, StringMatch } from "@peerbit/document";
+import { SearchRequest, StringMatch, Sort, SortDirection } from "@peerbit/document";
 import { webSockets } from '@libp2p/websockets';
 import { all } from '@libp2p/websockets/filters';
 import { tcp } from "@libp2p/tcp";
@@ -268,39 +268,40 @@ export async function delPost(whichPost, whichBoard, randomKey) {
     }
     //todo: need to return ids of what was deleted?
 }
-//todo: allow selectivity in post dbs to be queried from
-//todo: revisit remote
-//todo: revisit async
-export async function getAllPosts(query = {}) {
-    //todo: add query?
-    let results = [];
-    for (let thisBoard of Object.keys(openedBoards)) {
-        results = results.concat(await openedBoards[thisBoard].documents.index.search(new SearchRequest({ fetch: searchResultsLimit }), { local: true, remote: remoteQueryPosts }));
-    }
-    // Sort the results by the 'date' property in descending order
-    results.sort((a, b) => (a.date < b.date) ? -1 : ((a.date > b.date) ? 1 : 0)); //newest on top
-    return results;
-    //return await Posts.documents.index.search(new SearchRequest, { local: true, remote: remoteQueryPosts });
-}
-//todo: revisit remote
-//todo: revisit async
-export async function getPosts(whichBoard) {
-    if (!whichBoard) {
-        throw new Error('No board specified.');
-    }
-    //todo: add query?
-    let results = await openedBoards[whichBoard].documents.index.search(new SearchRequest({ fetch: searchResultsLimit }), { local: true, remote: remoteQueryPosts });
-    // Sort the results by the 'date' property in descending order
-    results.sort((a, b) => (a.date < b.date) ? -1 : ((a.date > b.date) ? 1 : 0)); //newest on top
-    return results;
-}
 //todo: add sage
 //todo: optimize more
+//todo: consider getting more than one post at a time?
 export async function getThreadsWithReplies(whichBoard, numThreads = 10, numPreviewPostsPerThread = 5, whichPage = 1) {
     if (!whichBoard) {
         throw new Error('No board specified.');
     }
-    const allPosts = await openedBoards[whichBoard].documents.index.search(new SearchRequest({ query: [], fetch: searchResultsLimit }), { local: true, remote: remoteQueryPosts });
+    const totalThreadsToGet = numThreads * whichPage;
+    const iterator = openedBoards[whichBoard].documents.index.iterate(new SearchRequest({
+        sort: [
+            new Sort({ key: 'date', direction: SortDirection.DESC })
+        ]
+    }), { local: true, remote: remoteQueryPosts });
+    //todo: avoid infinite loop?
+    var totalThreadsGotten = 0;
+    var totalThreadCount = 0; //there are two variables with the same functionality because totalThreadCount could ideally be obtained more simply and then not every post would need to be iterated over
+    const allPosts = [];
+    // todo: somehow get the thread count without iterating though the whole thing
+    // while (totalThreadsGotten < totalThreadsToGet) {
+    do {
+        const currentPost = await iterator.next(1).then((results) => results.length ? results[0] : null); // fetch next post
+        if (!currentPost) { //todo: necessary?
+            break;
+        }
+        if (!currentPost.replyto) {
+            totalThreadsGotten += 1;
+            totalThreadCount += 1;
+        }
+        allPosts.push(currentPost);
+        if (iterator.done()) { //todo: revisit?
+            break;
+        }
+    } while (!iterator.done());
+    await iterator.close();
     const threadPosts = [];
     const repliesByThread = {};
     for (const post of allPosts) {
@@ -319,13 +320,13 @@ export async function getThreadsWithReplies(whichBoard, numThreads = 10, numPrev
         const maxDate = replies.reduce((max, reply) => reply.date > max ? reply.date : max, thread.date);
         thread.lastbumped = maxDate;
         return { thread, replies, maxDate };
-    }).sort((a, b) => {
-        if (a.maxDate > b.maxDate)
-            return -1;
-        if (a.maxDate < b.maxDate)
-            return 1;
-        return 0;
-    }).slice(numToSkip, numThreads + numToSkip);
+    })
+        .slice(numToSkip, numThreads + numToSkip);
+    // .sort((a, b) => { //posts were already retreived in sorted order
+    //     if (a.maxDate > b.maxDate) return -1;
+    //     if (a.maxDate < b.maxDate) return 1;
+    //     return 0;
+    // })
     for (const t of sortedThreadsWithReplies) {
         t.thread.board = whichBoard;
         for (const r of t.replies) {
@@ -335,16 +336,11 @@ export async function getThreadsWithReplies(whichBoard, numThreads = 10, numPrev
     return {
         threads: sortedThreadsWithReplies.map((t) => t.thread),
         replies: sortedThreadsWithReplies.map((t) => numPreviewPostsPerThread ? t.replies
-            .sort((a, b) => {
-            if (a.date > b.date)
-                return 1;
-            if (a.date < b.date)
-                return -1;
-            return 0;
-        })
-            .slice(-numPreviewPostsPerThread) : []),
+            .slice(-numPreviewPostsPerThread)
+            .reverse()
+            : []), //replies were already retreived in sorted order but it needs to be reversed
         omittedreplies: sortedThreadsWithReplies.map((t) => Math.max(0, t.replies.length - numPreviewPostsPerThread)),
-        totalpages: Math.max(1, Math.ceil(threadPosts.length / numThreads)) //still have an index page even if its empty
+        totalpages: Math.max(1, Math.ceil(totalThreadCount / numThreads)) //still have an index page even if its empty
     };
 }
 //todo: revisit remote
@@ -390,13 +386,17 @@ export async function getRepliesToSpecificPost(whichBoard, whichThread) {
 //todo: how to handle files, file chunks, etc.
 //todo: async queries across boards
 //todo: more efficient way of concatting results?
-export async function queryPosts(whichBoards, queryObj) {
+//todo: use iterator instead of fetching
+export async function queryPosts(whichBoards, queryObj, queryLimit = 0) {
     // console.log('DEBUG 077:',whichBoards,queryObj)
     let results = {};
     for (let thisBoard of whichBoards) {
         // console.log("DEBUG 078:", thisBoard)
         //todo: optimize
-        let thisBoardResults = await openedBoards[thisBoard].documents.index.search(new SearchRequest({ query: queryObj, fetch: searchResultsLimit }), { local: true, remote: remoteQueryPosts });
+        // const iterator = openedBoards[whichBoard].documents.index.iterate(
+        //     new SearchRequest({ query: queryObj, fetch: queryLimit || searchResultsLimit }), { local: true, remote: remoteQueryPosts }
+        // );
+        let thisBoardResults = await openedBoards[thisBoard].documents.index.search(new SearchRequest({ query: queryObj, fetch: queryLimit || searchResultsLimit }), { local: true, remote: remoteQueryPosts });
         if (thisBoardResults.length) {
             results[thisBoard] = thisBoardResults;
         }
@@ -404,7 +404,7 @@ export async function queryPosts(whichBoards, queryObj) {
     }
     return results;
 }
-//todo: revisit in light of per-board fileDbs
+//todo: revisit in light of per-board fileDbs, iterator
 export async function getAllFileDocuments() {
     return await Files.files.index.search(new SearchRequest({ query: [], fetch: searchResultsLimit }), { local: true, remote: remoteQueryFileRefs });
 }

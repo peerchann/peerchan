@@ -1181,7 +1181,7 @@ app.post('/submitQuery', async (req, res, next) => {
         // console.log('Peerbit query:')
         // console.log(peerbitQuery)
 
-        lastQueryResults = makeRenderSafe(await db.queryPosts(boardsToQuery, peerbitQuery))
+        lastQueryResults = makeRenderSafe(await db.queryPosts(boardsToQuery, peerbitQuery, lastQueryLimit))
 
         //query limit handling
         //todo: maybe make this occur earlier someehow
@@ -1410,7 +1410,6 @@ app.get('/:board/:pagenumber.html', async (req, res, next) => {
 const boardPagesCache = {}; //todo: reconsider
 
 //todo: remove redundancy with currentBoard, watchedBoards, etc throughout?
-
 app.get('/:board/thread/:thread.html', async (req, res, next) => {
 
 	try {
@@ -1418,14 +1417,11 @@ app.get('/:board/thread/:thread.html', async (req, res, next) => {
 	    if (watchedBoards.indexOf(req.params.board) === -1) {
 	    	throw new Error(`Board /${req.params.board}/ not in watched board list.`)
 	    }
-		// let allPosts = makeRenderSafe(await db.getPosts(req.params.board))
 		let threadPost = await db.getSpecificPost(req.params.board, req.params.thread)
-		// threadPost.replies = []
 		if(threadPost.length) {
 			threadPost[0].replies = await db.getRepliesToSpecificPost(req.params.board, req.params.thread)
 			threadPost[0] = await addFileStatuses(makeRenderSafe(threadPost[0]), req.params.board)
 		}
-
 
 		// console.log(threadPost)
 		// for (let thisPostIndex in threadPost) {

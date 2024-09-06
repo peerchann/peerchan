@@ -37,8 +37,6 @@ export declare function openFilesDb(filesDbId: string | undefined, options: any)
 export declare function makeNewPost(postDocument: Post, whichBoard: string, randomKey: true): Promise<void>;
 export declare function listPeers(): Promise<import("@multiformats/multiaddr").Multiaddr[]>;
 export declare function delPost(whichPost: string, whichBoard: string, randomKey: true): Promise<void>;
-export declare function getAllPosts(query?: any): Promise<any>;
-export declare function getPosts(whichBoard: string): Promise<any>;
 export declare function getThreadsWithReplies(whichBoard: string, numThreads?: number, numPreviewPostsPerThread?: number, whichPage?: number): Promise<{
     threads: any[];
     replies: any[];
@@ -47,7 +45,7 @@ export declare function getThreadsWithReplies(whichBoard: string, numThreads?: n
 }>;
 export declare function getSpecificPost(whichBoard: string, whichPost: string): Promise<any>;
 export declare function getRepliesToSpecificPost(whichBoard: string, whichThread: string): Promise<any>;
-export declare function queryPosts(whichBoards: string[], queryObj: any): Promise<{
+export declare function queryPosts(whichBoards: string[], queryObj: any, queryLimit?: number): Promise<{
     [key: string]: any;
 }>;
 export declare function getAllFileDocuments(): Promise<File[]>;
