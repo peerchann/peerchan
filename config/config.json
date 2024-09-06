@@ -9,7 +9,7 @@
 	"openHomeOnStartup": true,
 	"openOnStartupUrl": "home.html",
 	"defaultTheme": "chalk",
-	"pageTitle": "Gladden",
+	"pageTitle": "Peerchan",
 	"bootstrapOnStartup": true,
 	"embedImageFileExtensions": [
 		"jpg",
