@@ -39,7 +39,7 @@ export declare function listPeers(): Promise<import("@multiformats/multiaddr").M
 export declare function delPost(whichPost: string, whichBoard: string, randomKey: true): Promise<void>;
 export declare function getThreadsWithReplies(whichBoard: string, numThreads?: number, numPreviewPostsPerThread?: number, whichPage?: number): Promise<{
     threads: any[];
-    replies: any[];
+    replies: any[][];
     omittedreplies: number[];
     totalpages: number;
 }>;
