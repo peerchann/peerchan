@@ -16,7 +16,7 @@ export declare let remoteQueryPosts: boolean;
 export declare let remoteQueryFileRefs: boolean;
 export declare let remoteQueryFileChunks: boolean;
 export declare const searchResultsLimit = 4294967295;
-export declare function pbInitClient(listenPort?: number): Promise<void>;
+export declare function pbInitClient(listenPort: number | undefined, configObject: any): Promise<void>;
 export declare function clientId(): Promise<string>;
 export type OpenArgs = {
     replicate?: {
@@ -39,7 +39,7 @@ export declare function listPeers(): Promise<import("@multiformats/multiaddr").M
 export declare function delPost(whichPost: string, whichBoard: string, randomKey: true): Promise<void>;
 export declare function getThreadsWithReplies(whichBoard: string, numThreads?: number, numPreviewPostsPerThread?: number, whichPage?: number): Promise<{
     threads: any[];
-    replies: any[][];
+    replies: any[];
     omittedreplies: number[];
     totalpages: number;
 }>;

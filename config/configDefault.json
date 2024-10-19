@@ -42,6 +42,7 @@
 	"postFileRandomKey": true,
 	"deleteFileRandomKey": false,
 	"queryFromPanBoardFilesDbIfFileNotFound": false,
+	"inMemoryIndex": false,
 	"remoteQueryPosts": true,
 	"remoteQueryFileRefs": true,
 	"remoteQueryFileChunks": true,

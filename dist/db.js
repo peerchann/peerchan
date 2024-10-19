@@ -2,15 +2,19 @@
 // const secrets = require(__dirname+'/../configs/secrets.js') //todo: address these
 // 	, { migrateVersion } = require(__dirname+'/../package.json');
 import { Peerbit } from "peerbit";
-import { SearchRequest, StringMatch, Sort, SortDirection } from "@peerbit/document";
+import { SearchRequest, StringMatch } from "@peerbit/document";
 import { webSockets } from '@libp2p/websockets';
 import { all } from '@libp2p/websockets/filters';
 import { tcp } from "@libp2p/tcp";
 // import { mplex } from "@libp2p/mplex";
 import { yamux } from "@chainsafe/libp2p-yamux";
-import { noise } from '@dao-xyz/libp2p-noise';
+//temporarily using the slower version for compatibility
+// import { noise } from '@dao-xyz/libp2p-noise'
+import { noise } from '@chainsafe/libp2p-noise';
 import { Ed25519Keypair, sha256Sync } from "@peerbit/crypto";
 import { multiaddr } from '@multiformats/multiaddr';
+//for simple (in-memory) index
+import { create } from '@peerbit/indexer-simple';
 import Validate from "./validation.js";
 import fs from "fs";
 import { PostDatabase } from './posts.js';
@@ -34,21 +38,22 @@ export let remoteQueryPosts = false;
 export let remoteQueryFileRefs = false;
 export let remoteQueryFileChunks = false;
 export const searchResultsLimit = 0xffffffff; //large number; get all results
-export async function pbInitClient(listenPort = 8500) {
+export async function pbInitClient(listenPort = 8500, configObject) {
     // setMaxListeners(0) //todo: revisit
     client = await Peerbit.create({
         //todo: need identity
         //		identity: keypair,
         directory: directory,
+        indexer: configObject.inMemoryIndex ? create : undefined,
         libp2p: {
             connectionManager: {
                 maxConnections: Infinity,
-                minConnections: 5
+                // minConnections: 5
             },
             transports: [tcp(), webSockets({ filter: all })],
             streamMuxers: [yamux()],
             // peerId: peerId, //todo: revisit this
-            connectionEncryption: [noise()], // Make connections encrypted
+            connectionEncrypters: [noise()], // Make connections encrypted
             addresses: {
                 listen: [
                     '/ip4/127.0.0.1/tcp/' + listenPort,
@@ -270,94 +275,55 @@ export async function delPost(whichPost, whichBoard, randomKey) {
 }
 //todo: add sage
 //todo: optimize more
-//todo: consider getting more than one post at a time?
-//note that there may be edge cases where a reply was made with a timestamp identical to or earlier than the timestamp of the op, potentially due to desynced clocks, where such replies wont be retreived 
-//todo: revisit this, possibly automically adjust timestamp to be on/after the op timestamp when posting through the ui 
 export async function getThreadsWithReplies(whichBoard, numThreads = 10, numPreviewPostsPerThread = 5, whichPage = 1) {
     if (!whichBoard) {
         throw new Error('No board specified.');
     }
-    const totalThreadsToGet = numThreads * whichPage;
-    const iterator = openedBoards[whichBoard].documents.index.iterate(new SearchRequest({
-        sort: [
-            new Sort({ key: 'date', direction: SortDirection.DESC })
-        ]
-    }), { local: true, remote: remoteQueryPosts });
-    function bigIntMax(a, b) {
-        if (a > b) {
-            return a;
-        }
-        else {
-            return b;
-        }
-    }
-    //we go back through each post, until totalThreadsToGet unique thread ops have been seen.
+    const allPosts = await openedBoards[whichBoard].documents.index.search(new SearchRequest({ query: [], fetch: searchResultsLimit }), { local: true, remote: remoteQueryPosts });
     const threadPosts = [];
     const repliesByThread = {};
-    const lastbumpedByThread = {};
-    // const omittedrepliesByThread: Record<string, number> = {};
-    var totalThreadCount = 0;
-    // var lastTimeStamp = 0
-    do {
-        const currentPost = await iterator.next(1).then((results) => results.length ? results[0] : null);
-        if (!currentPost) { //just in case
-            continue;
-        }
-        currentPost.board = whichBoard;
-        // if (lastTimeStamp) {
-        // 	if (lastTimeStamp <= currentPost.date) {
-        // 		console.log("ERROR: timestamps aint descending")
-        // 	}
-        // }
-        // lastTimeStamp = currentPost.date
-        // console.log(`${currentPost.date}|${currentPost.replyto}`)
-        //check if it's a reply or a thread op
-        if (true) {
-            if (!repliesByThread[currentPost.replyto || currentPost.hash])
-                repliesByThread[currentPost.replyto || currentPost.hash] = [];
-            if (currentPost.replyto) {
-                repliesByThread[currentPost.replyto].unshift(currentPost); //do it this way to avoid having to reverse(), the newest should be last in the array
-                lastbumpedByThread[currentPost.replyto] = bigIntMax(lastbumpedByThread[currentPost.replyto], currentPost.date);
-            }
-            else {
-                threadPosts.push(currentPost);
-                lastbumpedByThread[currentPost.hash] = bigIntMax(lastbumpedByThread[currentPost.hash], currentPost.date);
-                totalThreadCount += 1;
-            }
+    for (const post of allPosts) {
+        if (post.replyto) {
+            if (!repliesByThread[post.replyto])
+                repliesByThread[post.replyto] = [];
+            repliesByThread[post.replyto].push(post);
         }
         else {
-            if (!currentPost.replyto) {
-                totalThreadCount += 1;
-            }
+            threadPosts.push(post);
         }
-    } while (!iterator.done());
-    await iterator.close(); //todo: don't need to await this?
-    const numToSkip = (whichPage - 1) * numThreads;
-    const sortedThreads = threadPosts.sort((a, b) => {
-        if (lastbumpedByThread[b.hash] > lastbumpedByThread[a.hash]) {
-            return 1;
-        }
-        else if (lastbumpedByThread[a.hash] - lastbumpedByThread[b.hash]) {
-            return -1;
-        }
-        else {
-            return 0;
-        }
-    }).slice(numToSkip, numThreads + numToSkip);
-    for (let t of sortedThreads) {
-        t.lastbumped = lastbumpedByThread[t.hash];
     }
-    // console.log("threadPosts:",threadPosts)
-    // console.log("sortedThreads:",sortedThreads)
-    // console.log("repliesByThread:",repliesByThread)
-    // console.log("lastbumpedByThread:",lastbumpedByThread)
-    // Process threads and replies
-    //todo: optimize/simplify
+    const numToSkip = (whichPage - 1) * numThreads;
+    const sortedThreadsWithReplies = threadPosts.map(thread => {
+        const replies = repliesByThread[thread.hash] || [];
+        const maxDate = replies.reduce((max, reply) => reply.date > max ? reply.date : max, thread.date);
+        thread.lastbumped = maxDate;
+        return { thread, replies, maxDate };
+    }).sort((a, b) => {
+        if (a.maxDate > b.maxDate)
+            return -1;
+        if (a.maxDate < b.maxDate)
+            return 1;
+        return 0;
+    }).slice(numToSkip, numThreads + numToSkip);
+    for (const t of sortedThreadsWithReplies) {
+        t.thread.board = whichBoard;
+        for (const r of t.replies) {
+            r.board = whichBoard;
+        }
+    }
     return {
-        threads: sortedThreads,
-        replies: sortedThreads.map((t) => numPreviewPostsPerThread ? repliesByThread[t.hash].slice(-numPreviewPostsPerThread) : []),
-        omittedreplies: sortedThreads.map((t) => Math.max(0, repliesByThread[t.hash].length - numPreviewPostsPerThread)),
-        totalpages: Math.max(1, Math.ceil(totalThreadCount / numThreads)) //still have an index page even if its empty
+        threads: sortedThreadsWithReplies.map((t) => t.thread),
+        replies: sortedThreadsWithReplies.map((t) => numPreviewPostsPerThread ? t.replies
+            .sort((a, b) => {
+            if (a.date > b.date)
+                return 1;
+            if (a.date < b.date)
+                return -1;
+            return 0;
+        })
+            .slice(-numPreviewPostsPerThread) : []),
+        omittedreplies: sortedThreadsWithReplies.map((t) => Math.max(0, t.replies.length - numPreviewPostsPerThread)),
+        totalpages: Math.max(1, Math.ceil(threadPosts.length / numThreads)) //still have an index page even if its empty
     };
 }
 //todo: revisit remote

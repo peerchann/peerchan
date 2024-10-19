@@ -1958,7 +1958,7 @@ app.listen(cfg.browserPort, cfg.browserHost, () => {
 		loadCssThemes()
 		currentCssTheme = cfg.defaultTheme
 
-		await db.pbInitClient(cfg.peerbitPort)
+		await db.pbInitClient(cfg.peerbitPort, cfg)
 		console.log("Successfully initialized Peerbit node.")
 		console.log(await db.clientId())
 
