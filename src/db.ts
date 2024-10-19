@@ -296,23 +296,32 @@ export async function getAllPosts (query: any = {}) {
 }
 
 //todo: revisit remote
-//todo: revisit async
 export async function getPosts (whichBoard: string) {
 	
     if (!whichBoard) {
         throw new Error('No board specified.');
     }
 
-	//todo: add query?
 	let	results = await openedBoards[whichBoard].documents.index.search(new SearchRequest, { local: true, remote: remoteQueryPosts })
 
-    // Sort the results by the 'date' property in descending order
-    results.sort((a: any, b: any) => (a.date < b.date) ? -1 : ((a.date > b.date) ? 1 : 0)) //newest on top
+    // // Sort the results by the 'date' property in descending order
+    // results.sort((a: any, b: any) => (a.date < b.date) ? -1 : ((a.date > b.date) ? 1 : 0)) //newest on top
 
 	return results
 	//return await Posts.documents.index.search(new SearchRequest, { local: true, remote: remoteQueryPosts });
 }
 
+//todo: revisit remote
+export async function getFileRefs (whichBoard: string) {
+	
+    if (!whichBoard) {
+        throw new Error('No board specified.');
+    }
+
+	let	results = await openedBoards[whichBoard].fileDb.files.index.search(new SearchRequest, { local: true, remote: remoteQueryPosts })
+
+	return results
+}
 
 
 //todo: add sage

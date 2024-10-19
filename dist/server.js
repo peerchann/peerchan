@@ -190,6 +190,7 @@ rt['files'] = compileFile('./views/files.pug');
 rt['gatewayHome'] = compileFile('./views/gatewayhome.pug');
 rt['gatewayConfig'] = compileFile('./views/gatewayconfig.pug');
 rt['query'] = compileFile('./views/query.pug');
+rt['prune'] = compileFile('./views/prune.pug');
 
 //todo: consider not making the bigint into a string instead show it without quotes at least for query results
 function makeRenderSafe(inputObj) {
@@ -367,17 +368,45 @@ app.post('/deletePosts', upload.any(), async (req, res, next) => {
     res.redirect(req.headers.referer);
 });
 
-//todo: implement
 //todo: add GET version?
 //todo: consider async and/or simultaneous prunings
-app.post('/prunePosts', upload.any(), async (req, res, next) => {
+//todo: consider if these should be prunings or hard deletions... it's called pruning but we actually hard (explicitly) delete for now
+app.post('/pruneMany', upload.any(), async (req, res, next) => {
   try {
-    gatewayCanDo(req, 'delPost')
-    console.log(`Pruning posts: ${req.body.queryHashes}.`);
-    for (let thisBoard of Object.keys(req.body.queryHashes)) {
-        gatewayCanSeeBoard(req, thisBoard)
-        for (let thisHash of req.body.queryHashes) {
-            throw new Error ('Post pruning is unimplemented.')
+    gatewayCanDo(req, 'delPost') //todo: not need permissions to delPost when eg. only files are being pruned and vise versa
+    gatewayCanDo(req, 'delFile')
+    console.log('debug 1')
+    console.log(req.body.orphanReplies || '{}')
+    console.log('debug 2')
+    console.log(req.body.orphanFileRefs || '{}')
+    console.log('debug 3')
+    console.log(req.body.orphanFileChunks || '{}')
+    console.log('debug 4')
+    console.log(JSON.parse(req.body.orphanReplies || '{}'))
+    console.log(JSON.parse(req.body.orphanFileRefs || '{}'))
+    console.log(JSON.parse(req.body.orphanFileChunks || '{}'))    
+    const toPrune = {
+        'posts': JSON.parse(req.body.orphanReplies || '{}'),
+        'fileRefs': JSON.parse(req.body.orphanFileRefs || '{}'),
+        'fileChunks': JSON.parse(req.body.orphanFileChunks || '{}'),
+    }
+    console.log(`Pruning: ${toPrune}`);
+    for (let thisType of Object.keys(toPrune)) {
+        for (let thisBoard of Object.keys(toPrune[thisType])) {
+            gatewayCanSeeBoard(req, thisBoard)
+            for (let thisHash of toPrune[thisType][thisBoard]) {
+                try {
+                    switch (thisType) {
+                        case 'posts':
+                            await db.delPost(thisHash, thisBoard, cfg.deletePostRandomKey)
+                            break;
+                        default:
+                            await db.delFile(thisHash, thisBoard, cfg.deleteFileRandomKey)
+                    }
+                } catch (pruneErr) {
+                    console.log(`Failed to prune ${thisType.slice(0, -1)} ${thisHash}:`,pruneErr)
+                }
+            }
         }
     }
   } catch (err) {
@@ -1121,6 +1150,11 @@ var lastQuery
 var lastQueryBoards
 var lastQueryResults
 var lastQueryLimit = 0
+var lastPruneQueryBoards
+var lastPruneQueryLimit = 0
+var lastOrphanReplies
+var lastOrphanFileRefs
+var lastOrphanFileChunks
 
 //todo: also add GET API?
 //todo: add timer
@@ -1218,6 +1252,91 @@ app.post('/submitQuery', async (req, res, next) => {
     res.redirect('/query.html')
 })
 
+//todo: implement limit
+//todo: possibly combine this with thread count based pruning
+//todo: optimize
+app.post('/submitPruneQuery', async (req, res, next) => {
+    try {
+        gatewayCanDo(req, 'useQueryPage') //todo: seperate perm?
+        // console.log('req.body:', req.body)
+        lastPruneQueryBoards = req.body.boardIds
+        lastPruneQueryLimit = req.body.queryLimit
+        let boardsToQuery = canSeeBoards()
+        if (req.body.boardIds) {
+            const specifiedBoards = req.body.boardIds.split(',');
+            boardsToQuery = boardsToQuery.filter(b => specifiedBoards.includes(b));
+        }
+
+        const postsByBoard = Object.fromEntries(
+            await Promise.all(boardsToQuery.map(async b => {
+                const posts = await db.getPosts(b);
+                return [b, posts.map(post => ({ hash: post.hash, replyto: post.replyto, files: post.files}))];
+            }))
+        );
+
+        //Find orphaned replies, and files referenced by a post that isn't an orphaned reply
+        const lastOrphanReplies = Object.fromEntries(
+            Object.entries(postsByBoard).map(([board, posts]) => {
+                const postHashes = new Set(posts.map(post => post.hash));
+                const orphanedReplies = [];
+                const referencedFiles = new Set();
+
+                posts.forEach(post => {
+                    // Check if the post is non-orphaned
+                    if (!post.replyto || postHashes.has(post.replyto)) {
+                        // If non-orphaned, collect referenced files
+                        post.files.forEach(file => {
+                            referencedFiles.add(file.hash);
+                        });
+                    } else {
+                        // If orphaned, collect the reply hash
+                        orphanedReplies.push(post.hash);
+                    }
+                });
+
+                return [board, { orphanedReplies, referencedFiles }];
+            })
+        );
+
+        //if we only neeeded to find orphan replies we could do this in one step, but we want to use the postByBoard structure to find orphan file refs and file chunks as well
+        // const orphanedRepliesByBoard = Object.fromEntries(
+        //     await Promise.all(boardsToQuery.map(async b => {
+        //         const posts = await db.getPosts(b);
+        //         const postHashes = new Set(posts.map(post => post.hash));
+        //         const orphanedReplies = posts
+        //             .filter(post => post.replyto && !postHashes.has(post.replyto))
+        //             .map(post => post.hash);
+        //         return [b, orphanedReplies];
+        //     }))
+        // );
+
+        //now files references are handled
+
+        const orphanedFilesByBoard = {};
+
+        for (const thisBoard of boardsToQuery) {
+            const { referencedFiles } = lastOrphanReplies[thisBoard];
+
+            const thisBoardFiles = await db.getFileRefs(thisBoard);
+            const orphanedFiles = thisBoardFiles.filter(file => !referencedFiles.has(file.hash));
+
+            orphanedFilesByBoard[thisBoard] = orphanedFiles.map(file => file.hash);
+        }
+
+        lastOrphanFileRefs = orphanedFilesByBoard
+
+        //todo: handle file chunks
+        //lastOrphanFileChunks = ...
+
+    } catch (err) {
+        lastQueryResults = 'Error searching for orphans.'
+        console.log('Failed to search for orphans.')
+        console.log(err)
+        lastError = err
+    }
+    res.redirect('/prune.html')
+})
+
 //todo: add link to this somewhere
 //todo: made disabled on gateway by default (check if already is)
 app.get('/query.html', async (req, res, next) => {
@@ -1251,6 +1370,43 @@ app.get('/query.html', async (req, res, next) => {
     }
     console.timeEnd('buildQueryPage');
 })
+
+//todo: permissions check
+app.get('/prune.html', async (req, res, next) => {
+    try {
+        console.time('buildPrunePage');
+        // gatewayCanDo(req, 'del')
+        // console.log("lastQueryResults in query.html")
+        // console.log(lastQueryResults)
+        const options = await standardRenderOptions(req,res)
+
+        options.lastPruneQueryBoards = lastPruneQueryBoards
+        options.lastPruneQueryLimit = lastPruneQueryLimit
+        options.orphanReplies = lastOrphanReplies
+        options.orphanFileRefs = lastOrphanFileRefs
+        options.orphanFileChunks = lastOrphanFileChunks
+
+        // if (typeof lastQueryResults === "object") {
+        //     options.lastQueryResultsHashes = {}
+        //     for (let thisBoard of Object.keys(lastQueryResults)) {
+        //         options.lastQueryResultsHashes[thisBoard] = lastQueryResults[thisBoard].map(r => r.hash)
+        //     }
+        // }
+
+        // threads = await addFileStatuses(makeRenderSafe(threads))
+
+        const html = await rt['prune'](options)
+        resetError()
+        res.send(html)
+    } catch (err) {
+        console.log('Failed to generate prune page.')
+        console.log(err)
+        lastError = err
+        res.redirect('/home.html')
+    }
+    console.timeEnd('buildPrunePage');
+})
+
 
 app.get('/overboard.html', async (req, res, next) => {
     try {

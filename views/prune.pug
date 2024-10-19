@@ -1,0 +1,34 @@
+extends home.pug
+
+block title
+  title #{cfg.pageTitle} - Pruning
+
+block content
+  h2 Enter Pruning Query Parameters
+  form(action="/submitPruneQuery" method="POST" class="config-form")
+    label(for="boardIds") Comma-Separated Board IDs: &nbsp;
+    input(type="text" id="boardIds" name="boardIds" value=lastPruneQueryBoards)
+    label(for="queryLimit") Limit: &nbsp;
+    input(type="number" id="queryLimit" name="queryLimit" value=lastPruneQueryLimit)
+    |  
+    button(type="submit", class="sidebarbutton") Execute
+  p.message
+    != "Queries take the form:<br>name = \"User\" and date >= " + (Date.now() - 7 * 24 * 60 * 60 * 1000) + " or name = empty and date >= " + (Date.now() - 1 * 24 * 60 * 60 * 1000) + "<br>Supported operators are =, >, <, >=, <=, (and/AND/&/&&), (or/OR/|/||).<br>AND comes before OR."
+  h2 Found Orphans
+  form(class = "post-form")
+    label(for="orphanReplies") Orphan Replies:
+    br
+    textarea(id="orphanReplies" name="orphanReplies")
+      | #{JSON.stringify(orphanReplies)}
+    br
+    label(for="orphanFileRefs") Orphan File References:
+    br
+    textarea(id="orphanFileRefs" name="orphanFileRefs")
+      | #{JSON.stringify(orphanFileRefs)}
+    br
+    label(for="orphanFileChunks") Orphan File Chunks:
+    br
+    textarea(id="orphanFileChunks" name="orphanFileChunks")
+      | #{JSON.stringify(orphanFileChunks)}
+    br
+    button(type="submit" formaction="/pruneMany" formmethod="post" class="config-form sidebarbutton") Prune All
