@@ -250,7 +250,7 @@ export async function removeSinglePost(thisHash, whichBoard, randomKey = true, h
             await openedBoards[whichBoard].documents.del(thisHash, { signers: [newKeyPair.sign.bind(newKeyPair)] });
         }
         else {
-            await openedBoards[whichBoard].documents.log.prune([thisHash], { unchecked: true });
+            await openedBoards[whichBoard].documents.log.log.remove({ hash: thisHash });
         }
     }
     else {
@@ -258,7 +258,7 @@ export async function removeSinglePost(thisHash, whichBoard, randomKey = true, h
             await openedBoards[whichBoard].documents.del(thisHash);
         }
         {
-            await openedBoards[whichBoard].documents.log.prune([thisHash], { unchecked: true });
+            await openedBoards[whichBoard].documents.log.log.remove({ hash: thisHash });
         }
     }
     //todo: need to return id of what was deleted or boolean or something?
@@ -276,7 +276,7 @@ export async function removeSingleFileRef(thisHash, whichBoard, randomKey = true
             await openedBoards[whichBoard].fileDb.documents.del(thisHash, { signers: [newKeyPair.sign.bind(newKeyPair)] });
         }
         else {
-            await openedBoards[whichBoard].fileDb.documents.log.prune([thisHash], { unchecked: true });
+            await openedBoards[whichBoard].fileDb.documents.log.log.remove({ hash: thisHash });
         }
     }
     else {
@@ -284,7 +284,7 @@ export async function removeSingleFileRef(thisHash, whichBoard, randomKey = true
             await openedBoards[whichBoard].fileDb.documents.del(thisHash);
         }
         {
-            await openedBoards[whichBoard].fileDb.documents.log.prune([thisHash], { unchecked: true });
+            await openedBoards[whichBoard].fileDb.documents.log.log.remove({ hash: thisHash });
         }
     }
     //todo: need to return id of what was deleted or boolean or something?
@@ -302,7 +302,7 @@ export async function removeSingleFileChunk(thisHash, whichBoard, randomKey = tr
             await openedBoards[whichBoard].fileDb.chunks.documents.del(thisHash, { signers: [newKeyPair.sign.bind(newKeyPair)] });
         }
         else {
-            await openedBoards[whichBoard].fileDb.chunks.documents.log.prune([thisHash], { unchecked: true });
+            await openedBoards[whichBoard].fileDb.chunks.documents.log.log.remove({ hash: thisHash });
         }
     }
     else {
@@ -310,7 +310,7 @@ export async function removeSingleFileChunk(thisHash, whichBoard, randomKey = tr
             await openedBoards[whichBoard].fileDb.chunks.documents.del(thisHash);
         }
         {
-            await openedBoards[whichBoard].fileDb.chunks.documents.log.prune([thisHash], { unchecked: true });
+            await openedBoards[whichBoard].fileDb.chunks.documents.log.log.remove({ hash: thisHash });
         }
     }
     //todo: need to return id of what was deleted or boolean or something?

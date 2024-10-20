@@ -375,9 +375,9 @@ app.post('/pruneMany', upload.any(), async (req, res, next) => {
   try {
     gatewayCanDo(req, 'delPost') //todo: not need permissions to delPost when eg. only files are being pruned and vise versa
     gatewayCanDo(req, 'delFile')
-    const hardDelete = (() => req.body.action === 'delete')();
+    const hardDelete = req.body.action === 'delete'
     if (!hardDelete) {
-        throw new Error ('Pruning is unimplemented.') //todo: implement (mainly just need to properly call the prune() function in db.ts)
+        throw new Error ('Pruning is unimplemented.') //todo: implement (mainly just need to properly call the prune() function in db.ts?)
     }
     const toPrune = {
         'posts': JSON.parse(req.body.orphanReplies || '{}'),
@@ -1260,6 +1260,7 @@ app.post('/submitPruneQuery', async (req, res, next) => {
         // console.log('req.body:', req.body)
         lastPruneQueryBoards = req.body.boardIds
         lastPruneQueryLimit = req.body.queryLimit
+
         let boardsToQuery = canSeeBoards()
         if (req.body.boardIds) {
             const specifiedBoards = req.body.boardIds.split(',');
@@ -1268,8 +1269,7 @@ app.post('/submitPruneQuery', async (req, res, next) => {
 
         const postsByBoard = Object.fromEntries(
             await Promise.all(boardsToQuery.map(async b => {
-                const posts = await db.getPosts(b);
-                return [b, posts.map(post => ({ hash: post.hash, replyto: post.replyto, files: post.files}))];
+                return [b, await db.getPosts(b).then(results => results.map(post => ({ hash: post.hash, replyto: post.replyto, files: post.files })))];
             }))
         );
 
@@ -1290,6 +1290,7 @@ app.post('/submitPruneQuery', async (req, res, next) => {
                     } else {
                         // If orphaned, collect the reply hash
                         orphanedReplies.push(post.hash);
+
                     }
                 });
 
@@ -1348,7 +1349,7 @@ app.post('/submitPruneQuery', async (req, res, next) => {
         lastOrphanFileRefs = orphanedFileRefsByBoard;
         lastOrphanFileChunks = orphanedFileChunksByBoard;
 
-        //finally, remove empty entries (boards with no orphans of the given type)
+        //remove empty entries (boards with no orphans of the given type)
         lastOrphanReplies = Object.fromEntries(
             Object.entries(lastOrphanReplies).filter(([board, hashes]) => hashes.length > 0)
         );
@@ -1358,6 +1359,31 @@ app.post('/submitPruneQuery', async (req, res, next) => {
         lastOrphanFileChunks = Object.fromEntries(
             Object.entries(lastOrphanFileChunks).filter(([board, hashes]) => hashes.length > 0)
         );
+
+        const limitOrphans = (orphanObject) => {
+            const entries = Object.entries(orphanObject);
+            const limitedOrphans = {};
+            for (const [board, hashes] of entries) {
+                if (numResults >= queryLimit) break; // Stop if limit is reached
+                const remainingLimit = queryLimit - numResults;
+                const limitedHashes = hashes.slice(0, remainingLimit); // Limit the number of hashes
+                if (limitedHashes.length > 0) {
+                    limitedOrphans[board] = limitedHashes;
+                    numResults += limitedHashes.length; // Update numResults
+                }
+            }
+            return limitedOrphans;
+        };
+
+        const queryLimit = Math.max(0, parseInt(req.body.queryLimit) || 0);
+        var numResults = 0
+
+        // Limit orphan replies, file references, and file chunks
+        if (queryLimit) {
+            lastOrphanReplies = limitOrphans(lastOrphanReplies);
+            lastOrphanFileRefs = limitOrphans(lastOrphanFileRefs);
+            lastOrphanFileChunks = limitOrphans(lastOrphanFileChunks);            
+        }
 
     } catch (err) {
         lastQueryResults = 'Error searching for orphans.'

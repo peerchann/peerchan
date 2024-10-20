@@ -286,13 +286,13 @@ export async function removeSinglePost (thisHash: string, whichBoard: string, ra
     	if (hardDelete) {
     		await openedBoards[whichBoard].documents.del(thisHash, { signers: [newKeyPair.sign.bind(newKeyPair)] });
     	} else {
-    		await openedBoards[whichBoard].documents.log.prune([thisHash], { unchecked: true });
+    		await openedBoards[whichBoard].documents.log.log.remove({ hash: thisHash })
     	}
 	} else {
 		if (hardDelete) {
 			await openedBoards[whichBoard].documents.del(thisHash);
 		} {
-			await openedBoards[whichBoard].documents.log.prune([thisHash], { unchecked: true })
+			await openedBoards[whichBoard].documents.log.log.remove({ hash: thisHash })
 		}
 	}
 	//todo: need to return id of what was deleted or boolean or something?
@@ -310,13 +310,13 @@ export async function removeSingleFileRef (thisHash: string, whichBoard: string,
     	if (hardDelete) {
     		await openedBoards[whichBoard].fileDb.documents.del(thisHash, { signers: [newKeyPair.sign.bind(newKeyPair)] });
     	} else {
-    		await openedBoards[whichBoard].fileDb.documents.log.prune([thisHash], { unchecked: true })
+    		await openedBoards[whichBoard].fileDb.documents.log.log.remove({ hash: thisHash })
     	}
 	} else {
 		if (hardDelete) {
 			await openedBoards[whichBoard].fileDb.documents.del(thisHash);
 		} {
-			await openedBoards[whichBoard].fileDb.documents.log.prune([thisHash], { unchecked: true })
+			await openedBoards[whichBoard].fileDb.documents.log.log.remove({ hash: thisHash })
 		}
 	}
 	//todo: need to return id of what was deleted or boolean or something?
@@ -334,13 +334,13 @@ export async function removeSingleFileChunk (thisHash: string, whichBoard: strin
     	if (hardDelete) {
     		await openedBoards[whichBoard].fileDb.chunks.documents.del(thisHash, { signers: [newKeyPair.sign.bind(newKeyPair)] });
     	} else {
-    		await openedBoards[whichBoard].fileDb.chunks.documents.log.prune([thisHash], { unchecked: true })
+    		await openedBoards[whichBoard].fileDb.chunks.documents.log.log.remove({ hash: thisHash })
     	}
 	} else {
 		if (hardDelete) {
 			await openedBoards[whichBoard].fileDb.chunks.documents.del(thisHash);
 		} {
-			await openedBoards[whichBoard].fileDb.chunks.documents.log.prune([thisHash], { unchecked: true })
+			await openedBoards[whichBoard].fileDb.chunks.documents.log.log.remove({ hash: thisHash })
 		}
 	}
 	//todo: need to return id of what was deleted or boolean or something?
