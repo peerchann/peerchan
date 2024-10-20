@@ -129,7 +129,7 @@ export async function getBoardStats(whichBoard) {
     let rfStatus = [null, null, null];
     //if the board is opened, we get the replication factors, corresponding to posts, files, and fileChunks
     if (boardStatus == 2) {
-        rfStatus = [thisBoard.documents.log.role.segments[0].factor, thisBoard.fileDb.files.log.role.segments[0].factor, thisBoard.fileDb.chunks.documents.log.role.segments[0].factor];
+        rfStatus = [thisBoard.documents.log.role.segments[0].factor, thisBoard.fileDb.documents.log.role.segments[0].factor, thisBoard.fileDb.chunks.documents.log.role.segments[0].factor];
     }
     return { boardStatus, rfStatus };
 }
@@ -188,7 +188,7 @@ export async function openFilesDb(filesDbId = "", options) {
     }
 }
 //todo: store the signing keys locally and make them selectable for posting post, deleting post, putting file, deleting file, etc.
-export async function makeNewPost(postDocument, whichBoard, randomKey) {
+export async function makeNewPost(postDocument, whichBoard, randomKey = true) {
     if (!whichBoard) {
         throw new Error('No board specified.');
     }
@@ -210,8 +210,7 @@ export async function listPeers() {
     console.log(peerMultiAddrs);
     return peerMultiAddrs;
 }
-//todo: allow arbitrary post dbs to be posted to
-export async function delPost(whichPost, whichBoard, randomKey) {
+export async function delPost(whichPost, whichBoard, randomKey = true) {
     if (!whichPost) {
         throw new Error('No post specified.');
     }
@@ -237,6 +236,84 @@ export async function delPost(whichPost, whichBoard, randomKey) {
         }
     }
     //todo: need to return ids of what was deleted?
+}
+export async function removeSinglePost(thisHash, whichBoard, randomKey = true, hardDelete = false) {
+    if (!thisHash) {
+        throw new Error('No hash specified.');
+    }
+    if (!whichBoard) {
+        throw new Error('No board specified.');
+    }
+    if (randomKey) {
+        var newKeyPair = await Ed25519Keypair.create();
+        if (hardDelete) {
+            await openedBoards[whichBoard].documents.del(thisHash, { signers: [newKeyPair.sign.bind(newKeyPair)] });
+        }
+        else {
+            await openedBoards[whichBoard].documents.log.prune([thisHash], { unchecked: true });
+        }
+    }
+    else {
+        if (hardDelete) {
+            await openedBoards[whichBoard].documents.del(thisHash);
+        }
+        {
+            await openedBoards[whichBoard].documents.log.prune([thisHash], { unchecked: true });
+        }
+    }
+    //todo: need to return id of what was deleted or boolean or something?
+}
+export async function removeSingleFileRef(thisHash, whichBoard, randomKey = true, hardDelete = false) {
+    if (!thisHash) {
+        throw new Error('No hash specified.');
+    }
+    if (!whichBoard) {
+        throw new Error('No board specified.');
+    }
+    if (randomKey) {
+        var newKeyPair = await Ed25519Keypair.create();
+        if (hardDelete) {
+            await openedBoards[whichBoard].fileDb.documents.del(thisHash, { signers: [newKeyPair.sign.bind(newKeyPair)] });
+        }
+        else {
+            await openedBoards[whichBoard].fileDb.documents.log.prune([thisHash], { unchecked: true });
+        }
+    }
+    else {
+        if (hardDelete) {
+            await openedBoards[whichBoard].fileDb.documents.del(thisHash);
+        }
+        {
+            await openedBoards[whichBoard].fileDb.documents.log.prune([thisHash], { unchecked: true });
+        }
+    }
+    //todo: need to return id of what was deleted or boolean or something?
+}
+export async function removeSingleFileChunk(thisHash, whichBoard, randomKey = true, hardDelete = false) {
+    if (!thisHash) {
+        throw new Error('No hash specified.');
+    }
+    if (!whichBoard) {
+        throw new Error('No board specified.');
+    }
+    if (randomKey) {
+        var newKeyPair = await Ed25519Keypair.create();
+        if (hardDelete) {
+            await openedBoards[whichBoard].fileDb.chunks.documents.del(thisHash, { signers: [newKeyPair.sign.bind(newKeyPair)] });
+        }
+        else {
+            await openedBoards[whichBoard].fileDb.chunks.documents.log.prune([thisHash], { unchecked: true });
+        }
+    }
+    else {
+        if (hardDelete) {
+            await openedBoards[whichBoard].fileDb.chunks.documents.del(thisHash);
+        }
+        {
+            await openedBoards[whichBoard].fileDb.chunks.documents.log.prune([thisHash], { unchecked: true });
+        }
+    }
+    //todo: need to return id of what was deleted or boolean or something?
 }
 //todo: allow selectivity in post dbs to be queried from
 //todo: revisit remote
@@ -268,7 +345,15 @@ export async function getFileRefs(whichBoard) {
     if (!whichBoard) {
         throw new Error('No board specified.');
     }
-    let results = await openedBoards[whichBoard].fileDb.files.index.search(new SearchRequest, { local: true, remote: remoteQueryPosts });
+    let results = await openedBoards[whichBoard].fileDb.documents.index.search(new SearchRequest, { local: true, remote: remoteQueryPosts });
+    return results;
+}
+//todo: revisit remote
+export async function getFileChunks(whichBoard) {
+    if (!whichBoard) {
+        throw new Error('No board specified.');
+    }
+    let results = await openedBoards[whichBoard].fileDb.chunks.documents.index.search(new SearchRequest, { local: true, remote: remoteQueryPosts });
     return results;
 }
 //todo: add sage
@@ -383,9 +468,9 @@ export async function queryPosts(whichBoards, queryObj) {
 }
 //todo: revisit in light of per-board fileDbs
 export async function getAllFileDocuments() {
-    return await Files.files.index.search(new SearchRequest({ query: [] }), { local: true, remote: remoteQueryFileRefs });
+    return await Files.documents.index.search(new SearchRequest({ query: [] }), { local: true, remote: remoteQueryFileRefs });
 }
-export async function putFile(fileData, whichBoard, randomKey) {
+export async function putFile(fileData, whichBoard, randomKey = true) {
     //todo: maybe validate size in advance here or in writeChunks to avoid putting chunks and then exiting 
     let fileDocument = await new File(fileData);
     Validate.file(fileDocument); //check the file isn't too big before starting to write the chunks
@@ -393,23 +478,23 @@ export async function putFile(fileData, whichBoard, randomKey) {
         await fileDocument.writeChunks(openedBoards[whichBoard].fileDb.chunks, fileData, randomKey);
         if (randomKey) {
             const newKeyPair = await Ed25519Keypair.create();
-            await openedBoards[whichBoard].fileDb.files.put(fileDocument, { signers: [newKeyPair.sign.bind(newKeyPair)] });
+            await openedBoards[whichBoard].fileDb.documents.put(fileDocument, { signers: [newKeyPair.sign.bind(newKeyPair)] });
         }
         else {
-            await openedBoards[whichBoard].fileDb.files.put(fileDocument);
+            await openedBoards[whichBoard].fileDb.documents.put(fileDocument);
         }
-        // await openedBoards[whichBoard].fileDb.files.put(fileDocument)
+        // await openedBoards[whichBoard].fileDb.documents.put(fileDocument)
     }
     else {
         await fileDocument.writeChunks(Files.chunks, fileData, randomKey);
         if (randomKey) {
             const newKeyPair = await Ed25519Keypair.create();
-            await Files.files.put(fileDocument, { signers: [newKeyPair.sign.bind(newKeyPair)] });
+            await Files.documents.put(fileDocument, { signers: [newKeyPair.sign.bind(newKeyPair)] });
         }
         else {
-            await Files.files.put(fileDocument);
+            await Files.documents.put(fileDocument);
         }
-        // await Files.files.put(fileDocument)
+        // await Files.documents.put(fileDocument)
     }
     // await Promise.all([ //todo: can move out of await
     // 	// fileDocument.writeChunks(fileData, fileDocument.hash),
@@ -419,13 +504,13 @@ export async function putFile(fileData, whichBoard, randomKey) {
 }
 export async function getFile(fileHash, whichBoard) {
     if (whichBoard) {
-        let foundResults = await openedBoards[whichBoard].fileDb.files.index.search(new SearchRequest({ query: [new StringMatch({ key: 'hash', value: fileHash })] }), { local: true, remote: remoteQueryFileRefs }).then((results) => results[0]);
+        let foundResults = await openedBoards[whichBoard].fileDb.documents.index.search(new SearchRequest({ query: [new StringMatch({ key: 'hash', value: fileHash })] }), { local: true, remote: remoteQueryFileRefs }).then((results) => results[0]);
         if (foundResults) {
             return await openedBoards[whichBoard].fileDb.getFile(foundResults.hash); //todo: revisit for efficiency?
         }
     }
     else {
-        let foundResults = await Files.files.index.search(new SearchRequest({ query: [new StringMatch({ key: 'hash', value: fileHash })] }), { local: true, remote: remoteQueryFileRefs }).then((results) => results[0]);
+        let foundResults = await Files.documents.index.search(new SearchRequest({ query: [new StringMatch({ key: 'hash', value: fileHash })] }), { local: true, remote: remoteQueryFileRefs }).then((results) => results[0]);
         if (foundResults) {
             return await Files.getFile(foundResults.hash);
         }
@@ -435,13 +520,13 @@ export async function getFile(fileHash, whichBoard) {
 //todo: consider making more efficient with above
 export async function fileExists(fileHash, whichBoard) {
     if (whichBoard) {
-        let foundResults = await openedBoards[whichBoard].fileDb.files.index.search(new SearchRequest({ query: [new StringMatch({ key: 'hash', value: fileHash })] }), { local: true, remote: remoteQueryFileRefs });
+        let foundResults = await openedBoards[whichBoard].fileDb.documents.index.search(new SearchRequest({ query: [new StringMatch({ key: 'hash', value: fileHash })] }), { local: true, remote: remoteQueryFileRefs });
         if (foundResults.length) {
             return true;
         }
     }
     else {
-        let foundResults = await Files.files.index.search(new SearchRequest({ query: [new StringMatch({ key: 'hash', value: fileHash })] }), { local: true, remote: remoteQueryFileRefs });
+        let foundResults = await Files.documents.index.search(new SearchRequest({ query: [new StringMatch({ key: 'hash', value: fileHash })] }), { local: true, remote: remoteQueryFileRefs });
         if (foundResults.length) {
             return true;
         }
@@ -449,7 +534,7 @@ export async function fileExists(fileHash, whichBoard) {
     return false;
 }
 //todo: need to get this also deleting the file chunks whenever anyone deletes, not just us
-export async function delFile(fileHash, whichBoard, randomKey) {
+export async function delFile(fileHash, whichBoard, randomKey = true) {
     try {
         if (whichBoard) {
             await openedBoards[whichBoard].fileDb.deleteFile(fileHash, randomKey);

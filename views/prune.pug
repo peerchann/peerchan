@@ -12,8 +12,6 @@ block content
     input(type="number" id="queryLimit" name="queryLimit" value=lastPruneQueryLimit)
     |  
     button(type="submit", class="sidebarbutton") Execute
-  p.message
-    != "Queries take the form:<br>name = \"User\" and date >= " + (Date.now() - 7 * 24 * 60 * 60 * 1000) + " or name = empty and date >= " + (Date.now() - 1 * 24 * 60 * 60 * 1000) + "<br>Supported operators are =, >, <, >=, <=, (and/AND/&/&&), (or/OR/|/||).<br>AND comes before OR."
   h2 Found Orphans
   form(class = "post-form")
     label(for="orphanReplies") Orphan Replies:
@@ -31,4 +29,5 @@ block content
     textarea(id="orphanFileChunks" name="orphanFileChunks")
       | #{JSON.stringify(orphanFileChunks)}
     br
-    button(type="submit" formaction="/pruneMany" formmethod="post" class="config-form sidebarbutton") Prune All
+    button(type="submit" formaction="/pruneMany" formmethod="post" class="config-form sidebarbutton" name="action" value="prune") Prune
+    button(type="submit" formaction="/pruneMany" formmethod="post" class="config-form sidebarbutton" name="action" value="delete") Delete

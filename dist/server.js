@@ -370,21 +370,15 @@ app.post('/deletePosts', upload.any(), async (req, res, next) => {
 
 //todo: add GET version?
 //todo: consider async and/or simultaneous prunings
-//todo: consider if these should be prunings or hard deletions... it's called pruning but we actually hard (explicitly) delete for now
+//todo: consider if these should be prunings or hard deletions... it's called pruning but we actually hard (explicitly) delete for now, (or have this an interface checkbox/config option)
 app.post('/pruneMany', upload.any(), async (req, res, next) => {
   try {
     gatewayCanDo(req, 'delPost') //todo: not need permissions to delPost when eg. only files are being pruned and vise versa
     gatewayCanDo(req, 'delFile')
-    console.log('debug 1')
-    console.log(req.body.orphanReplies || '{}')
-    console.log('debug 2')
-    console.log(req.body.orphanFileRefs || '{}')
-    console.log('debug 3')
-    console.log(req.body.orphanFileChunks || '{}')
-    console.log('debug 4')
-    console.log(JSON.parse(req.body.orphanReplies || '{}'))
-    console.log(JSON.parse(req.body.orphanFileRefs || '{}'))
-    console.log(JSON.parse(req.body.orphanFileChunks || '{}'))    
+    const hardDelete = (() => req.body.action === 'delete')();
+    if (!hardDelete) {
+        throw new Error ('Pruning is unimplemented.') //todo: implement (mainly just need to properly call the prune() function in db.ts)
+    }
     const toPrune = {
         'posts': JSON.parse(req.body.orphanReplies || '{}'),
         'fileRefs': JSON.parse(req.body.orphanFileRefs || '{}'),
@@ -398,10 +392,14 @@ app.post('/pruneMany', upload.any(), async (req, res, next) => {
                 try {
                     switch (thisType) {
                         case 'posts':
-                            await db.delPost(thisHash, thisBoard, cfg.deletePostRandomKey)
+                            await db.removeSinglePost(thisHash, thisBoard, cfg.deletePostRandomKey, hardDelete)
                             break;
-                        default:
-                            await db.delFile(thisHash, thisBoard, cfg.deleteFileRandomKey)
+                        case 'fileRefs':
+                            await db.removeSingleFileRef(thisHash, thisBoard, cfg.deletePostRandomKey, hardDelete)
+                            break;
+                        case 'fileChunks':
+                            await db.removeSingleFileChunk(thisHash, thisBoard, cfg.deletePostRandomKey, hardDelete)
+                            break;
                     }
                 } catch (pruneErr) {
                     console.log(`Failed to prune ${thisType.slice(0, -1)} ${thisHash}:`,pruneErr)
@@ -1255,6 +1253,7 @@ app.post('/submitQuery', async (req, res, next) => {
 //todo: implement limit
 //todo: possibly combine this with thread count based pruning
 //todo: optimize
+//todo: since file chunks can be large in in-memory size, it would be useful if peerbit supported projection, then the chunk contents wouldn't have to be retrieved, only the file chunk .hash and .fileHash
 app.post('/submitPruneQuery', async (req, res, next) => {
     try {
         gatewayCanDo(req, 'useQueryPage') //todo: seperate perm?
@@ -1275,7 +1274,7 @@ app.post('/submitPruneQuery', async (req, res, next) => {
         );
 
         //Find orphaned replies, and files referenced by a post that isn't an orphaned reply
-        const lastOrphanReplies = Object.fromEntries(
+        const orphanedRepliesAndReferencedFilesByBoard = Object.fromEntries(
             Object.entries(postsByBoard).map(([board, posts]) => {
                 const postHashes = new Set(posts.map(post => post.hash));
                 const orphanedReplies = [];
@@ -1298,6 +1297,10 @@ app.post('/submitPruneQuery', async (req, res, next) => {
             })
         );
 
+        lastOrphanReplies = Object.fromEntries(
+            Object.entries(orphanedRepliesAndReferencedFilesByBoard).map(([board, { orphanedReplies }]) => [board, orphanedReplies])
+        );
+
         //if we only neeeded to find orphan replies we could do this in one step, but we want to use the postByBoard structure to find orphan file refs and file chunks as well
         // const orphanedRepliesByBoard = Object.fromEntries(
         //     await Promise.all(boardsToQuery.map(async b => {
@@ -1310,23 +1313,51 @@ app.post('/submitPruneQuery', async (req, res, next) => {
         //     }))
         // );
 
-        //now files references are handled
+        //now files are handled
 
-        const orphanedFilesByBoard = {};
+        const orphanedFileRefsByBoard = {};
+        const orphanedFileChunksByBoard = {};
 
         for (const thisBoard of boardsToQuery) {
-            const { referencedFiles } = lastOrphanReplies[thisBoard];
+            const { referencedFiles } = orphanedRepliesAndReferencedFilesByBoard[thisBoard];
 
             const thisBoardFiles = await db.getFileRefs(thisBoard);
-            const orphanedFiles = thisBoardFiles.filter(file => !referencedFiles.has(file.hash));
 
-            orphanedFilesByBoard[thisBoard] = orphanedFiles.map(file => file.hash);
+            // Find orphaned file references where their hashes are NOT in the referencedFiles Set
+            const orphanedFileRefs = thisBoardFiles
+                .filter(fileRef => !referencedFiles.has(fileRef.hash)) // Orphaned fileRefs
+                .map(fileRef => fileRef.hash); // Collect their hashes
+
+            // Store orphaned file references by board
+            orphanedFileRefsByBoard[thisBoard] = orphanedFileRefs;
+
+            // Create a Set of referenced file hashes from non-orphan fileRefs
+            const referencedFileHashes = new Set(thisBoardFiles
+                .filter(fileRef => referencedFiles.has(fileRef.hash)) // Only non-orphan fileRefs
+                .map(fileRef => fileRef.fileHash) // Map to their fileHash
+            );
+
+            // Find orphaned fileChunks where fileHash is NOT in the referencedFileHashes Set
+            orphanedFileChunksByBoard[thisBoard] = await db.getFileChunks(thisBoard).then(allFileChunks =>
+                allFileChunks
+                    .filter(fileChunk => !referencedFileHashes.has(fileChunk.fileHash))
+                    .map(fileChunk => fileChunk.hash)
+            );
         }
 
-        lastOrphanFileRefs = orphanedFilesByBoard
+        lastOrphanFileRefs = orphanedFileRefsByBoard;
+        lastOrphanFileChunks = orphanedFileChunksByBoard;
 
-        //todo: handle file chunks
-        //lastOrphanFileChunks = ...
+        //finally, remove empty entries (boards with no orphans of the given type)
+        lastOrphanReplies = Object.fromEntries(
+            Object.entries(lastOrphanReplies).filter(([board, hashes]) => hashes.length > 0)
+        );
+        lastOrphanFileRefs = Object.fromEntries(
+            Object.entries(lastOrphanFileRefs).filter(([board, hashes]) => hashes.length > 0)
+        );
+        lastOrphanFileChunks = Object.fromEntries(
+            Object.entries(lastOrphanFileChunks).filter(([board, hashes]) => hashes.length > 0)
+        );
 
     } catch (err) {
         lastQueryResults = 'Error searching for orphans.'
@@ -2066,7 +2097,7 @@ function addEventListeners(board) {
         };
 
         whichBoard.documents.events.addEventListener("change", eventListeners[board].posts)
-        whichBoard.fileDb.files.events.addEventListener("change", eventListeners[board].fileRefs)
+        whichBoard.fileDb.documents.events.addEventListener("change", eventListeners[board].fileRefs)
         whichBoard.fileDb.chunks.documents.events.addEventListener("change", eventListeners[board].fileChunks)
     })
 }
@@ -2077,9 +2108,9 @@ function removeEventListeners(board) {
     const handlers = eventListeners[board];
 
     if (handlers) {
-        whichBoard.documents.events.removeEventListener("change", handlers.documents);
-        whichBoard.fileDb.files.events.removeEventListener("change", handlers.files);
-        whichBoard.fileDb.chunks.documents.events.removeEventListener("change", handlers.chunks);
+        whichBoard.documents.events.removeEventListener("change", handlers.posts);
+        whichBoard.fileDb.documents.events.removeEventListener("change", handlers.fileRefs);
+        whichBoard.fileDb.chunks.documents.events.removeEventListener("change", handlers.fileChunks);
         delete eventListeners[board];
     } else {
         console.log(`No event listeners to delete for /${board}/`);

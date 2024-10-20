@@ -130,7 +130,7 @@ export class FileChunkDatabase extends Program<OpenArgs>{
 export class FileDatabase extends Program<OpenArgs>{
 
 	@field({ type: Documents })
-	files: Documents<File>
+	documents: Documents<File>
 	@field({ type: FileChunkDatabase })
 	chunks: FileChunkDatabase
 	constructor(properties?: { id?: Uint8Array }) {
@@ -138,7 +138,7 @@ export class FileDatabase extends Program<OpenArgs>{
 		// this.id = properties?.id
 		// this.rootKeys = properties ? properties.rootKeys : []
 		this.chunks = new FileChunkDatabase({ id: properties?.id })
-		this.files = new Documents({ id: sha256Sync(this.chunks.documents.log.log.id) }) //
+		this.documents = new Documents({ id: sha256Sync(this.chunks.documents.log.log.id) }) //
 		// this.documents = new Documents({ index: new DocumentIndex({ indexBy: '_id' }) })s
 	}
 
@@ -146,7 +146,7 @@ export class FileDatabase extends Program<OpenArgs>{
 
 		//for some reason this proceeds to the next without finishing so it has to be declared elsewhere (in .db .ts) //todo: revisit
 		// 	await this.chunks.open();
-		await this.files.open({
+		await this.documents.open({
 			type: File,
 			index: { key: 'hash' },
 			role: properties?.role,
@@ -208,7 +208,7 @@ export class FileDatabase extends Program<OpenArgs>{
 	// }
 
 	async getFile(hash: string) {
-		let file = await this.files.index.get(hash)
+		let file = await this.documents.index.get(hash)
 		if (file) {
 			return await file.getFile(this.chunks)
 		}
@@ -216,8 +216,8 @@ export class FileDatabase extends Program<OpenArgs>{
 
 	}
 
-	async deleteFile(hash: string, randomKey: true) {
-		let file = await this.files.index.get(hash)
+	async deleteFile(hash: string, randomKey: boolean = true) {
+		let file = await this.documents.index.get(hash)
 		if (file) {
 			if (randomKey) {
 				var newKeyPair = await Ed25519Keypair.create()
@@ -225,12 +225,12 @@ export class FileDatabase extends Program<OpenArgs>{
 					await this.chunks.documents.del(chunkHash, { signers: [newKeyPair.sign.bind(newKeyPair)] })
 					newKeyPair = await Ed25519Keypair.create()
 				}
-				return await this.files.del(hash, { signers: [newKeyPair.sign.bind(newKeyPair)] })
+				return await this.documents.del(hash, { signers: [newKeyPair.sign.bind(newKeyPair)] })
 			} else {
 				for (let chunkHash of file.chunkCids) {
 					await this.chunks.documents.del(chunkHash)
 				}
-				return await this.files.del(hash)
+				return await this.documents.del(hash)
 			}
 
 		}
@@ -305,7 +305,7 @@ export class File extends BaseFileDocument {
 		return fileArray
 	}
 
-	async writeChunks(fileChunks: FileChunkDatabase, fileContents: Uint8Array, randomKey: true) {
+	async writeChunks(fileChunks: FileChunkDatabase, fileContents: Uint8Array, randomKey: boolean = true) {
 		// let chunkWrites = Array(Math.ceil(fileContents.length / this.chunkSize))
 		let chunkStartIndex = 0
 		let newFileHash = toHexString(sha256Sync(fileContents))
