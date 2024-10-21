@@ -5,11 +5,13 @@
 import { Peerbit } from "peerbit"
 import { field, variant, vec, option, serialize, deserialize } from "@dao-xyz/borsh"
 import { Program } from "@peerbit/program"
-import { Documents, DocumentIndex, 	SearchRequest, StringMatch, IntegerCompare, Compare, Results, PutOperation, DeleteOperation } from "@peerbit/document" //todo: remove address redundancy
+import { Documents, DocumentIndex, 	SearchRequest, StringMatch, IntegerCompare, Compare } from "@peerbit/document" //todo: remove address redundancy
 // import { nanoid } from 'nanoid'
 
-import { sha256Sync, toHexString, PublicSignKey } from "@peerbit/crypto"
+import { sha256Sync, toBase64, toHexString, PublicSignKey } from "@peerbit/crypto"
 ;
+
+import { currentModerators, OpenArgs } from './db.js'
 
 // import { RPC } from "@peerbit/rpc";
 
@@ -25,15 +27,17 @@ import { equals } from "uint8arrays";
 
 
 //todo: consolidate/move to validation file along with files.ts one
-function isModerator(theSigner: PublicSignKey, theIdentity: PublicSignKey) {
+function isModerator(theSigner: PublicSignKey, theIdentity: PublicSignKey, moderators: string[] = []) {
 	if (theSigner && theIdentity) {
 		if(theSigner.equals(theIdentity)) {
 			return true;
 		}
+	} 
+	if (moderators.includes(toBase64(sha256Sync(theSigner.bytes)))) {
+		return true
 	}
 	return false
 }
-
 
 
 // Abstract document definition we can create many kinds of document types from
@@ -78,7 +82,7 @@ export class Board extends BaseBoardDocument {
 
 //todo: consistency with the document type 
 @variant("boarddatabase") //todo: consider renaming/modifying as appropriate
-export class BoardDatabase extends Program {
+export class BoardDatabase extends Program<OpenArgs> {
 
 	@field({ type: Documents })
 	documents: Documents<Board>
@@ -90,47 +94,58 @@ export class BoardDatabase extends Program {
 		// this.documents = new Documents({ index: new DocumentIndex({ indexBy: '_id' }) })
 	}
 
-	async open() {
+	async open(properties?: OpenArgs) {
 		await this.documents.open({
 			type: Board,
-			index: { key: 'hash' },
-			canPerform: async (operation, { entry }) => {
-				const signers = await entry.getPublicKeys();
-				if (operation instanceof PutOperation) {
+			index: { idProperty: 'hash' },
+			// canPerform: async (operation) => {
+			// 	const signers = await entry.getPublicKeys();
+			// 	if (props.type === 'put') {
+			// 		try {
+			// 			const board = operation.value
+			// 			let new
+			// 		} catch (err) {
+			// 			console.log(err)
+			// 			return false
+			// 		}
+			// 	} 
+			// }
+			replicate: properties?.replicate,
+			canPerform: async (operation) => {
+				if (operation.type === 'put') {
 					try {
-						if (operation.value) {
-							// if (operation.value.chunkCids.length > 16) {
-							// 	throw new Error('Expected file size greater than configured maximum of ' + 16 * fileChunkingSize + ' bytes.')
-							// }
-							let newCopy = new Board(
-								operation.value.id,
-								operation.value.title,
-								operation.value.desc,
-								operation.value.tags
-								)
-							if (newCopy.hash != operation.value.hash) {
-								console.log('Board document hash didn\'t match expected.')
-								console.log(newCopy)
-								console.log(operation.value)
-								return false
-							}
-							return true	
-						} 
+						const board = operation.value
+						// if (operation.value.chunkCids.length > 16) {
+						// 	throw new Error('Expected file size greater than configured maximum of ' + 16 * fileChunkingSize + ' bytes.')
+						// }
+						let newCopy = new Board(
+							board.id,
+							board.title,
+							board.desc,
+							board.tags
+							)
+						if (newCopy.hash != board.hash) {
+							console.log('Board document hash didn\'t match expected.')
+							console.log(newCopy)
+							console.log(board)
+							return false
+						}
+						return true	
 						//todo: remove (or dont write in the first place) blocks of invalid file
 
 					} catch (err) {
 						console.log(err)
 						return false
 					}
-				} else if (operation instanceof DeleteOperation) {
+				} else if (operation.type === 'delete') {
+					const signers = operation.entry.signatures.map(s => s.publicKey);
 					for (var signer of signers) {
-						if (isModerator(signer, this.node.identity.publicKey)) {//todo: more granularcontrol, etc.
+						if (isModerator(signer, this.node.identity.publicKey, currentModerators)) {//todo: board specific, more granularcontrol, etc.
 							return true;
 						}
 					}
 				}
 				return false
-
 			}
 		})
 

@@ -13,7 +13,7 @@ import mime from 'mime'
 
 import { DeliveryError } from '@peerbit/stream-interface';
 import { randomBytes } from '@peerbit/crypto';
-import { StringMatch, IntegerCompare, Compare, MissingField, Or, And } from '@peerbit/document'
+import { StringMatch, IntegerCompare, Compare, IsNull, Or, And } from '@peerbit/document'
 
 const app = express();
 
@@ -232,6 +232,7 @@ async function addFileStatuses(inputObj = {}, whichBoard) {
     await Promise.all(fileStatusChecks)
     return inputObj;
 }
+
 
 //todo: use enums
 function convertStringFormat(inputHex, format) {
@@ -1029,7 +1030,7 @@ function convertQueryToPeerbitQuery (queryString) {
     function queryExpToPeerbitQueryExp(tokenArray) {
         //we get the type of the Peerbit query based on the third element of the array
         if (tokenArray[2] == 'empty' && tokenArray[1] == '=') {
-            return new Or([new StringMatch({key: tokenArray[0], value: ''}), new MissingField({key: tokenArray[0]})])
+            return new Or([new StringMatch({key: tokenArray[0], value: ''}), new IsNull({key: tokenArray[0]})])
         } else if (tokenArray[2].startsWith('"') && tokenArray[2].endsWith('"') && tokenArray[1] == '=') {
             //todo: partial matches, case sensitivity, etc
             return new StringMatch({key: tokenArray[0], value: tokenArray[2].slice(1, -1)})
@@ -1212,7 +1213,7 @@ app.post('/submitQuery', async (req, res, next) => {
         // console.log('Peerbit query:')
         // console.log(peerbitQuery)
 
-        lastQueryResults = makeRenderSafe(await db.queryPosts(boardsToQuery, peerbitQuery))
+        lastQueryResults = makeRenderSafe(await db.queryPosts(boardsToQuery, peerbitQuery, lastQueryLimit))
 
         //query limit handling
         //todo: maybe make this occur earlier someehow
@@ -1588,8 +1589,7 @@ app.get('/:board/:pagenumber.html', async (req, res, next) => {
 		}
 
 		let indexPosts = await addFileStatuses(makeRenderSafe(await db.getThreadsWithReplies(req.params.board, cfg.threadsPerPage, cfg.previewReplies, whichPage)), req.params.board)
-		// let allPosts = makeRenderSafe(db.getThreadsWithReplies(req.params.board, cfg.threadsPerPage, cfg.previewReplies))
-
+    
 		boardPagesCache[req.params.board] = indexPosts.totalpages
 
 		for(let threadPost in indexPosts.threads) {
@@ -1622,7 +1622,6 @@ app.get('/:board/:pagenumber.html', async (req, res, next) => {
 const boardPagesCache = {}; //todo: reconsider
 
 //todo: remove redundancy with currentBoard, watchedBoards, etc throughout?
-
 app.get('/:board/thread/:thread.html', async (req, res, next) => {
 
 	try {
@@ -1630,14 +1629,11 @@ app.get('/:board/thread/:thread.html', async (req, res, next) => {
 	    if (watchedBoards.indexOf(req.params.board) === -1) {
 	    	throw new Error(`Board /${req.params.board}/ not in watched board list.`)
 	    }
-		// let allPosts = makeRenderSafe(await db.getPosts(req.params.board))
 		let threadPost = await db.getSpecificPost(req.params.board, req.params.thread)
-		// threadPost.replies = []
 		if(threadPost.length) {
 			threadPost[0].replies = await db.getRepliesToSpecificPost(req.params.board, req.params.thread)
 			threadPost[0] = await addFileStatuses(makeRenderSafe(threadPost[0]), req.params.board)
 		}
-
 
 		// console.log(threadPost)
 		// for (let thisPostIndex in threadPost) {
@@ -1713,10 +1709,10 @@ app.post('/submit', upload.any(), async (req, res, next) => {
     		postFiles
     	)
     	const Validate = await import('./validation.js')
-    	// console.log(Validate)
     	Validate.default.post(newPost)
-    	//todo: make pass post document
-    	await db.makeNewPost(newPost, req.body.whichBoard, cfg.postPostRandomKey)
+        
+        await db.makeNewPost(newPost, req.body.whichBoard, cfg.postPostRandomKey)            
+
     	// await db.makeNewPost({
     	//   date:  BigInt(Date.now()),
     	//   replyto: req.body.replyto,
@@ -2174,7 +2170,7 @@ app.listen(cfg.browserPort, cfg.browserHost, () => {
 		loadCssThemes()
 		currentCssTheme = cfg.defaultTheme
 
-		await db.pbInitClient(cfg.peerbitPort)
+		await db.pbInitClient(cfg.peerbitPort, cfg)
 		console.log("Successfully initialized Peerbit node.")
 		console.log(await db.clientId())
 
@@ -2185,9 +2181,6 @@ app.listen(cfg.browserPort, cfg.browserHost, () => {
                 console.log("Failed to bootstrap:", bootstrapErr)
             }
         }
-
-		// console.log(db.client)
-		// console.log(db.client.libp2p)
 
 		// db.client.libp2p.addEventListener('peer:connect', (peerMultiHash) => {
 		//     console.log('ping 0 debug');

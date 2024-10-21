@@ -1,10 +1,8 @@
 import { Program } from "@peerbit/program";
-import { Documents, RoleOptions } from "@peerbit/document";
-type OpenArgs = {
-    role?: RoleOptions;
-};
+import { Documents } from "@peerbit/document";
+import { OpenArgs } from './db.js';
 export declare class FileChunkDatabase extends Program<OpenArgs> {
-    documents: Documents<FileChunk>;
+    documents: Documents<FileChunk, IndexedFileChunk>;
     constructor(properties?: {
         id?: Uint8Array;
     });
@@ -19,8 +17,8 @@ export declare class FileDatabase extends Program<OpenArgs> {
     open(properties?: OpenArgs): Promise<void>;
     getFile(hash: string): Promise<Uint8Array | null>;
     deleteFile(hash: string, randomKey?: boolean): Promise<{
-        entry: import("@peerbit/log").Entry<import("@peerbit/document").Operation<File>>;
-        removed: import("@peerbit/log").Entry<import("@peerbit/document").Operation<File>>[];
+        entry: import("@peerbit/log").Entry<import("@peerbit/document").Operation>;
+        removed: import("@peerbit/log").ShallowOrFullEntry<import("@peerbit/document").Operation>[];
     } | null>;
 }
 declare class BaseFileDocument {
@@ -44,5 +42,12 @@ export declare class FileChunk extends BaseFileChunkDocument {
     chunkSize: number;
     chunkData: Uint8Array;
     constructor(fileHash: string, chunkIndex: number, chunkSize: number, chunkData: Uint8Array);
+}
+export declare class IndexedFileChunk extends BaseFileChunkDocument {
+    hash: string;
+    fileHash: string;
+    chunkIndex: number;
+    chunkSize: number;
+    constructor(originalFileChunk: FileChunk);
 }
 export {};

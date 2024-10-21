@@ -5,16 +5,24 @@
 import { Peerbit, createLibp2pExtended } from "peerbit"
 import { Program } from "@peerbit/program"
 import { createLibp2p, Libp2p} from 'libp2p'
-import { Documents, DocumentIndex, SearchRequest, StringMatch, MissingField } from "@peerbit/document"
+import { Documents, DocumentIndex, SearchRequest, StringMatch, IsNull, Sort, SortDirection } from "@peerbit/document"
 import { webSockets } from '@libp2p/websockets'
 import { all } from '@libp2p/websockets/filters'
 import { tcp } from "@libp2p/tcp"
 // import { mplex } from "@libp2p/mplex";
 import { yamux } from "@chainsafe/libp2p-yamux";
-import { noise } from '@dao-xyz/libp2p-noise'
+
+//temporarily using the slower version for compatibility
+// import { noise } from '@dao-xyz/libp2p-noise'
+import { noise } from '@chainsafe/libp2p-noise'
+
 import { Ed25519Keypair, toBase64, fromBase64, sha256Sync } from "@peerbit/crypto"
 import { field, variant, vec, option, serialize, deserialize } from "@dao-xyz/borsh"
 import { multiaddr } from '@multiformats/multiaddr'
+import { type ReplicationOptions } from "@peerbit/shared-log";
+
+//for simple (in-memory) index
+import { create } from '@peerbit/indexer-simple'
 
 import Validate from "./validation.js"
 
@@ -49,7 +57,9 @@ export let remoteQueryPosts: boolean = false
 export let remoteQueryFileRefs: boolean = false
 export let remoteQueryFileChunks: boolean = false 
 
-export async function pbInitClient (listenPort = 8500) {
+export const searchResultsLimit = 0xffffffff //large number; get all results
+
+export async function pbInitClient (createSettings: any) {
 
 	// setMaxListeners(0) //todo: revisit
 
@@ -57,20 +67,21 @@ export async function pbInitClient (listenPort = 8500) {
 //todo: need identity
 //		identity: keypair,
 		directory: directory,
+		indexer: createSettings.inMemoryIndex ? create : undefined,
 		libp2p: {
 			connectionManager: { //todo: revisit this
 				maxConnections: Infinity,
-				minConnections: 5
+				// minConnections: 5
 			},
 			
 			transports: [tcp(), webSockets({filter: all})],
 			streamMuxers: [yamux()],
 			// peerId: peerId, //todo: revisit this
-			connectionEncryption: [noise()], // Make connections encrypted
+			connectionEncrypters: [noise()], // Make connections encrypted
 			addresses: {
 				listen: [
-					'/ip4/127.0.0.1/tcp/'+listenPort,
-					'/ip4/127.0.0.1/tcp/'+(listenPort+1)+'/ws'
+					'/ip4/127.0.0.1/tcp/'+createSettings.peerbitPort,
+					'/ip4/127.0.0.1/tcp/'+(createSettings.peerbitPort+1)+'/ws'
 				]
 			},
 
@@ -83,6 +94,13 @@ export async function clientId () {
 	return client.identity.publicKey.hashcode()
 }
 
+// export type OpenArgs = { replicate: ReplicationOptions };
+export type OpenArgs = {
+	replicate?: {factor: any},
+	existing: any,
+	compatibility: any
+}
+
 //todo: move the config to a different spot
 //todo: consider finding a way to open files, chunks, posts async
 export async function openPostsDb(postsDbId = "my_post_db", options: any) {
@@ -93,47 +111,63 @@ export async function openPostsDb(postsDbId = "my_post_db", options: any) {
     if (options?.replicationFactor) {
         if (openedBoards[postsDbId].fileDb.chunks.closed) {
             await client.open(openedBoards[postsDbId].fileDb.chunks, {
+                // replicate: {factor: options.replicationFactor},
                 args: {
-                    role: {
-                        type: "replicator",
+                    replicate: {
                         factor: options.replicationFactor
                     },
+                    existing: "reuse",
+                    compatibility: 6
                 },
-                existing: "reuse"
             });
         }
         if (openedBoards[postsDbId].fileDb.closed) {
              await client.open(openedBoards[postsDbId].fileDb, {
                 args: {
-                    role: {
-                        type: "replicator",
+                    replicate: {
                         factor: options.replicationFactor
-                    }
+                    },
+                    existing: "reuse",
+                    compatibility: 6
                 },
-                existing: "reuse"
             });
         }
         if (openedBoards[postsDbId].closed) {
             await client.open(openedBoards[postsDbId], {
                 args: {
-                    role: {
-                        type: "replicator",
+                    replicate: {
                         factor: options.replicationFactor
-                    }
+                    },
+                    existing: "reuse",
+                    compatibility: 6
                 },
-                existing: "reuse"
             });
         }
     }
     else {
         if (openedBoards[postsDbId].fileDb.chunks.closed) {
-            await client.open(openedBoards[postsDbId].fileDb.chunks, { existing: "reuse" });
+            await client.open(openedBoards[postsDbId].fileDb.chunks, {
+            	args: {
+            		existing: "reuse",
+            		compatibility: 6	
+            	}  
+            });
         }
         if (openedBoards[postsDbId].fileDb.closed) {
-            await client.open(openedBoards[postsDbId].fileDb, { existing: "reuse" });
+            await client.open(openedBoards[postsDbId].fileDb, {
+            	args: {
+            		existing: "reuse",
+            		compatibility: 6	
+            	}  
+            });
         }
         if (openedBoards[postsDbId].closed) {
-            await client.open(openedBoards[postsDbId], { existing: "reuse" });
+            await client.open(openedBoards[postsDbId], {
+            	args: {
+            		existing: "reuse",
+            		compatibility: 6	
+            	}  
+            });
         }
     }
 }
@@ -152,7 +186,7 @@ export async function getBoardStats (whichBoard: string) {
 	let rfStatus = [null, null, null]
 	//if the board is opened, we get the replication factors, corresponding to posts, files, and fileChunks
 	if (boardStatus == 2) {
-		 rfStatus = [thisBoard.documents.log.role.segments[0].factor, thisBoard.fileDb.documents.log.role.segments[0].factor, thisBoard.fileDb.chunks.documents.log.role.segments[0].factor]
+	        rfStatus = [(await thisBoard.documents.log.getMyReplicationSegments())[0]?.widthNormalized || 0, (await thisBoard.fileDb.documents.log.getMyReplicationSegments())[0]?.widthNormalized || 0, (await thisBoard.fileDb.chunks.documents.log.getMyReplicationSegments())[0]?.widthNormalized || 0]
 	}
 
 	return {boardStatus, rfStatus}
@@ -191,30 +225,40 @@ export async function dropPostsDb (postsDbId = "my_post_db") {
 
 //only used for pan-boards files db, the others board-specific ones are openend in openPostsDb
 export async function openFilesDb (filesDbId = "", options: any ) {
-
 	Files = new FileDatabase({ id: sha256Sync(Buffer.from(filesDbId)) })
 	if (options.replicationFactor) {
 		console.log(`Opening files database...`, options)
 		await client.open(Files.chunks, {
 			args: {
-				role: {
-					type: "replicator",
+				replicate: {
 					factor: options.replicationFactor
-				}
+				},
+				existing: 'reuse',
+				compatibility: 6
 			}
 		})
 		await client.open(Files, {
 			args: {
-				role: {
-					type: "replicator",
+				replicate: {
 					factor: options.replicationFactor
-				}
+				},
+				existing: 'reuse',
+				compatibility: 6
 			}
 		})
 	} else {
-		await client.open(Files.chunks)
-		await client.open(Files)
-
+		await client.open(Files.chunks, {
+        	args: {
+        		existing: "reuse",
+        		compatibility: 6	
+        	}  
+        });
+		await client.open(Files, {
+        	args: {
+        		existing: "reuse",
+        		compatibility: 6	
+        	}  
+        });
 	}
 
 }
@@ -253,7 +297,7 @@ export async function delPost (whichPost: string, whichBoard: string, randomKey:
     if (!whichBoard) {
         throw new Error('No board specified.');
     }
-	let theseReplies = await openedBoards[whichBoard].documents.index.search(new SearchRequest({query: [new StringMatch({ key: 'replyto', value: whichPost })]}), { local: true, remote: remoteQueryPosts })
+	let theseReplies = await openedBoards[whichBoard].documents.index.search(new SearchRequest({query: [new StringMatch({ key: 'replyto', value: whichPost })], fetch: searchResultsLimit }), { local: true, remote: remoteQueryPosts })
 	//delete post itself
 
 	if (randomKey) {
@@ -345,7 +389,6 @@ export async function removeSingleFileChunk (thisHash: string, whichBoard: strin
 	}
 	//todo: need to return id of what was deleted or boolean or something?
 }
-
 //todo: allow selectivity in post dbs to be queried from
 //todo: revisit remote
 //todo: revisit async
@@ -411,7 +454,7 @@ export async function getThreadsWithReplies(whichBoard: string, numThreads: numb
         throw new Error('No board specified.');
     }
 
-    const allPosts = await openedBoards[whichBoard].documents.index.search(new SearchRequest({ query: [] }), { local: true, remote: remoteQueryPosts })
+    const allPosts = await openedBoards[whichBoard].documents.index.search(new SearchRequest({ query: [], fetch: searchResultsLimit }), { local: true, remote: remoteQueryPosts })
 
     const threadPosts: any[] = [];
     const repliesByThread: Record<string, any[]> = {};
@@ -490,7 +533,7 @@ export async function getRepliesToSpecificPost (whichBoard: string, whichThread:
     }
 
 	//todo: add query?
-	let	results = await openedBoards[whichBoard].documents.index.search(new SearchRequest({query: [new StringMatch({ key: 'replyto', value: whichThread })]}), { local: true, remote: remoteQueryPosts })
+	let	results = await openedBoards[whichBoard].documents.index.search(new SearchRequest({query: [new StringMatch({ key: 'replyto', value: whichThread })], fetch: searchResultsLimit }), { local: true, remote: remoteQueryPosts })
 	results.sort((a: any, b: any) => (a.date < b.date) ? -1 : ((a.date > b.date) ? 1 : 0)) //newest on bottom
 	results.forEach((r: any) => {r.board = whichBoard})
 	return results
@@ -511,13 +554,18 @@ export async function getRepliesToSpecificPost (whichBoard: string, whichThread:
 //todo: how to handle files, file chunks, etc.
 //todo: async queries across boards
 //todo: more efficient way of concatting results?
-export async function queryPosts(whichBoards: string[], queryObj: any) {
+//todo: use iterator instead of fetching
+export async function queryPosts(whichBoards: string[], queryObj: any, queryLimit: number = 0) {
     // console.log('DEBUG 077:',whichBoards,queryObj)
+
     let results: { [key: string]: any } = {}
     for (let thisBoard of whichBoards) {
     	// console.log("DEBUG 078:", thisBoard)
         //todo: optimize
-        let thisBoardResults = await openedBoards[thisBoard].documents.index.search(new SearchRequest({ query: queryObj }), { local: true, remote: remoteQueryPosts })
+		// const iterator = openedBoards[whichBoard].documents.index.iterate(
+		//     new SearchRequest({ query: queryObj, fetch: queryLimit || searchResultsLimit }), { local: true, remote: remoteQueryPosts }
+		// );
+        let thisBoardResults = await openedBoards[thisBoard].documents.index.search(new SearchRequest({ query: queryObj, fetch: queryLimit || searchResultsLimit }), { local: true, remote: remoteQueryPosts })
     	if (thisBoardResults.length) {
 	    	results[thisBoard] = thisBoardResults	
     	}
@@ -526,10 +574,9 @@ export async function queryPosts(whichBoards: string[], queryObj: any) {
     return results
 }
 
-//todo: revisit in light of per-board fileDbs
+//todo: revisit in light of per-board fileDbs, iterator
 export async function getAllFileDocuments () {
-		return await Files.documents.index.search(new SearchRequest({ query: [] }), { local: true, remote: remoteQueryFileRefs })
-
+		return await Files.documents.index.search(new SearchRequest({ query: [], fetch: searchResultsLimit  }), { local: true, remote: remoteQueryFileRefs })
 }
 
 export async function putFile (fileData: Uint8Array, whichBoard: string, randomKey: boolean = true) {
