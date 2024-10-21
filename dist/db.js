@@ -151,7 +151,7 @@ export async function getBoardStats(whichBoard) {
     let rfStatus = [null, null, null];
     //if the board is opened, we get the replication factors, corresponding to posts, files, and fileChunks
     if (boardStatus == 2) {
-        rfStatus = [(await thisBoard.documents.log.getMyReplicationSegments())[0]?.widthNormalized || 0, (await thisBoard.fileDb.files.log.getMyReplicationSegments())[0]?.widthNormalized || 0, (await thisBoard.fileDb.chunks.documents.log.getMyReplicationSegments())[0]?.widthNormalized || 0];
+        rfStatus = [(await thisBoard.documents.log.getMyReplicationSegments())[0]?.widthNormalized || 0, (await thisBoard.fileDb.documents.log.getMyReplicationSegments())[0]?.widthNormalized || 0, (await thisBoard.fileDb.chunks.documents.log.getMyReplicationSegments())[0]?.widthNormalized || 0];
     }
     return { boardStatus, rfStatus };
 }
