@@ -15,8 +15,16 @@ export declare let openedBoards: any;
 export declare let remoteQueryPosts: boolean;
 export declare let remoteQueryFileRefs: boolean;
 export declare let remoteQueryFileChunks: boolean;
-export declare function pbInitClient(listenPort?: number): Promise<void>;
+export declare const searchResultsLimit = 4294967295;
+export declare function pbInitClient(createSettings: any): Promise<void>;
 export declare function clientId(): Promise<string>;
+export type OpenArgs = {
+    replicate?: {
+        factor: any;
+    };
+    existing: any;
+    compatibility: any;
+};
 export declare function openPostsDb(postsDbId: string | undefined, options: any): Promise<void>;
 export declare function getBoardStats(whichBoard: string): Promise<{
     boardStatus: number;
@@ -44,7 +52,7 @@ export declare function getThreadsWithReplies(whichBoard: string, numThreads?: n
 }>;
 export declare function getSpecificPost(whichBoard: string, whichPost: string): Promise<any>;
 export declare function getRepliesToSpecificPost(whichBoard: string, whichThread: string): Promise<any>;
-export declare function queryPosts(whichBoards: string[], queryObj: any): Promise<{
+export declare function queryPosts(whichBoards: string[], queryObj: any, queryLimit?: number): Promise<{
     [key: string]: any;
 }>;
 export declare function getAllFileDocuments(): Promise<File[]>;

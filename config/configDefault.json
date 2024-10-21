@@ -9,7 +9,7 @@
 	"openHomeOnStartup": true,
 	"openOnStartupUrl": "home.html",
 	"defaultTheme": "chalk",
-	"pageTitle": "Gladden",
+	"pageTitle": "Peerchan",
 	"bootstrapOnStartup": true,
 	"embedImageFileExtensions": [
 		"jpg",
@@ -42,6 +42,7 @@
 	"postFileRandomKey": true,
 	"deleteFileRandomKey": false,
 	"queryFromPanBoardFilesDbIfFileNotFound": false,
+	"inMemoryIndex": false,
 	"remoteQueryPosts": true,
 	"remoteQueryFileRefs": true,
 	"remoteQueryFileChunks": true,

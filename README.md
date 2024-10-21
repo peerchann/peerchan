@@ -1,4 +1,4 @@
-# Gladden
+# Peerchan
 Server node and rendering engine for distributed imageboard browsing.
 
 Participate in a distributed imageboard and share posts and files with peers.
@@ -35,7 +35,7 @@ You can customize the ports used and other settings by modifying config/config.j
 If you'd like to daemonize the process so it starts on boot, make sure pm2 is installed globally and then:
 
 ```bash
-pm2 start dist/server.js --name gladden
+pm2 start dist/server.js --name peerchan
 pm2 startup
 <copy-paste the command displayed>
 pm2 save
@@ -48,6 +48,6 @@ Make sure your system clock is set properly; by default other nodes may consider
 ## Troubleshooting
 By default, the program should open the homepage in the default browser on startup. If that doesn't happen, try navigating to http://localhost:8000/.
 
-If you have any issues, you can ask in /help/ if you're able, or report the issue at https://gitgud.io/threshold862543/gladden/-/issues.
+If you have any issues, you can ask in /help/ if you're able, or report the issue at https://gitgud.io/threshold862543/peerchan/-/issues.
 
 Additionally you can ask on https://peerchan.net/ or https://matrix.to/#/#gladden_p2p:matrix.org.
