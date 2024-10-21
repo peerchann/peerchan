@@ -1204,7 +1204,7 @@ app.post('/submitQuery', async (req, res, next) => {
         lastQueryBoards = req.body.boardIds
         lastQueryLimit = parseInt(req.body.queryLimit) || 0
 
-        let boardsToQuery = req.body.boardIds ? req.visibleBoards : boardsToQuery.filter(b => req.body.boardIds.split(',').includes(b));
+        let boardsToQuery = req.body.boardIds ? req.visibleBoards : req.visibleBoards.filter(b => req.body.boardIds.split(',').includes(b));
 
         // console.log('debug 01') //todo: remove
         // console.log(req.body.queryString)
@@ -1274,7 +1274,7 @@ app.post('/submitPruneQuery', async (req, res, next) => {
         lastPruneQueryBoards = req.body.boardIds
         lastPruneQueryLimit = req.body.queryLimit
 
-        let boardsToQuery = req.body.boardIds ? req.visibleBoards : boardsToQuery.filter(b => req.body.boardIds.split(',').includes(b));
+        let boardsToQuery = req.body.boardIds ? req.visibleBoards : req.visibleBoards.filter(b => req.body.boardIds.split(',').includes(b));
 
         const postsByBoard = Object.fromEntries(
             await Promise.all(boardsToQuery.map(async b => {
