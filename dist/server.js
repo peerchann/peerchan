@@ -125,7 +125,7 @@ function saveGatewayConfig() {
     const configFile = configDir+'/gatewayConfig.json';
     try {
         fs.writeFileSync(configFile, JSON.stringify(gatewayCfg, null, '\t'), 'utf8');
-        console.log('Gateway configuration successfully.');
+        console.log('Gateway configuration saved successfully.');
     } catch (err) {
         console.error('Error saving gateway configuration:', err);
     }
