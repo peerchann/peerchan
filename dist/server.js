@@ -159,20 +159,6 @@ app.use((req, res, next) => {
     next();
 });
 
-//determine which boards can be accessed by the current requester
-function canSeeBoards(req, res, next) {
-    if (req.session.loggedIn) {
-        req.visibleBoards = watchedBoards;
-    } else if (gatewayCfg.gatewayMode && !gatewayCfg.can.seeAllBoards) {
-        req.visibleBoards = gatewayCfg.canSeeBoards.filter(b => watchedBoards.includes(b));
-    } else {
-        req.visibleBoards = watchedBoards;
-    }
-    next();
-}
-
-app.use(canSeeBoards);
-
 app.use(express.static('./res')); //todo: revist to allow static icons and such, also change in home.pug
 
 // Middleware to generate a nonce for each request to make inline script execution comply with CSP.
@@ -190,6 +176,20 @@ app.use(session({
   resave: false,
   saveUninitialized: false
 }));
+
+//determine which boards can be accessed by the current requester
+function canSeeBoards(req, res, next) {
+    if (req.session.loggedIn) {
+        req.visibleBoards = watchedBoards;
+    } else if (gatewayCfg.gatewayMode && !gatewayCfg.can.seeAllBoards) {
+        req.visibleBoards = gatewayCfg.canSeeBoards.filter(b => watchedBoards.includes(b));
+    } else {
+        req.visibleBoards = watchedBoards;
+    }
+    next();
+}
+
+app.use(canSeeBoards);
 
 // Multer storage configuration
 const storage = multer.memoryStorage();
