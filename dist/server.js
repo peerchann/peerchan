@@ -159,6 +159,20 @@ app.use((req, res, next) => {
     next();
 });
 
+//determine which boards can be accessed by the current requester
+function canSeeBoards(req, res, next) {
+    if (req.session.loggedIn) {
+        req.visibleBoards = watchedBoards;
+    } else if (gatewayCfg.gatewayMode && !gatewayCfg.can.seeAllBoards) {
+        req.visibleBoards = gatewayCfg.canSeeBoards.filter(b => watchedBoards.includes(b));
+    } else {
+        req.visibleBoards = watchedBoards;
+    }
+    next();
+}
+
+app.use(canSeeBoards);
+
 app.use(express.static('./res')); //todo: revist to allow static icons and such, also change in home.pug
 
 // Middleware to generate a nonce for each request to make inline script execution comply with CSP.
@@ -1188,11 +1202,9 @@ app.post('/submitQuery', async (req, res, next) => {
         lastQuery = req.body.queryString
         lastQueryBoards = req.body.boardIds
         lastQueryLimit = parseInt(req.body.queryLimit) || 0
-        let boardsToQuery = canSeeBoards()
-        if (req.body.boardIds) {
-            const specifiedBoards = req.body.boardIds.split(',');
-            boardsToQuery = boardsToQuery.filter(b => specifiedBoards.includes(b));
-        }
+
+        let boardsToQuery = req.body.boardIds ? req.visibleBoards : boardsToQuery.filter(b => req.body.boardIds.split(',').includes(b));
+
         // console.log('debug 01') //todo: remove
         // console.log(req.body.queryString)
         // console.log('debug 02')
@@ -1261,11 +1273,7 @@ app.post('/submitPruneQuery', async (req, res, next) => {
         lastPruneQueryBoards = req.body.boardIds
         lastPruneQueryLimit = req.body.queryLimit
 
-        let boardsToQuery = canSeeBoards()
-        if (req.body.boardIds) {
-            const specifiedBoards = req.body.boardIds.split(',');
-            boardsToQuery = boardsToQuery.filter(b => specifiedBoards.includes(b));
-        }
+        let boardsToQuery = req.body.boardIds ? req.visibleBoards : boardsToQuery.filter(b => req.body.boardIds.split(',').includes(b));
 
         const postsByBoard = Object.fromEntries(
             await Promise.all(boardsToQuery.map(async b => {
@@ -1983,14 +1991,6 @@ function gatewayCanSeeBoard(req, whichBoard) {
     }
 }
 
-function canSeeBoards() { //todo: make into middleware, consolidate functionality
-    if (gatewayCfg.gatewayMode && !gatewayCfg.can.seeAllBoards) {
-        return gatewayCfg.canSeeBoards.filter(b => watchedBoards.includes(b))
-    } else {
-        return watchedBoards
-    }
-}
-
 async function standardRenderOptions (req,res) { //todo: make this into a middleware?
     return {
         clientId: await db.clientId(),
@@ -2001,7 +2001,7 @@ async function standardRenderOptions (req,res) { //todo: make this into a middle
         specialPageLinks: cfg.specialPageLinks,
         alert: lastError,
         loggedInAs: req.session.loggedIn,
-        watchedBoards: req.session.loggedIn ? watchedBoards : canSeeBoards(), //todo: split visible in top versus visible in gateway manage? nicer way to visualize which are gateway boards or not?
+        watchedBoards: req.visibleBoards, //todo: split visible in top versus visible in gateway manage? nicer way to visualize which are gateway boards or not?
         themes: cssThemes,
         cssTheme: currentCssTheme,
         defaultName: cfg.defaultName, //todo: consolidate cfg where possible
