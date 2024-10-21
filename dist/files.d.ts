@@ -9,14 +9,14 @@ export declare class FileChunkDatabase extends Program<OpenArgs> {
     open(properties?: OpenArgs): Promise<void>;
 }
 export declare class FileDatabase extends Program<OpenArgs> {
-    files: Documents<File>;
+    documents: Documents<File>;
     chunks: FileChunkDatabase;
     constructor(properties?: {
         id?: Uint8Array;
     });
     open(properties?: OpenArgs): Promise<void>;
     getFile(hash: string): Promise<Uint8Array | null>;
-    deleteFile(hash: string, randomKey: true): Promise<{
+    deleteFile(hash: string, randomKey?: boolean): Promise<{
         entry: import("@peerbit/log").Entry<import("@peerbit/document").Operation>;
         removed: import("@peerbit/log").ShallowOrFullEntry<import("@peerbit/document").Operation>[];
     } | null>;
@@ -31,7 +31,7 @@ export declare class File extends BaseFileDocument {
     chunkCids: string[];
     constructor(fileContents: Uint8Array);
     getFile(fileChunks: FileChunkDatabase): Promise<Uint8Array>;
-    writeChunks(fileChunks: FileChunkDatabase, fileContents: Uint8Array, randomKey: true): Promise<void>;
+    writeChunks(fileChunks: FileChunkDatabase, fileContents: Uint8Array, randomKey?: boolean): Promise<void>;
 }
 declare class BaseFileChunkDocument {
 }

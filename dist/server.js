@@ -190,6 +190,7 @@ rt['files'] = compileFile('./views/files.pug');
 rt['gatewayHome'] = compileFile('./views/gatewayhome.pug');
 rt['gatewayConfig'] = compileFile('./views/gatewayconfig.pug');
 rt['query'] = compileFile('./views/query.pug');
+rt['prune'] = compileFile('./views/prune.pug');
 
 //todo: consider not making the bigint into a string instead show it without quotes at least for query results
 function makeRenderSafe(inputObj) {
@@ -368,17 +369,43 @@ app.post('/deletePosts', upload.any(), async (req, res, next) => {
     res.redirect(req.headers.referer);
 });
 
-//todo: implement
 //todo: add GET version?
 //todo: consider async and/or simultaneous prunings
-app.post('/prunePosts', upload.any(), async (req, res, next) => {
+//todo: consider if these should be prunings or hard deletions... it's called pruning but we actually hard (explicitly) delete for now, (or have this an interface checkbox/config option)
+app.post('/pruneMany', upload.any(), async (req, res, next) => {
   try {
-    gatewayCanDo(req, 'delPost')
-    console.log(`Pruning posts: ${req.body.queryHashes}.`);
-    for (let thisBoard of Object.keys(req.body.queryHashes)) {
-        gatewayCanSeeBoard(req, thisBoard)
-        for (let thisHash of req.body.queryHashes) {
-            throw new Error ('Post pruning is unimplemented.')
+    gatewayCanDo(req, 'delPost') //todo: not need permissions to delPost when eg. only files are being pruned and vise versa
+    gatewayCanDo(req, 'delFile')
+    const hardDelete = req.body.action === 'delete'
+    if (!hardDelete) {
+        throw new Error ('Pruning is unimplemented.') //todo: implement (mainly just need to properly call the prune() function in db.ts?)
+    }
+    const toPrune = {
+        'posts': JSON.parse(req.body.orphanReplies || '{}'),
+        'fileRefs': JSON.parse(req.body.orphanFileRefs || '{}'),
+        'fileChunks': JSON.parse(req.body.orphanFileChunks || '{}'),
+    }
+    console.log(`Pruning: ${toPrune}`);
+    for (let thisType of Object.keys(toPrune)) {
+        for (let thisBoard of Object.keys(toPrune[thisType])) {
+            gatewayCanSeeBoard(req, thisBoard)
+            for (let thisHash of toPrune[thisType][thisBoard]) {
+                try {
+                    switch (thisType) {
+                        case 'posts':
+                            await db.removeSinglePost(thisHash, thisBoard, cfg.deletePostRandomKey, hardDelete)
+                            break;
+                        case 'fileRefs':
+                            await db.removeSingleFileRef(thisHash, thisBoard, cfg.deletePostRandomKey, hardDelete)
+                            break;
+                        case 'fileChunks':
+                            await db.removeSingleFileChunk(thisHash, thisBoard, cfg.deletePostRandomKey, hardDelete)
+                            break;
+                    }
+                } catch (pruneErr) {
+                    console.log(`Failed to prune ${thisType.slice(0, -1)} ${thisHash}:`,pruneErr)
+                }
+            }
         }
     }
   } catch (err) {
@@ -1122,6 +1149,11 @@ var lastQuery
 var lastQueryBoards
 var lastQueryResults
 var lastQueryLimit = 0
+var lastPruneQueryBoards
+var lastPruneQueryLimit = 0
+var lastOrphanReplies
+var lastOrphanFileRefs
+var lastOrphanFileChunks
 
 //todo: also add GET API?
 //todo: add timer
@@ -1219,6 +1251,150 @@ app.post('/submitQuery', async (req, res, next) => {
     res.redirect('/query.html')
 })
 
+//todo: implement limit
+//todo: possibly combine this with thread count based pruning
+//todo: optimize
+//todo: since file chunks can be large in in-memory size, it would be useful if peerbit supported projection, then the chunk contents wouldn't have to be retrieved, only the file chunk .hash and .fileHash
+app.post('/submitPruneQuery', async (req, res, next) => {
+    try {
+        gatewayCanDo(req, 'useQueryPage') //todo: seperate perm?
+        // console.log('req.body:', req.body)
+        lastPruneQueryBoards = req.body.boardIds
+        lastPruneQueryLimit = req.body.queryLimit
+
+        let boardsToQuery = canSeeBoards()
+        if (req.body.boardIds) {
+            const specifiedBoards = req.body.boardIds.split(',');
+            boardsToQuery = boardsToQuery.filter(b => specifiedBoards.includes(b));
+        }
+
+        const postsByBoard = Object.fromEntries(
+            await Promise.all(boardsToQuery.map(async b => {
+                return [b, await db.getPosts(b).then(results => results.map(post => ({ hash: post.hash, replyto: post.replyto, files: post.files })))];
+            }))
+        );
+
+        //Find orphaned replies, and files referenced by a post that isn't an orphaned reply
+        const orphanedRepliesAndReferencedFilesByBoard = Object.fromEntries(
+            Object.entries(postsByBoard).map(([board, posts]) => {
+                const postHashes = new Set(posts.map(post => post.hash));
+                const orphanedReplies = [];
+                const referencedFiles = new Set();
+
+                posts.forEach(post => {
+                    // Check if the post is non-orphaned
+                    if (!post.replyto || postHashes.has(post.replyto)) {
+                        // If non-orphaned, collect referenced files
+                        post.files.forEach(file => {
+                            referencedFiles.add(file.hash);
+                        });
+                    } else {
+                        // If orphaned, collect the reply hash
+                        orphanedReplies.push(post.hash);
+
+                    }
+                });
+
+                return [board, { orphanedReplies, referencedFiles }];
+            })
+        );
+
+        lastOrphanReplies = Object.fromEntries(
+            Object.entries(orphanedRepliesAndReferencedFilesByBoard).map(([board, { orphanedReplies }]) => [board, orphanedReplies])
+        );
+
+        //if we only neeeded to find orphan replies we could do this in one step, but we want to use the postByBoard structure to find orphan file refs and file chunks as well
+        // const orphanedRepliesByBoard = Object.fromEntries(
+        //     await Promise.all(boardsToQuery.map(async b => {
+        //         const posts = await db.getPosts(b);
+        //         const postHashes = new Set(posts.map(post => post.hash));
+        //         const orphanedReplies = posts
+        //             .filter(post => post.replyto && !postHashes.has(post.replyto))
+        //             .map(post => post.hash);
+        //         return [b, orphanedReplies];
+        //     }))
+        // );
+
+        //now files are handled
+
+        const orphanedFileRefsByBoard = {};
+        const orphanedFileChunksByBoard = {};
+
+        for (const thisBoard of boardsToQuery) {
+            const { referencedFiles } = orphanedRepliesAndReferencedFilesByBoard[thisBoard];
+
+            const thisBoardFiles = await db.getFileRefs(thisBoard);
+
+            // Find orphaned file references where their hashes are NOT in the referencedFiles Set
+            const orphanedFileRefs = thisBoardFiles
+                .filter(fileRef => !referencedFiles.has(fileRef.hash)) // Orphaned fileRefs
+                .map(fileRef => fileRef.hash); // Collect their hashes
+
+            // Store orphaned file references by board
+            orphanedFileRefsByBoard[thisBoard] = orphanedFileRefs;
+
+            // Create a Set of referenced file hashes from non-orphan fileRefs
+            const referencedFileHashes = new Set(thisBoardFiles
+                .filter(fileRef => referencedFiles.has(fileRef.hash)) // Only non-orphan fileRefs
+                .map(fileRef => fileRef.fileHash) // Map to their fileHash
+            );
+
+            // Find orphaned fileChunks where fileHash is NOT in the referencedFileHashes Set
+            orphanedFileChunksByBoard[thisBoard] = await db.getFileChunks(thisBoard).then(allFileChunks =>
+                allFileChunks
+                    .filter(fileChunk => !referencedFileHashes.has(fileChunk.fileHash))
+                    .map(fileChunk => fileChunk.hash)
+            );
+        }
+
+        lastOrphanFileRefs = orphanedFileRefsByBoard;
+        lastOrphanFileChunks = orphanedFileChunksByBoard;
+
+        //remove empty entries (boards with no orphans of the given type)
+        lastOrphanReplies = Object.fromEntries(
+            Object.entries(lastOrphanReplies).filter(([board, hashes]) => hashes.length > 0)
+        );
+        lastOrphanFileRefs = Object.fromEntries(
+            Object.entries(lastOrphanFileRefs).filter(([board, hashes]) => hashes.length > 0)
+        );
+        lastOrphanFileChunks = Object.fromEntries(
+            Object.entries(lastOrphanFileChunks).filter(([board, hashes]) => hashes.length > 0)
+        );
+
+        const limitOrphans = (orphanObject) => {
+            const entries = Object.entries(orphanObject);
+            const limitedOrphans = {};
+            for (const [board, hashes] of entries) {
+                if (numResults >= queryLimit) break; // Stop if limit is reached
+                const remainingLimit = queryLimit - numResults;
+                const limitedHashes = hashes.slice(0, remainingLimit); // Limit the number of hashes
+                if (limitedHashes.length > 0) {
+                    limitedOrphans[board] = limitedHashes;
+                    numResults += limitedHashes.length; // Update numResults
+                }
+            }
+            return limitedOrphans;
+        };
+
+        const queryLimit = Math.max(0, parseInt(req.body.queryLimit) || 0);
+        var numResults = 0
+
+        // Limit orphan replies, file references, and file chunks
+        if (queryLimit) {
+            lastOrphanReplies = limitOrphans(lastOrphanReplies);
+            lastOrphanFileRefs = limitOrphans(lastOrphanFileRefs);
+            lastOrphanFileChunks = limitOrphans(lastOrphanFileChunks);            
+        }
+
+    } catch (err) {
+        lastQueryResults = 'Error searching for orphans.'
+        console.log('Failed to search for orphans.')
+        console.log(err)
+        lastError = err
+    }
+    res.redirect('/prune.html')
+})
+
 //todo: add link to this somewhere
 //todo: made disabled on gateway by default (check if already is)
 app.get('/query.html', async (req, res, next) => {
@@ -1252,6 +1428,43 @@ app.get('/query.html', async (req, res, next) => {
     }
     console.timeEnd('buildQueryPage');
 })
+
+//todo: permissions check
+app.get('/prune.html', async (req, res, next) => {
+    try {
+        console.time('buildPrunePage');
+        // gatewayCanDo(req, 'del')
+        // console.log("lastQueryResults in query.html")
+        // console.log(lastQueryResults)
+        const options = await standardRenderOptions(req,res)
+
+        options.lastPruneQueryBoards = lastPruneQueryBoards
+        options.lastPruneQueryLimit = lastPruneQueryLimit
+        options.orphanReplies = lastOrphanReplies
+        options.orphanFileRefs = lastOrphanFileRefs
+        options.orphanFileChunks = lastOrphanFileChunks
+
+        // if (typeof lastQueryResults === "object") {
+        //     options.lastQueryResultsHashes = {}
+        //     for (let thisBoard of Object.keys(lastQueryResults)) {
+        //         options.lastQueryResultsHashes[thisBoard] = lastQueryResults[thisBoard].map(r => r.hash)
+        //     }
+        // }
+
+        // threads = await addFileStatuses(makeRenderSafe(threads))
+
+        const html = await rt['prune'](options)
+        resetError()
+        res.send(html)
+    } catch (err) {
+        console.log('Failed to generate prune page.')
+        console.log(err)
+        lastError = err
+        res.redirect('/home.html')
+    }
+    console.timeEnd('buildPrunePage');
+})
+
 
 app.get('/overboard.html', async (req, res, next) => {
     try {
@@ -1906,7 +2119,7 @@ function addEventListeners(board) {
         };
 
         whichBoard.documents.events.addEventListener("change", eventListeners[board].posts)
-        whichBoard.fileDb.files.events.addEventListener("change", eventListeners[board].fileRefs)
+        whichBoard.fileDb.documents.events.addEventListener("change", eventListeners[board].fileRefs)
         whichBoard.fileDb.chunks.documents.events.addEventListener("change", eventListeners[board].fileChunks)
     })
 }
@@ -1917,9 +2130,9 @@ function removeEventListeners(board) {
     const handlers = eventListeners[board];
 
     if (handlers) {
-        whichBoard.documents.events.removeEventListener("change", handlers.documents);
-        whichBoard.fileDb.files.events.removeEventListener("change", handlers.files);
-        whichBoard.fileDb.chunks.documents.events.removeEventListener("change", handlers.chunks);
+        whichBoard.documents.events.removeEventListener("change", handlers.posts);
+        whichBoard.fileDb.documents.events.removeEventListener("change", handlers.fileRefs);
+        whichBoard.fileDb.chunks.documents.events.removeEventListener("change", handlers.fileChunks);
         delete eventListeners[board];
     } else {
         console.log(`No event listeners to delete for /${board}/`);

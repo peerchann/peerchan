@@ -37,6 +37,8 @@ block content
     include configform.pug
 
   h2
+    a(href="/prune.html") Pruning Interface
+  h2
     a(href="/query.html") Query Interface
 
   if renderFunctions.gatewayCanDo(req,'changeGatewayConfig',false)
