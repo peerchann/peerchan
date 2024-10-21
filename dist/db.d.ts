@@ -16,7 +16,7 @@ export declare let remoteQueryPosts: boolean;
 export declare let remoteQueryFileRefs: boolean;
 export declare let remoteQueryFileChunks: boolean;
 export declare const searchResultsLimit = 4294967295;
-export declare function pbInitClient(listenPort: number | undefined, configObject: any): Promise<void>;
+export declare function pbInitClient(createSettings: any): Promise<void>;
 export declare function clientId(): Promise<string>;
 export type OpenArgs = {
     replicate?: {

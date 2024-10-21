@@ -1376,8 +1376,7 @@ app.get('/:board/:pagenumber.html', async (req, res, next) => {
 		}
 
 		let indexPosts = await addFileStatuses(makeRenderSafe(await db.getThreadsWithReplies(req.params.board, cfg.threadsPerPage, cfg.previewReplies, whichPage)), req.params.board)
-		// let allPosts = makeRenderSafe(db.getThreadsWithReplies(req.params.board, cfg.threadsPerPage, cfg.previewReplies))
-
+    
 		boardPagesCache[req.params.board] = indexPosts.totalpages
 
 		for(let threadPost in indexPosts.threads) {
