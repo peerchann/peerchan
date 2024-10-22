@@ -8,7 +8,7 @@ Runs a [Peerbit](https://github.com/dao-xyz/peerbit) node and serves pages to yo
 ![Screenshot](screenshots/screenshot01.png)
 
 ## Prerequisites
-Node.js (at least v18.9.0) and a package manager like yarn (reccomended) or npm.
+Node.js (at least v20.18.0) and a package manager like yarn (reccomended) or npm.
 
 ## License
 GNU AGPLv3, see [LICENSE](LICENSE).
