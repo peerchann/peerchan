@@ -61,11 +61,7 @@ export const searchResultsLimit = 0xffffffff //large number; get all results
 
 export async function pbInitClient (createSettings: any) {
 
-	// setMaxListeners(0) //todo: revisit
-
 	client = await Peerbit.create({
-//todo: need identity
-//		identity: keypair,
 		directory: directory,
 		indexer: createSettings.inMemoryIndex ? create : undefined,
 		libp2p: {
@@ -73,10 +69,11 @@ export async function pbInitClient (createSettings: any) {
 				maxConnections: Infinity,
 				// minConnections: 5
 			},
-			
+			connectionMonitor: {
+				enabled: false
+			},
 			transports: [tcp(), webSockets({filter: all})],
 			streamMuxers: [yamux()],
-			// peerId: peerId, //todo: revisit this
 			connectionEncrypters: [noise()], // Make connections encrypted
 			addresses: {
 				listen: [
@@ -674,10 +671,6 @@ export async function pbStopClient () {
 
 export function resetDb () {
 	fs.existsSync(directory) && fs.rmSync(directory, { recursive: true })
-
-
-
-
  }
 
 export async function connectToPeer (peerAddress: string) { //todo: make more flexible? //todo: consider pass multiaddr object?

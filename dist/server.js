@@ -2174,14 +2174,6 @@ app.listen(cfg.browserPort, cfg.browserHost, () => {
 		console.log("Successfully initialized Peerbit node.")
 		console.log(await db.clientId())
 
-        if (cfg.bootstrapOnStartup) {
-            try {
-                await db.bootstrap()
-            } catch (bootstrapErr) {
-                console.log("Failed to bootstrap:", bootstrapErr)
-            }
-        }
-
 		// db.client.libp2p.addEventListener('peer:connect', (peerMultiHash) => {
 		//     console.log('ping 0 debug');
 		//     console.log(peerMultiHash)
@@ -2278,10 +2270,22 @@ app.listen(cfg.browserPort, cfg.browserHost, () => {
         console.log(err)
     }
 
-//open the configured homepage
-if (cfg.openHomeOnStartup) {
-	open(`http://${cfg.browserHost}:${cfg.browserPort}/${cfg.openOnStartupUrl}`);
-}
+    if (cfg.bootstrapOnStartup) {
+        try {
+            console.log('Bootstrapping...')
+            await db.bootstrap()
+            console.log('Bootstrapping successful.')
+        } catch (bootstrapErr) {
+            console.log("Failed to bootstrap:", bootstrapErr)
+        }
+    }
+
+    console.log("Initialization complete.")
+
+    //open the configured homepage
+    if (cfg.openHomeOnStartup) {
+    	open(`http://${cfg.browserHost}:${cfg.browserPort}/${cfg.openOnStartupUrl}`);
+    }
 
 
 })();

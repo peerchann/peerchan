@@ -39,10 +39,7 @@ export let remoteQueryFileRefs = false;
 export let remoteQueryFileChunks = false;
 export const searchResultsLimit = 0xffffffff; //large number; get all results
 export async function pbInitClient(createSettings) {
-    // setMaxListeners(0) //todo: revisit
     client = await Peerbit.create({
-        //todo: need identity
-        //		identity: keypair,
         directory: directory,
         indexer: createSettings.inMemoryIndex ? create : undefined,
         libp2p: {
@@ -50,9 +47,11 @@ export async function pbInitClient(createSettings) {
                 maxConnections: Infinity,
                 // minConnections: 5
             },
+            connectionMonitor: {
+                enabled: false
+            },
             transports: [tcp(), webSockets({ filter: all })],
             streamMuxers: [yamux()],
-            // peerId: peerId, //todo: revisit this
             connectionEncrypters: [noise()], // Make connections encrypted
             addresses: {
                 listen: [
