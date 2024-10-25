@@ -8,7 +8,7 @@ Runs a [Peerbit](https://github.com/dao-xyz/peerbit) node and serves pages to yo
 ![Screenshot](screenshots/screenshot01.png)
 
 ## Prerequisites
-Node.js (at least v20.18.0) and a package manager like yarn (reccomended) or npm.
+Node.js (at least v20.18.0) and a package manager like yarn (reccomended) or npm (comes with Node.js).
 
 ## License
 GNU AGPLv3, see [LICENSE](LICENSE).
@@ -16,15 +16,25 @@ GNU AGPLv3, see [LICENSE](LICENSE).
 ## Installation
 To install dependencies:
 
+If yarn is installed:
 ```bash
-yarn install
+yarn build
+```
+Else if only node is installed:
+```bash
+npm build
 ```
 
 ## Running
 To run:
 
+If yarn is installed:
 ```bash
 yarn start
+ ```
+Else if only node is installed:
+ ```bash
+npm start
  ```
 
 ## Configuration
@@ -50,4 +60,4 @@ By default, the program should open the homepage in the default browser on start
 
 If you have any issues, you can ask in /help/ if you're able, or report the issue at https://gitgud.io/threshold862543/peerchan/-/issues.
 
-Additionally you can ask on https://peerchan.net/ or https://matrix.to/#/#gladden_p2p:matrix.org.
+Additionally you can ask on https://peerchan.net/ or https://matrix.to/#/#peerchan:matrix.org.

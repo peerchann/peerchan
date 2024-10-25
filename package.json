@@ -5,7 +5,8 @@
   "type": "module",
   "main": "./dist/server.js",
   "scripts": {
-    "start": "node ./dist/server.js"
+    "start": "node ./dist/server.js",
+    "build": "rm -rf node_modules yarn.lock && yarn install"
   },
   "author": "threshold",
   "license": "AGPL-3.0-only",
