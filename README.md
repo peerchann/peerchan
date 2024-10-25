@@ -20,9 +20,9 @@ If yarn is installed:
 ```bash
 yarn build
 ```
-Else if only node is installed:
+Else:
 ```bash
-npm build
+npm install
 ```
 
 ## Running
@@ -32,7 +32,7 @@ If yarn is installed:
 ```bash
 yarn start
  ```
-Else if only node is installed:
+Else:
  ```bash
 npm start
  ```
