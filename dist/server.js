@@ -2172,7 +2172,7 @@ app.listen(cfg.browserPort, cfg.browserHost, () => {
 
 		await db.pbInitClient(cfg)
 		console.log("Successfully initialized Peerbit node.")
-		console.log(await db.clientId())
+		console.log(`Client ID: ${await db.clientId()}`)
 
 		// db.client.libp2p.addEventListener('peer:connect', (peerMultiHash) => {
 		//     console.log('ping 0 debug');

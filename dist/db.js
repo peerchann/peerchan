@@ -452,7 +452,8 @@ export async function getSpecificPost(whichBoard, whichPost) {
         throw new Error('No post specified.');
     }
     //todo: add query?
-    let results = await openedBoards[whichBoard].documents.index.search(new SearchRequest({ query: [new StringMatch({ key: 'hash', value: whichPost })] }), { local: true, remote: remoteQueryPosts });
+    let results = (await openedBoards[whichBoard].documents.index.search(new SearchRequest({ query: [new StringMatch({ key: 'hash', value: whichPost })] }), { local: true, remote: remoteQueryPosts }))
+        .map((result) => ({ ...result, board: whichBoard }));
     return results;
     // return results.length ? results[0] : []
     //return await Posts.documents.index.search(new SearchRequest, { local: true, remote: remoteQuery });
