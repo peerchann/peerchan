@@ -45,7 +45,7 @@ You can customize the ports used and other settings by modifying config/config.j
 If you'd like to daemonize the process so it starts on boot, make sure pm2 is installed globally and then:
 
 ```bash
-pm2 start dist/server.js --name peerchan
+pm2 start ./server.js --name peerchan
 pm2 startup
 <copy-paste the command displayed>
 pm2 save
