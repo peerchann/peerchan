@@ -1,0 +1,83 @@
+if checkAccess(req, ["addBoard"])
+  h2 Add Watched Board
+  form(action="/addWatchedBoard" method="POST" class="config-form")
+    label(for="boardId") Board ID: &nbsp;
+    input(type="text" id="boardId" name="boardId" required)
+    |  
+    button(type="submit", class="sidebarbutton") Add
+
+if checkAccess(req, ["addBoard","remBoard"])
+  h2 Currently Watched Boards
+  include boardtable.pug
+
+if checkAccess(req, ["addBoard"])
+  h2 Add Gateway Board
+  form(action="/addGatewayBoard" method="POST" class="config-form")
+    label(for="agbId") Board ID: &nbsp;
+    input(type="text" id="agbId" name="agbId" required)
+    |  
+    button(type="submit", class="sidebarbutton") Add
+
+if checkAccess(req, ["remBoard"])
+  h2 Remove Gateway Board
+  form(action="/removeGatewayBoard" method="POST" class="config-form")
+    label(for="rgbId") Board ID: &nbsp;
+    input(type="text" id="rgbId" name="rgbId")
+    |  
+    button(type="submit", class="sidebarbutton") Remove
+
+
+if checkAccess(req, ["seeClientId"])
+  h2 Client ID
+  span #{clientId}
+
+if checkAccess(req, ["addMod"])
+  h2 Add Moderator
+  form(action="/addModerator" method="POST" class="config-form")
+    label(for="moderatorId") Moderator Client ID: &nbsp;
+    input(type="text" id="moderatorId" name="moderatorId" required)
+    |  
+    button(type="submit", class="sidebarbutton") Add
+
+if checkAccess(req, ["seeMod"])
+  h2 Current Moderators
+  each moderator, index in moderators
+    div.moderator
+      span #{moderator}
+      if checkAccess(req, ["remMod"])
+        form(action="/removeModerator" method="POST", style="display:inline-block; margin-left: 5px;")
+          input(type="hidden" name="moderatorId" value=moderator)
+          button(type="submit", class="delete-link") X
+
+if checkAccess(req, ["changeConfig"])
+  include configform.pug
+
+if checkAccess(req, ["delPost","delFile"])
+  h2
+    a(href="/prune.html") Pruning Interface
+
+if checkAccess(req, ["query"])
+  h2
+    a(href="/query.html") Query Interface
+
+if checkAccess(req, ["changeGatewayConfig"])
+  h2
+    a(href="/gatewayconfig.html") Gateway Configuration
+
+if checkAccess(req, ["restartClient"])
+  h2 Restart Client
+  form(action="/restartClient" method="POST" class="config-form")
+    button(type="submit", class="sidebarbutton") Restart
+
+if checkAccess(req, ["dialPeer"])
+  h2 Peer Dialing
+  label(for="myMultiAddrTextbox") My MultiAddr:
+  br
+  input(type="text", id="myMultiAddrTextbox", readonly, value=myMultiAddr)
+  form(action="/connectToPeer" method="POST" enctype="multipart/form-data" class="config-form")
+    label(for="peerMultiAddr") Peer MultiAddr:
+    br
+    input(type="text", id="peerMultiAddr", name="peerMultiAddr" required)
+    br
+    br
+    button(type="connecttopeer", class="sidebarbutton") Connect to Peer MultiAddr

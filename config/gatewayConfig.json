@@ -1,11 +1,11 @@
 {
-	"gatewayMode": false,
+	"gatewayMode": true,
 	"gatewayTitle": "Welcome",
 	"gatewayText": "Select a board above to begin browsing.",
-	"adminUser": "",
-	"adminPass": "",
+	"adminUser": "admin",
+	"adminPass": "pass",
 	"can": {
-		"post": false,
+		"post": true,
 		"postFile": false,
 		"delFile": false,
 		"delPost": false,
@@ -21,7 +21,8 @@
 		"seeAllBoards": false,
 		"changeConfig": false,
 		"changeGatewayConfig": false,
-		"query": false
+		"query": false,
+		"restartClient": false
 	},
 	"maxOverboardThreads": 10,
 	"canSeeBoards": [

@@ -149,7 +149,7 @@ function getFileExtension(url) {
 app.use((req, res, next) => {
     const ext = getFileExtension(req.url);
 
-    if (cfg.gatewayMode && (cfg.embedImageFileExtensions.includes(ext) || cfg.embedVideoFileExtensions.includes(ext) || cfg.embedAudioFileExtensions.includes(ext))) {
+    if (gatewayCfg.gatewayMode && (cfg.embedImageFileExtensions.includes(ext) || cfg.embedVideoFileExtensions.includes(ext) || cfg.embedAudioFileExtensions.includes(ext))) {
         // Cache specific file types for 1 week
         res.setHeader('Cache-Control', 'public, max-age=604800');
     } else {
@@ -1206,24 +1206,9 @@ app.post('/submitQuery', async (req, res, next) => {
 
         let boardsToQuery = req.body.boardIds ? req.visibleBoards.filter(b => req.body.boardIds.split(',').includes(b)) : req.visibleBoards
 
-        // console.log('debug 01') //todo: remove
-        // console.log(req.body.queryString)
-        // console.log('debug 02')
-        // console.log(JSON.parse(req.body.queryString))
-        // console.log('debug 03')
-        // console.log(convertQueryToBigInt(JSON.parse(req.body.queryString)))
-        // console.log('debug 04')
-        // console.log(convertQueryToPeerbitQuery(convertQueryToBigInt(JSON.parse(req.body.queryString))))
-
         const peerbitQuery = convertQueryToPeerbitQuery(req.body.queryString);
 
         //todo: handle non-implemented query?
-
-        // //todo: remove debug
-        // console.log("NoSQL query:")
-        // console.log(lastQuery)
-        // console.log('Peerbit query:')
-        // console.log(peerbitQuery)
 
         lastQueryResults = makeRenderSafe(await db.queryPosts(boardsToQuery, peerbitQuery, lastQueryLimit))
 
@@ -1263,7 +1248,6 @@ app.post('/submitQuery', async (req, res, next) => {
     res.redirect('/query.html')
 })
 
-//todo: implement limit
 //todo: possibly combine this with thread count based pruning
 //todo: optimize
 //todo: since file chunks can be large in in-memory size, it would be useful if peerbit supported projection, then the chunk contents wouldn't have to be retrieved, only the file chunk .hash and .fileHash
@@ -1693,7 +1677,7 @@ app.post('/submit', upload.any(), async (req, res, next) => {
 		// console.log(req.files)
 		// console.log(req.body.message)
 		// let lastbumps = new Array(threads.length)
-		const dbPosts = await import('./posts.js')
+		const dbPosts = await import('./dist/posts.js')
 		let postFiles = []
 		for (let thisFile of req.files) {
 	  		thisFile.originalname = Buffer.from(thisFile.originalname, 'latin1').toString('utf-8'); //allow unicode in filenames, gets around issue with multer 1.4.5/busboy for the time being
@@ -1716,7 +1700,7 @@ app.post('/submit', upload.any(), async (req, res, next) => {
     		req.body.message,
     		postFiles
     	)
-    	const Validate = await import('./validation.js')
+    	const Validate = await import('./dist/validation.js')
     	Validate.default.post(newPost)
         
         await db.makeNewPost(newPost, req.body.whichBoard, cfg.postPostRandomKey)            
@@ -1987,6 +1971,26 @@ function gatewayCanSeeBoard(req, whichBoard) {
     }
 }
 
+function createCheckAccess(req) {
+    if (!gatewayCfg.gatewayMode || req.session.loggedIn) {
+        return function(req, accessTypes) {
+            return true;
+        };
+    } else {
+        return function(req, accessTypes) {
+            return accessTypes.every(accessType => {
+                try {
+                    gatewayCanDo(req, accessType);
+                    return true;
+                } catch (error) {
+                    return false;
+                }
+            });
+        };
+    }
+}
+
+
 async function standardRenderOptions (req,res) { //todo: make this into a middleware?
     return {
         clientId: await db.clientId(),
@@ -2003,6 +2007,7 @@ async function standardRenderOptions (req,res) { //todo: make this into a middle
         defaultName: cfg.defaultName, //todo: consolidate cfg where possible
         moderators: moderators,
         renderFunctions: renderFunctions,
+        checkAccess: createCheckAccess(req),
         cfg: cfg,
         gatewayCfg: gatewayCfg,            
         myMultiAddr: db.client.libp2p.getMultiaddrs()[0],
@@ -2063,9 +2068,7 @@ app.post('/gatewayLogin', (req, res) => {
   res.redirect(req.headers.referer);
 });
 
-// Endpoint to handle login form submission
 app.post('/gatewayLogout', (req, res) => {
-    console.log('ping')
   try {
     if (req.session.loggedIn) {
         console.log('req.session.loggedIn', req.session.loggedIn)
@@ -2079,6 +2082,19 @@ app.post('/gatewayLogout', (req, res) => {
   }
   res.redirect(req.headers.referer);
 });
+
+app.post('/restartClient', async (req, res, next) => {
+    try {
+        gatewayCanDo(req, 'restartClient')
+        await clientReboot(cfg)
+    } catch (err) {
+        lastQueryResults = 'Error restarting client.'
+        console.log('Error restarting client:',err)
+        console.log(err)
+        lastError = err
+    }
+    res.redirect('/query.html')
+})
 
 app.get('/:board', async (req, res, next) => {
     if (/[\s!"#$%&'()*+,\-./:;<=>?@[\\\]^_`{|}~]/.test(req.params.board)) {
@@ -2107,7 +2123,7 @@ async function dropBoardDbs (board) {
 
 //add event listeners
 function addEventListeners(board) {
-    const eventTriggersPath = `../${configDir}/events.js`
+    const eventTriggersPath = `./${configDir}/events.js`
     import(eventTriggersPath).then(EventTriggers => {
         const whichBoard = db.openedBoards[board]
 
@@ -2142,16 +2158,23 @@ function removeEventListeners(board) {
 //store references to event listeners so they can be deleted upon board closing
 const eventListeners = {};
 
-// Start the Server
-app.listen(cfg.browserPort, cfg.browserHost, () => {
-	console.log(`Starting Server at ${cfg.browserPort}:${cfg.browserHost}`);
-});
+async function clientReboot(cfg) {
+    await clientStop()
+    await clientBoot(cfg)
+}
 
-(async () => {
 
-	process.setMaxListeners(0);
+async function clientStop() {
+    await Promise.all(watchedBoards.map(thisBoard => closeBoardDbs(thisBoard)));
+    await db.pbStopClient()
+}
 
-	db = await import('./db.js');
+
+async function clientBoot(configObject) {
+
+    process.setMaxListeners(0);
+
+    db = await import('./dist/db.js');
 
     process.on('uncaughtException', (error) => {
         if (error instanceof DeliveryError) {
@@ -2163,93 +2186,31 @@ app.listen(cfg.browserPort, cfg.browserHost, () => {
         }
     });
 
+    try {
 
-	try {
+        loadCssThemes()
+        currentCssTheme = configObject.defaultTheme
 
+        await db.pbInitClient(configObject)
+        console.log("Successfully initialized Peerbit node.")
+        console.log(`Client ID: ${await db.clientId()}`)
 
-		loadCssThemes()
-		currentCssTheme = cfg.defaultTheme
+    } catch (err) {
 
-		await db.pbInitClient(cfg)
-		console.log("Successfully initialized Peerbit node.")
-		console.log(`Client ID: ${await db.clientId()}`)
+        console.log('Failed to initialize Peerbit node:')
+        console.log(err)
 
-		// db.client.libp2p.addEventListener('peer:connect', (peerMultiHash) => {
-		//     console.log('ping 0 debug');
-		//     console.log(peerMultiHash)
-		//     console.log(peerMultiHash.detail)
-		//     console.log(Object.keys(peerMultiHash.detail));
-		//     for (let thisKey of Object.keys(peerMultiHash.detail)) {
-		//     	console.log(thisKey)
-		//     	console.log(peerMultiHash.detail[thisKey])
-		//     }
-		// });
-
-	    // db.client.libp2p.addEventListener('peer:discovery', async peerMultiHash => {
-		    // // Recursive function to log properties
-		    // const logProperties = (obj, depth = 0) => {
-		    //     const indent = ' '.repeat(depth * 4);
-		    //     for (const [key, value] of Object.entries(obj)) {
-		    //         console.log(`${indent}${key}: ${value}`);
-		    //         if (typeof value === 'object' && value !== null) {
-		    //             logProperties(value, depth + 1);
-		    //         }
-		    //     }
-		    // };
-		    // console.log(peerMultiHash.detail.id.toString());
-		    // console.log(await db.client.libp2p.peerStore.get(peerMultiHash.detail.id))
-	 	// })
-
-	} catch (err) {
-
-		console.log('Failed to initialize Peerbit node:')
-		console.log(err)
-
-	}
-
-	//try to connect to known peers
-	//todo: test default behavior
-
-	// try {
-	// 	console.log("Attempting to connect to known peers...")
-	// 	//create an object to hold all databases so they can be referenced by name string:
-
-	// 	//todo: shutdown all connections when the application closes here and throughout
-	// 	module.exports.store = new sqlite3.Database('./storage/peers.db')
-
-	// 	await module.exports.store.serialize(function() {
-	// 		module.exports.store.run('CREATE TABLE IF NOT EXISTS peers(multiaddr TEXT PRIMARY KEY)');
-	// 		module.exports.store.all('SELECT multiaddr FROM peers', async (err,rows) => { //todo: is err neeeded?
-	// 			rows.forEach(async (row) => {
-	// 				if(newPeerMultiAddrList && !newPeerMultiAddrList.includes(row.multiaddr)) {
-	// 					db.connectToPeer(row.multiaddr)
-	// 				}
-	// 			})
-			
-	// 		}) 
-
-
-
-	// 	})
-	// } catch (err) {
-	// 	console.log(err)
-	// }
-
-	// process.on('uncaughtException', (error) => {
-	// 	    console.error('An uncaught exception occurred:', error.message);
-	// 	    console.error('Stack trace:', error.stack);
-	// });
-
+    }
     try {
 
         db.setModerators(moderators)
-        db.setRemoteQuery(cfg.remoteQueryPosts, cfg.remoteQueryFileRefs, cfg.remoteQueryFileChunks)
+        db.setRemoteQuery(configObject.remoteQueryPosts, configObject.remoteQueryFileRefs, configObject.remoteQueryFileChunks)
 
-        let dbOpens = cfg.queryFromPanBoardFilesDbIfFileNotFound ? [db.openFilesDb("", { replicationFactor: cfg.replicationFactor }).then(r => console.log("Successfully opened pan-board files database."))] : []
+        let dbOpens = configObject.queryFromPanBoardFilesDbIfFileNotFound ? [db.openFilesDb("", { replicationFactor: configObject.replicationFactor }).then(r => console.log("Successfully opened pan-board files database."))] : []
 
         for (let thisBoard of watchedBoards) {
             dbOpens.push(
-                db.openPostsDb(thisBoard, { replicationFactor: cfg.replicationFactor })
+                db.openPostsDb(thisBoard, { replicationFactor: configObject.replicationFactor })
                     .then(() => {
                         console.log("Successfully opened database for \/" + thisBoard + "\/.")
                         addEventListeners(thisBoard) //todo: use openBoardDbs here
@@ -2270,7 +2231,7 @@ app.listen(cfg.browserPort, cfg.browserHost, () => {
         console.log(err)
     }
 
-    if (cfg.bootstrapOnStartup) {
+    if (configObject.bootstrapOnStartup) {
         try {
             console.log('Bootstrapping...')
             await db.bootstrap()
@@ -2279,8 +2240,18 @@ app.listen(cfg.browserPort, cfg.browserHost, () => {
             console.log("Failed to bootstrap:", bootstrapErr)
         }
     }
-
     console.log("Initialization complete.")
+}
+
+
+// Start the Server
+app.listen(cfg.browserPort, cfg.browserHost, () => {
+    console.log(`Starting Server at ${cfg.browserPort}:${cfg.browserHost}`);
+});
+
+(async () => {
+
+    await clientBoot(cfg)
 
     //open the configured homepage
     if (cfg.openHomeOnStartup) {

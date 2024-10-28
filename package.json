@@ -3,9 +3,9 @@
   "version": "0.0.2",
   "description": "Distributed imageboard browsing.",
   "type": "module",
-  "main": "./dist/server.js",
+  "main": "./server.js",
   "scripts": {
-    "start": "node ./dist/server.js",
+    "start": "node ./server.js",
     "build": "node -e \"fs.rmSync('node_modules', { recursive: true, force: true }); fs.rmSync('yarn.lock', { force: true });\" && yarn install"
   },
   "author": "threshold",
