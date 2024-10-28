@@ -2246,7 +2246,7 @@ async function clientBoot(configObject) {
 
 // Start the Server
 app.listen(cfg.browserPort, cfg.browserHost, () => {
-    console.log(`Starting Server at ${cfg.browserPort}:${cfg.browserHost}`);
+    console.log(`Starting Server at ${cfg.browserHost}:${cfg.browserPort}`);
 });
 
 (async () => {
