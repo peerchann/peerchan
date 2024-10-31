@@ -1,9 +1,9 @@
 {
-	"gatewayMode": true,
+	"gatewayMode": false,
 	"gatewayTitle": "Welcome",
 	"gatewayText": "Select a board above to begin browsing.",
-	"adminUser": "admin",
-	"adminPass": "pass",
+	"adminUser": "",
+	"adminPass": "",
 	"can": {
 		"post": true,
 		"postFile": false,
