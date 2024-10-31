@@ -1,6 +1,6 @@
 {
 	"browserPort": 8000,
-	"peerbitPort": 8500,
+	"peerbitPort": 8100,
 	"browserHost": "127.0.0.1",
 	"replicationFactor": 1,
 	"threadsPerPage": 10,

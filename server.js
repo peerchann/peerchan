@@ -2235,15 +2235,27 @@ async function clientBoot(configObject) {
 
 async function dialBootstrapNodes() {
     if (cfg.bootstrapOnStartup) {
+        console.log('Bootstrapping...');
         try {
-            console.log('Bootstrapping...')
-            await db.bootstrap()
-            console.log('Bootstrapping successful.')
+            const bootstrapAddresses = JSON.parse(fs.readFileSync(configDir + '/bootstrap.json', 'utf8'))['multiAddrs'];
+            Promise.all([
+                db.bootstrap(),
+                Promise.all(bootstrapAddresses.map(async (thisAddress) => {
+                    try {
+                        await db.connectToPeer(thisAddress);
+                    } catch (dialErr) {
+                        console.log(`Failed to dial ${thisAddress}:`, dialErr);
+                    }
+                }))
+            ]).then(() => {
+                console.log('Bootstrapping complete.');
+            });
         } catch (bootstrapErr) {
-            console.log("Failed to bootstrap:", bootstrapErr)
+            console.log("Failed to bootstrap:", bootstrapErr);
         }
     }
 }
+
 
 
 // Start the Server
