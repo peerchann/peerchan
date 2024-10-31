@@ -1494,7 +1494,7 @@ app.get('/overboard.html', async (req, res, next) => {
         }
         threadsPerPage = Math.max(threadsPerPage, 0)
         for (let whichBoard of boardsToShow) {
-            boardQueries.push(db.getThreadsWithReplies(whichBoard, threadsPerPage, cfg.previewReplies, 1).then((thisBoardResults) => {
+            boardQueries.push(db.getThreadsWithRepliesForOverboard(whichBoard, threadsPerPage, cfg.previewReplies, 1).then((thisBoardResults) => {
                 threads = threads.concat(thisBoardResults.threads);
                 replies = replies.concat(thisBoardResults.replies)
                 omittedreplies = omittedreplies.concat(thisBoardResults.omittedreplies)
@@ -1580,7 +1580,7 @@ app.get('/:board/:pagenumber.html', async (req, res, next) => {
 			whichPage = 1
 		}
 
-		let indexPosts = await addFileStatuses(makeRenderSafe(await db.getThreadsWithReplies(req.params.board, cfg.threadsPerPage, cfg.previewReplies, whichPage)), req.params.board)
+        let indexPosts = await addFileStatuses(makeRenderSafe(await db.getThreadsWithRepliesForOverboard(req.params.board, cfg.threadsPerPage, cfg.previewReplies, whichPage)), req.params.board)
     
 		boardPagesCache[req.params.board] = indexPosts.totalpages
 
@@ -2230,8 +2230,11 @@ async function clientBoot(configObject) {
         console.log("Error opening databases:")
         console.log(err)
     }
+    console.log("Initialization complete.")
+}
 
-    if (configObject.bootstrapOnStartup) {
+async function dialBootstrapNodes() {
+    if (cfg.bootstrapOnStartup) {
         try {
             console.log('Bootstrapping...')
             await db.bootstrap()
@@ -2240,7 +2243,6 @@ async function clientBoot(configObject) {
             console.log("Failed to bootstrap:", bootstrapErr)
         }
     }
-    console.log("Initialization complete.")
 }
 
 
@@ -2252,6 +2254,8 @@ app.listen(cfg.browserPort, cfg.browserHost, () => {
 (async () => {
 
     await clientBoot(cfg)
+
+    dialBootstrapNodes() //don't await this
 
     //open the configured homepage
     if (cfg.openHomeOnStartup) {

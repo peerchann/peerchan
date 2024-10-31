@@ -2,7 +2,7 @@
 // const secrets = require(__dirname+'/../configs/secrets.js') //todo: address these
 // 	, { migrateVersion } = require(__dirname+'/../package.json');
 import { Peerbit } from "peerbit";
-import { SearchRequest, StringMatch } from "@peerbit/document";
+import { SearchRequest, StringMatch, Sort, SortDirection } from "@peerbit/document";
 import { webSockets } from '@libp2p/websockets';
 import { all } from '@libp2p/websockets/filters';
 import { tcp } from "@libp2p/tcp";
@@ -440,6 +440,104 @@ export async function getThreadsWithReplies(whichBoard, numThreads = 10, numPrev
             .slice(-numPreviewPostsPerThread) : []),
         omittedreplies: sortedThreadsWithReplies.map((t) => Math.max(0, t.replies.length - numPreviewPostsPerThread)),
         totalpages: Math.max(1, Math.ceil(threadPosts.length / numThreads)) //still have an index page even if its empty
+    };
+}
+//typically faster version of getThreadsWithRepliesForOverboard that can exit early as generating a page count isn't required.
+export async function getThreadsWithRepliesForOverboard(whichBoard, numThreads = 10, numPreviewPostsPerThread = 5, whichPage = 1) {
+    const iteratorGulpSize = 256;
+    var iterationCount = 0;
+    if (!whichBoard) {
+        throw new Error('No board specified.');
+    }
+    const totalThreadsToGet = numThreads * whichPage;
+    const iterator = openedBoards[whichBoard].documents.index.iterate(new SearchRequest({
+        sort: [
+            new Sort({ key: 'date', direction: SortDirection.DESC })
+        ]
+    }), { local: true, remote: remoteQueryPosts });
+    function bigIntMax(a, b) {
+        if (a > b) {
+            return a;
+        }
+        else {
+            return b;
+        }
+    }
+    //we go back through each post, until totalThreadsToGet unique thread ops have been seen.
+    const threadPosts = [];
+    const repliesByThread = {};
+    const lastbumpedByThread = {};
+    // const omittedrepliesByThread: Record<string, number> = {};
+    // var lastTimeStamp = 0
+    const hashesForThreadOpsThatStillNeedToBeFound = new Set();
+    const hashesForThreadOpsThatHaveAlreadyBeenFound = new Set();
+    const hashesForUniquelyReferencedThreads = new Set();
+    gulpIterator: do {
+        const currentPosts = await iterator.next(iteratorGulpSize);
+        iterationCount += 1;
+        if (!currentPosts.length) {
+            continue;
+        }
+        var threadHash = '';
+        for (let currentPost of currentPosts) {
+            currentPost.board = whichBoard;
+            threadHash = currentPost.replyto || currentPost.hash;
+            //initialize the replies array if necessary
+            if (!repliesByThread[threadHash]) {
+                repliesByThread[threadHash] = [];
+            }
+            //first, we check if we see this is a new thread reference
+            if (!hashesForUniquelyReferencedThreads.has(threadHash)) {
+                //if so, we add it to the list of uniquely referenced threads
+                hashesForUniquelyReferencedThreads.add(threadHash);
+            }
+            //if the post is a reply
+            if (currentPost.replyto) {
+                //if we have referenced l.t.e. numThreads posts, we need to ensure we have the thread op of this thread
+                if (hashesForUniquelyReferencedThreads.size <= numThreads) {
+                    //if we havent found the op already, we add it to the list of ops we need to find
+                    if (!hashesForThreadOpsThatHaveAlreadyBeenFound.has(threadHash)) {
+                        hashesForThreadOpsThatStillNeedToBeFound.add(threadHash);
+                    }
+                }
+                repliesByThread[threadHash].unshift(currentPost); //do it this way to avoid having to reverse(), the newest should be last in the array
+                lastbumpedByThread[threadHash] = bigIntMax(lastbumpedByThread[threadHash], currentPost.date);
+            }
+            //if the post is a thread op
+            else {
+                hashesForThreadOpsThatStillNeedToBeFound.delete(threadHash);
+                hashesForThreadOpsThatHaveAlreadyBeenFound.add(threadHash);
+                threadPosts.push(currentPost);
+                lastbumpedByThread[threadHash] = bigIntMax(lastbumpedByThread[threadHash], currentPost.date);
+            }
+            //if we found the last post we need, exit early
+            if (hashesForThreadOpsThatHaveAlreadyBeenFound.size >= numThreads && hashesForThreadOpsThatStillNeedToBeFound.size == 0) {
+                break gulpIterator;
+            }
+        }
+    } while (!iterator.done());
+    await iterator.close(); //todo: don't need to await this?
+    const numToSkip = (whichPage - 1) * numThreads;
+    const sortedThreads = threadPosts.sort((a, b) => {
+        if (lastbumpedByThread[b.hash] > lastbumpedByThread[a.hash]) {
+            return 1;
+        }
+        else if (lastbumpedByThread[a.hash] - lastbumpedByThread[b.hash]) {
+            return -1;
+        }
+        else {
+            return 0;
+        }
+    }).slice(numToSkip, numThreads + numToSkip);
+    for (let t of sortedThreads) {
+        t.lastbumped = lastbumpedByThread[t.hash];
+    }
+    //todo: optimize/simplify
+    return {
+        threads: sortedThreads,
+        replies: sortedThreads.map((t) => numPreviewPostsPerThread ? repliesByThread[t.hash].slice(-numPreviewPostsPerThread) : []),
+        omittedreplies: sortedThreads.map((t) => Math.max(0, repliesByThread[t.hash].length - numPreviewPostsPerThread)),
+        totalpages: 1 //still have an index page even if its empty //todo: remove this for overboard
     };
 }
 //todo: revisit remote
