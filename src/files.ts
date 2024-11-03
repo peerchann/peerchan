@@ -3,7 +3,7 @@ import { Peerbit, createLibp2pExtended } from "peerbit"
 import { Program, } from "@peerbit/program"
 //import { createBlock, getBlockValue } from "@peerbit/libp2p-direct-block"
 import { Ed25519Keypair, sha256Sync, toBase64, toHexString, PublicSignKey } from "@peerbit/crypto"
-import { Documents, DocumentIndex, SearchRequest, StringMatch } from "@peerbit/document" //todo: remove address redundancy
+import { Documents, DocumentIndex, SearchRequest, StringMatch, Or } from "@peerbit/document" //todo: remove address redundancy
 import { currentModerators, remoteQueryFileChunks, OpenArgs, searchResultsLimit } from './db.js'
 
 import Validate from "./validation.js"
@@ -260,29 +260,12 @@ export class File extends BaseFileDocument {
 	//todo: do this in a single query using Or
 	async getFile(fileChunks: FileChunkDatabase) {
 		let fileArray = new Uint8Array(this.fileSize)
-		let chunkReads: any[] = []
-		// let chunkCidIndex = 0
-		for (let chunkCidIndex = 0; chunkCidIndex < this.chunkCids.length; chunkCidIndex++) {
-			// chunkCidIndex = parseInt(chunkCidIndex)
-
-			chunkReads.push(fileChunks.documents.index.search(new SearchRequest({ query: [new StringMatch({ key: 'hash', value: this.chunkCids[chunkCidIndex] })], fetch: searchResultsLimit }), { local: true, remote: remoteQueryFileChunks })
-				.then(result => {
-					if (result && result.length) {
-						if (result[0].chunkData.length > fileChunkingSize) {
-							throw new Error('Received chunk with length ' + result[0].chunkData.length + ' bytes, greater than expected maximum ' + fileChunkingSize + ' bytes.') //todo: consider/allow cases with variable file sizes
-						} else {
-							fileArray.set(result[0].chunkData as Uint8Array, chunkCidIndex * this.chunkSize) //todo: consider remove "as Uint8Array"
-						}
-					} else {
-						throw new Error('Chunk not found.') //todo: revisit
-					}
-				}))
-		}
-		// for (let thisChunk in this.chunkCids) {
-		//  client.services.blocks.get(this.chunkCids[thisChunk], { replicate: true }) //todo: replicate/pinning considerations
-		//  .then(blockValue => fileArray.set(blockValue as Uint8Array, thisChunk * chunkSize))
-		// }
-		await Promise.all(chunkReads)
+		let allChunksQuery = new Or(this.chunkCids.map(chunkHash => new StringMatch({ key: 'hash', value: chunkHash })))
+		await fileChunks.documents.index.search(new SearchRequest({ query: allChunksQuery, fetch: searchResultsLimit }), { local: true, remote: remoteQueryFileChunks }).then(results =>
+		results.sort((a, b) => a.chunkIndex - b.chunkIndex)
+	    .forEach(chunk => {
+	        fileArray.set(new Uint8Array(chunk.chunkData), chunk.chunkIndex * this.chunkSize);
+	    }));
 		return fileArray
 	}
 
