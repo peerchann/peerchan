@@ -50,6 +50,11 @@ export declare function getThreadsWithReplies(whichBoard: string, numThreads?: n
     omittedreplies: number[];
     totalpages: number;
 }>;
+export declare function getAllBumpSortedThreads(whichBoard: string): Promise<{
+    omittedreplies: number[];
+    threads: any[];
+    replies: never[][];
+}>;
 export declare function getThreadsWithRepliesForOverboard(whichBoard: string, numThreads?: number, numPreviewPostsPerThread?: number, whichPage?: number): Promise<{
     threads: any[];
     replies: any[][];

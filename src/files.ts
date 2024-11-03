@@ -257,7 +257,7 @@ export class File extends BaseFileDocument {
 		this.chunkSize = fileChunkingSize
 	}
 
-
+	//todo: do this in a single query using Or
 	async getFile(fileChunks: FileChunkDatabase) {
 		let fileArray = new Uint8Array(this.fileSize)
 		let chunkReads: any[] = []

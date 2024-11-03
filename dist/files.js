@@ -241,6 +241,7 @@ let File = class File extends BaseFileDocument {
         this.fileHash = toHexString(sha256Sync(fileContents));
         this.chunkSize = fileChunkingSize;
     }
+    //todo: do this in a single query using Or
     async getFile(fileChunks) {
         let fileArray = new Uint8Array(this.fileSize);
         let chunkReads = [];

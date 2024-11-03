@@ -351,11 +351,12 @@ export async function removeSingleFileChunk(thisHash, whichBoard, randomKey = tr
 //todo: allow selectivity in post dbs to be queried from
 //todo: revisit remote
 //todo: revisit async
+//todo: unused but if used needs to take into account limit which defaults to 10 and should in increased to searchResultsLimit
 export async function getAllPosts(query = {}) {
     //todo: add query?
     let results = [];
     for (let thisBoard of Object.keys(openedBoards)) {
-        results = results.concat(await openedBoards[thisBoard].documents.index.search(new SearchRequest, { local: true, remote: remoteQueryPosts }));
+        results = results.concat(await openedBoards[thisBoard].documents.index.search(new SearchRequest({ query: [], fetch: searchResultsLimit }), { local: true, remote: remoteQueryPosts }));
     }
     // Sort the results by the 'date' property in descending order
     results.sort((a, b) => (a.date < b.date) ? -1 : ((a.date > b.date) ? 1 : 0)); //newest on top
@@ -367,18 +368,15 @@ export async function getPosts(whichBoard) {
     if (!whichBoard) {
         throw new Error('No board specified.');
     }
-    let results = await openedBoards[whichBoard].documents.index.search(new SearchRequest, { local: true, remote: remoteQueryPosts });
-    // // Sort the results by the 'date' property in descending order
-    // results.sort((a: any, b: any) => (a.date < b.date) ? -1 : ((a.date > b.date) ? 1 : 0)) //newest on top
+    let results = await openedBoards[whichBoard].documents.index.search(new SearchRequest({ query: [], fetch: searchResultsLimit }), { local: true, remote: remoteQueryPosts });
     return results;
-    //return await Posts.documents.index.search(new SearchRequest, { local: true, remote: remoteQueryPosts });
 }
 //todo: revisit remote
 export async function getFileRefs(whichBoard) {
     if (!whichBoard) {
         throw new Error('No board specified.');
     }
-    let results = await openedBoards[whichBoard].fileDb.documents.index.search(new SearchRequest, { local: true, remote: remoteQueryPosts });
+    let results = await openedBoards[whichBoard].fileDb.documents.index.search(new SearchRequest({ query: [], fetch: searchResultsLimit }), { local: true, remote: remoteQueryFileRefs });
     return results;
 }
 //todo: revisit remote
@@ -386,7 +384,7 @@ export async function getFileChunks(whichBoard) {
     if (!whichBoard) {
         throw new Error('No board specified.');
     }
-    let results = await openedBoards[whichBoard].fileDb.chunks.documents.index.search(new SearchRequest, { local: true, remote: remoteQueryPosts });
+    let results = await openedBoards[whichBoard].fileDb.chunks.documents.index.search(new SearchRequest({ query: [], fetch: searchResultsLimit }), { local: true, remote: remoteQueryFileChunks });
     return results;
 }
 //todo: add sage
@@ -442,7 +440,49 @@ export async function getThreadsWithReplies(whichBoard, numThreads = 10, numPrev
         totalpages: Math.max(1, Math.ceil(threadPosts.length / numThreads)) //still have an index page even if its empty
     };
 }
-//typically faster version of getThreadsWithRepliesForOverboard that can exit early as generating a page count isn't required.
+//same as getThreadsWithReplies but returns everything rather than slicing a few and doesn't return any replies
+export async function getAllBumpSortedThreads(whichBoard) {
+    if (!whichBoard) {
+        throw new Error('No board specified.');
+    }
+    const allPosts = await openedBoards[whichBoard].documents.index.search(new SearchRequest({ query: [], fetch: searchResultsLimit }), { local: true, remote: remoteQueryPosts });
+    const threadPosts = [];
+    const repliesByThread = {};
+    for (const post of allPosts) {
+        if (post.replyto) {
+            if (!repliesByThread[post.replyto])
+                repliesByThread[post.replyto] = [];
+            repliesByThread[post.replyto].push(post);
+        }
+        else {
+            threadPosts.push(post);
+        }
+    }
+    const sortedThreadsWithReplies = threadPosts.map(thread => {
+        const replies = repliesByThread[thread.hash] || [];
+        const maxDate = replies.reduce((max, reply) => reply.date > max ? reply.date : max, thread.date);
+        thread.lastbumped = maxDate;
+        return { thread, replies, maxDate };
+    }).sort((a, b) => {
+        if (a.maxDate > b.maxDate)
+            return -1;
+        if (a.maxDate < b.maxDate)
+            return 1;
+        return 0;
+    });
+    for (const t of sortedThreadsWithReplies) {
+        t.thread.board = whichBoard;
+        for (const r of t.replies) {
+            r.board = whichBoard;
+        }
+    }
+    return {
+        omittedreplies: sortedThreadsWithReplies.map((t) => Math.max(0, t.replies.length)),
+        threads: sortedThreadsWithReplies.map((t) => t.thread),
+        replies: sortedThreadsWithReplies.map((t) => []),
+    };
+}
+//typically faster version of getThreadsWithReplies that can exit early as generating a page count isn't required.
 export async function getThreadsWithRepliesForOverboard(whichBoard, numThreads = 10, numPreviewPostsPerThread = 5, whichPage = 1) {
     const iteratorGulpSize = 256;
     var iterationCount = 0;

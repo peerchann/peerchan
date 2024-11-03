@@ -279,7 +279,6 @@ export async function makeNewPost (postDocument: Post, whichBoard: string, rando
 	//todo: need to return id?
 
 }
-
 export async function listPeers () {
 	let peerMultiAddrs = client.libp2p.getMultiaddrs()
 	//todo: fix this to actually list peers
@@ -296,7 +295,6 @@ export async function delPost (whichPost: string, whichBoard: string, randomKey:
     }
 	let theseReplies = await openedBoards[whichBoard].documents.index.search(new SearchRequest({query: [new StringMatch({ key: 'replyto', value: whichPost })], fetch: searchResultsLimit }), { local: true, remote: remoteQueryPosts })
 	//delete post itself
-
 	if (randomKey) {
     	var newKeyPair = await Ed25519Keypair.create()
 		await openedBoards[whichBoard].documents.del(whichPost, { signers: [newKeyPair.sign.bind(newKeyPair)] });
@@ -389,12 +387,13 @@ export async function removeSingleFileChunk (thisHash: string, whichBoard: strin
 //todo: allow selectivity in post dbs to be queried from
 //todo: revisit remote
 //todo: revisit async
+//todo: unused but if used needs to take into account limit which defaults to 10 and should in increased to searchResultsLimit
 export async function getAllPosts (query: any = {}) {
 	
 	//todo: add query?
 	let results: any = []
 	for (let thisBoard of Object.keys(openedBoards)) {
-		results = results.concat(await openedBoards[thisBoard].documents.index.search(new SearchRequest, { local: true, remote: remoteQueryPosts }))
+		results = results.concat(await openedBoards[thisBoard].documents.index.search(new SearchRequest({ query: [], fetch: searchResultsLimit }), { local: true, remote: remoteQueryPosts }))
 	}
 
     // Sort the results by the 'date' property in descending order
@@ -406,41 +405,28 @@ export async function getAllPosts (query: any = {}) {
 
 //todo: revisit remote
 export async function getPosts (whichBoard: string) {
-	
     if (!whichBoard) {
         throw new Error('No board specified.');
     }
-
-	let	results = await openedBoards[whichBoard].documents.index.search(new SearchRequest, { local: true, remote: remoteQueryPosts })
-
-    // // Sort the results by the 'date' property in descending order
-    // results.sort((a: any, b: any) => (a.date < b.date) ? -1 : ((a.date > b.date) ? 1 : 0)) //newest on top
-
+	let	results = await openedBoards[whichBoard].documents.index.search(new SearchRequest({ query: [], fetch: searchResultsLimit }), { local: true, remote: remoteQueryPosts })
 	return results
-	//return await Posts.documents.index.search(new SearchRequest, { local: true, remote: remoteQueryPosts });
 }
 
 //todo: revisit remote
 export async function getFileRefs (whichBoard: string) {
-	
     if (!whichBoard) {
         throw new Error('No board specified.');
     }
-
-	let	results = await openedBoards[whichBoard].fileDb.documents.index.search(new SearchRequest, { local: true, remote: remoteQueryPosts })
-
+	let	results = await openedBoards[whichBoard].fileDb.documents.index.search(new SearchRequest({ query: [], fetch: searchResultsLimit }), { local: true, remote: remoteQueryFileRefs })
 	return results
 }
 
 //todo: revisit remote
 export async function getFileChunks (whichBoard: string) {
-	
     if (!whichBoard) {
         throw new Error('No board specified.');
     }
-
-	let	results = await openedBoards[whichBoard].fileDb.chunks.documents.index.search(new SearchRequest, { local: true, remote: remoteQueryPosts })
-
+	let	results = await openedBoards[whichBoard].fileDb.chunks.documents.index.search(new SearchRequest({ query: [], fetch: searchResultsLimit }), { local: true, remote: remoteQueryFileChunks })
 	return results
 }
 
@@ -499,7 +485,52 @@ export async function getThreadsWithReplies(whichBoard: string, numThreads: numb
     }
 }
 
-//typically faster version of getThreadsWithRepliesForOverboard that can exit early as generating a page count isn't required.
+//same as getThreadsWithReplies but returns everything rather than slicing a few and doesn't return any replies
+export async function getAllBumpSortedThreads(whichBoard: string) {
+    if (!whichBoard) {
+        throw new Error('No board specified.');
+    }
+
+    const allPosts = await openedBoards[whichBoard].documents.index.search(new SearchRequest({ query: [], fetch: searchResultsLimit }), { local: true, remote: remoteQueryPosts })
+
+    const threadPosts: any[] = [];
+    const repliesByThread: Record<string, any[]> = {};
+
+    for (const post of allPosts) {
+        if (post.replyto) {
+            if (!repliesByThread[post.replyto]) repliesByThread[post.replyto] = [];
+            repliesByThread[post.replyto].push(post);
+        } else {
+            threadPosts.push(post);
+        }
+    }
+
+    const sortedThreadsWithReplies = threadPosts.map(thread => {
+        const replies = repliesByThread[thread.hash] || [];
+        const maxDate = replies.reduce((max: bigint, reply: any) => reply.date > max ? reply.date : max, thread.date);
+        thread.lastbumped = maxDate;
+        return { thread, replies, maxDate };
+    }).sort((a, b) => {
+        if (a.maxDate > b.maxDate) return -1;
+        if (a.maxDate < b.maxDate) return 1;
+        return 0;
+    })
+
+    for (const t of sortedThreadsWithReplies) {
+        t.thread.board = whichBoard;
+        for (const r of t.replies) {
+            r.board = whichBoard;
+        }
+    }
+
+    return {
+    	omittedreplies: sortedThreadsWithReplies.map((t: any) => Math.max(0, t.replies.length)),
+    	threads: sortedThreadsWithReplies.map((t: any) => t.thread),
+    	replies: sortedThreadsWithReplies.map((t: any) => []),
+    }
+}
+
+//typically faster version of getThreadsWithReplies that can exit early as generating a page count isn't required.
 export async function getThreadsWithRepliesForOverboard(whichBoard: string, numThreads: number = 10, numPreviewPostsPerThread: number = 5, whichPage: number = 1) {
     
     const iteratorGulpSize = 256
@@ -549,7 +580,7 @@ export async function getThreadsWithRepliesForOverboard(whichBoard: string, numT
 	        //initialize the replies array if necessary
 	       	if (!repliesByThread[threadHash]) {
 	                repliesByThread[threadHash] = [];
-	        }
+	        } 
 
 	        //first, we check if we see this is a new thread reference
 	        if (!hashesForUniquelyReferencedThreads.has(threadHash)) {

@@ -4,14 +4,22 @@ block title
   title #{cfg.pageTitle} - Pruning
 
 block content
-  h2 Enter Pruning Query Parameters
-  form(action="/submitPruneQuery" method="POST" class="config-form")
-    label(for="boardIds") Comma-Separated Board IDs: &nbsp;
-    input(type="text" id="boardIds" name="boardIds" value=lastPruneQueryBoards)
-    label(for="queryLimit") Limit: &nbsp;
-    input(type="number" id="queryLimit" name="queryLimit" value=lastPruneQueryLimit)
+  h2 Prune Least Recently Bumped Threads
+  form(action="/pruneThreads" method="POST" class="config-form")
+    label(for="pruneBoardIds") Comma-Separated Board IDs: &nbsp;
+    input(type="text" id="pruneBoardIds" name="pruneBoardIds" value=lastPruneBoards)
+    label(for="pruneAllBut") Number of Threads to Keep: &nbsp;
+    input(type="number" id="pruneAllBut" name="pruneAllBut" value=lastPruneAllBut)
     |  
-    button(type="submit", class="sidebarbutton") Execute
+    button(type="submit", class="sidebarbutton") Prune Threads
+  h2 Find Orphans
+  form(action="/submitOrphanQuery" method="POST" class="config-form")
+    label(for="orphanQueryBoardIds") Comma-Separated Board IDs: &nbsp;
+    input(type="text" id="orphanQueryBoardIds" name="orphanQueryBoardIds" value=lastOrphanQueryBoards)
+    label(for="orphanQueryLimit") Limit: &nbsp;
+    input(type="number" id="orphanQueryLimit" name="orphanQueryLimit" value=lastOrphanQueryLimit)
+    |  
+    button(type="submit", class="sidebarbutton") Find Orphans
   h2 Found Orphans:
   form(class = "post-form")
     label(for="orphanReplies") Orphan Replies:
@@ -29,5 +37,5 @@ block content
     textarea(id="orphanFileChunks" name="orphanFileChunks")
       | #{JSON.stringify(orphanFileChunks)}
     br
-    button(type="submit" formaction="/pruneMany" formmethod="post" class="config-form sidebarbutton" name="action" value="prune") Prune
     button(type="submit" formaction="/pruneMany" formmethod="post" class="config-form sidebarbutton" name="action" value="delete") Delete
+
