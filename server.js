@@ -1447,15 +1447,6 @@ async function getOrphans(boardsToQuery) {
         };
 }
 
-app.get('/function/test/:testHash' ,async (req,res,next) =>{
-    const hashToRemove = req.params.testHash
-    console.log(`removing post ${hashToRemove}`)
-    console.log(await db.getSpecificPost('test', hashToRemove))
-    await db.removeSinglePost(hashToRemove, 'test', false, true)
-    console.log(await db.getSpecificPost('test', hashToRemove))
-    console.log('post removed')
-}) 
-
 //todo: possibly combine this with thread count based pruning
 //todo: optimize
 //todo: since file chunks can be large in in-memory size, it would be useful if peerbit supported projection, then the chunk contents wouldn't have to be retrieved, only the file chunk .hash and .fileHash
