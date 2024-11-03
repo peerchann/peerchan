@@ -1626,7 +1626,7 @@ app.get('/overboard.html', async (req, res, next) => {
         threadsPerPage = Math.max(threadsPerPage, 0)
 
         for (let whichBoard of boardsToShow) {
-            boardQueries.push(db.getThreadsWithRepliesForOverboard2(whichBoard, threadsPerPage, cfg.previewReplies, 1).then((thisBoardResults) => {
+            boardQueries.push(db.getThreadsWithRepliesForOverboard(whichBoard, threadsPerPage, cfg.previewReplies, 1).then((thisBoardResults) => {
                 threads = threads.concat(thisBoardResults.threads);
                 replies = replies.concat(thisBoardResults.replies)
                 omittedreplies = omittedreplies.concat(thisBoardResults.omittedreplies)
