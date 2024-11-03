@@ -337,7 +337,7 @@ app.get('/function/changeTheme/:themeName', async (req, res, next) => {
     updateDefaultTheme(req.params.themeName)
   } catch (err) {
   	console.log(`Failed to change theme to: ${req.params.themeName}.`)
-  	lastError = err
+  	req.session.lastError = err.message
   }
   	res.redirect(req.headers.referer)
 });
@@ -352,7 +352,7 @@ app.get('/:board/deletepost=:posthash', async (req, res, next) => {
 
   } catch (err) {
   	console.log(`Failed to delete post: ${req.params.posthash}.`)
-  	lastError = err
+  	req.session.lastError = err.message
   }
 
 	res.redirect(req.headers.referer); //todo: check propriety
@@ -378,7 +378,7 @@ app.post('/deletePosts', upload.any(), async (req, res, next) => {
     }
   } catch (err) {
     console.log(`Failed to delete posts.`)
-    lastError = err
+    req.session.lastError = err.message
   }
     res.redirect(req.headers.referer);
 });
@@ -425,7 +425,7 @@ app.post('/pruneMany', upload.any(), async (req, res, next) => {
     }
   } catch (err) {
     console.log(`Failed to prune posts.`)
-    lastError = err
+    req.session.lastError = err.message
   }
     res.redirect(req.headers.referer);
 });
@@ -437,7 +437,7 @@ app.get('/myreplicationfactors.html', async (req, res, next) => {
   } catch (err) {
   	console.log('Failed to get replication factor.')
   	console.log(err)
-  	lastError = err
+  	req.session.lastError = err.message
   	res.redirect('/home.html')
   }
 
@@ -451,7 +451,7 @@ app.get('/mymultiaddr.json', async (req, res, next) => {
   } catch (err) {
   	console.log('Failed to get multiAddr.')
   	console.log(err)
-  	lastError = err
+  	req.session.lastError = err.message
   	res.redirect('/home.html')
   }
 
@@ -476,7 +476,7 @@ app.get('/:board/deletefile=:filehash', async (req, res, next) => {
 
   } catch (err) {
   	console.log(`Failed to delete file: ${params.params.fileHash}.`)
-  	lastError = err
+  	req.session.lastError = err.message
   }
 	res.redirect(req.headers.referer); //todo: check propriety
 });
@@ -491,7 +491,7 @@ app.post('/connectToPeer', upload.any(), async (req, res, next) => {
 
   } catch (err) {
   	console.log(`Failed to connect to peer.`)
-  	lastError = err
+  	req.session.lastError = err.message
   }
 
 	res.redirect(req.headers.referer); //todo: check propriety
@@ -509,7 +509,7 @@ app.post('/updateHashStyle', (req, res) => {
   } catch (err) {
     // Handle errors
     console.error('Error updating hash style:', err);
-    lastError = err
+    req.session.lastError = err.message
   }
     res.redirect(req.headers.referer);
 });
@@ -543,7 +543,7 @@ app.post('/addWatchedBoard', upload.any(), async (req, res, next) => {
     // Redirect back to the previous page
   } catch (err) {
 	    console.error('Error adding watched board:', err);
-	    lastError = err
+	    req.session.lastError = err.message
   }
     res.redirect(req.headers.referer);
 });
@@ -562,7 +562,7 @@ app.post('/removeWatchedBoard', upload.any(), async (req, res, next) => {
 	}
   } catch (err) {
     console.error('Error removing watched board:', err);
-    lastError = err
+    req.session.lastError = err.message
   }
   res.redirect(req.headers.referer);
 });
@@ -587,7 +587,7 @@ app.post('/reloadBoard', async (req, res, next) => {
 
   } catch (err) {
     console.error(`Error reloading /${req.body.boardId}/:`, err);
-    lastError = err
+    req.session.lastError = err.message
   }
   res.redirect(req.headers.referer);
 })
@@ -607,7 +607,7 @@ app.get('/function/addBoard/:board',  async (req, res, next) => {
     }
   } catch (err) {
 	    console.error('Error adding watched board:', err);
-        lastError = err
+        req.session.lastError = err.message
         res.send(err)
   }
 });
@@ -635,7 +635,7 @@ app.post('/resetBoard', async (req, res, next) => {
 
   } catch (err) {
     console.error(`Error resetting /${req.body.boardId}/:`, err);
-    lastError = err
+    req.session.lastError = err.message
   }
   res.redirect(req.headers.referer);
 })
@@ -655,7 +655,7 @@ app.get('/function/addBoard/:board',  async (req, res, next) => {
     }
   } catch (err) {
         console.error('Error adding watched board:', err);
-        lastError = err
+        req.session.lastError = err.message
         res.send(err)
   }
 });
@@ -678,7 +678,7 @@ app.get('/function/removeBoard/:board', async (req, res, next) => {
     }
   } catch (err) {
         console.error('Error removing watched board:', err);
-        lastError = err
+        req.session.lastError = err.message
         res.send(err)
   }
 });
@@ -691,7 +691,7 @@ app.get('/function/pruneBoard/:board', async (req, res, next) => {
     res.send(`Successfully pruned data from /${req.params.board}/.`)
   } catch (err) {
         console.error('Error pruning data from board:', err);
-        lastError = err
+        req.session.lastError = err.message
         res.send(err)
   }
 });
@@ -711,7 +711,7 @@ app.get('/function/addGatewayBoard/:board',  async (req, res, next) => {
         res.send(`/${req.params.board}/ was already in gateway boards.`)
     }
   } catch (err) {
-        lastError = err
+        req.session.lastError = err.message
         res.send('Error adding watched board:', err);
   }
 });
@@ -730,7 +730,7 @@ app.get('/function/removeGatewayBoard/:board', async (req, res, next) => {
         res.send(`/${req.params.board}/ was already not in gateway boards.`)
     }
   } catch (err) {
-        lastError = err
+        req.session.lastError = err.message
         res.send('Error removing watched board:', err);
   }
 });
@@ -741,7 +741,7 @@ app.get('/function/eventListeners', async (req, res, next) => {
         console.log(eventListeners)
         res.json(eventListeners)
   } catch (err) {
-        lastError = err
+        req.session.lastError = err.message
         res.send('Error viewing event listeners:', err);
   }
 });
@@ -761,7 +761,7 @@ app.post('/addGatewayBoard', upload.any(), async (req, res, next) => {
     }
   } catch (err) {
         console.log('Error adding watched board:', err);
-        lastError = err
+        req.session.lastError = err.message
   }
   res.redirect(req.headers.referer);
 });
@@ -781,7 +781,7 @@ app.post('/removeGatewayBoard', upload.any(), async (req, res, next) => {
     }
   } catch (err) {
         console.log('Error removing watched board:', err);
-        lastError = err
+        req.session.lastError = err.message
   }
   res.redirect(req.headers.referer);
 });
@@ -850,7 +850,7 @@ app.get('/function/toggleSidebar', async (req, res, next) => {
     }
   } catch (err) {
         console.log('Error toggling sidebar visibility:', err);
-        lastError = err
+        req.session.lastError = err.message
   }
   res.redirect(req.headers.referer);
 });
@@ -921,7 +921,7 @@ app.post('/addModerator', upload.any(), async (req, res, next) => {
     await addModerator(req.body.moderatorId)
   } catch (err) {
 	    console.error('Error adding moderator:', err);
-		lastError = err
+		req.session.lastError = err.message
   }
   res.redirect(req.headers.referer);
 });
@@ -934,7 +934,7 @@ app.post('/removeModerator', upload.any(), async (req, res, next) => {
     await removeModerator(req.body.moderatorId)
   } catch (err) {
 		console.error('Error adding moderator:', err);
-		lastError = err
+		req.session.lastError = err.message
   }
   res.redirect(req.headers.referer);
 });
@@ -945,7 +945,7 @@ app.get('/function/addModerator/:moderatorId'),  async (req, res, next) => {
     await addModerator(req.params.moderatorId)
   } catch (err) {
 	    console.error('Error adding moderator:', err);
-		lastError = err
+		req.session.lastError = err.message
   }
   res.redirect(req.headers.referer);
 }
@@ -956,7 +956,7 @@ app.get('/function/removeModerator/:moderatorId', async (req, res, next) => {
     await removeModerator(req.params.moderatorId)
   } catch (err) {
 		console.error('Error adding moderator:', err);
-		lastError = err
+		req.session.lastError = err.message
   }
     res.redirect(req.headers.referer);
 });
@@ -1252,7 +1252,7 @@ app.post('/submitQuery', async (req, res, next) => {
         lastQueryResults = 'Error executing query.'
         console.log('Failed to submit query.')
         console.log(err)
-        lastError = err
+        req.session.lastError = err.message
     }
     res.redirect('/query.html')
 })
@@ -1348,7 +1348,7 @@ app.post('/pruneThreads', async (req, res, next) => {
 
     } catch (err) {
         console.log(`Error pruning threads:`, err)
-        lastError = err
+        req.session.lastError = err.message
     }
     res.redirect('/prune.html')
 })
@@ -1504,7 +1504,7 @@ app.post('/submitOrphanQuery', async (req, res, next) => {
         lastQueryResults = 'Error searching for orphans.'
         console.log('Failed to search for orphans.')
         console.log(err)
-        lastError = err
+        req.session.lastError = err.message
     }
     res.redirect('/prune.html')
 })
@@ -1532,12 +1532,12 @@ app.get('/query.html', async (req, res, next) => {
         // threads = await addFileStatuses(makeRenderSafe(threads))
 
         const html = await rt['query'](options)
-        resetError()
+        // resetError(req)
         res.send(html)
     } catch (err) {
         console.log('Failed to generate query page.')
         console.log(err)
-        lastError = err
+        req.session.lastError = err.message
         res.redirect('/home.html')
     }
     console.timeEnd('buildQueryPage');
@@ -1571,12 +1571,12 @@ app.get('/prune.html', async (req, res, next) => {
         // threads = await addFileStatuses(makeRenderSafe(threads))
 
         const html = await rt['prune'](options)
-        resetError()
+        // resetError(req)
         res.send(html)
     } catch (err) {
         console.log('Failed to generate prune page.')
         console.log(err)
-        lastError = err
+        req.session.lastError = err.message
         res.redirect('/home.html')
     }
     console.timeEnd('buildPrunePage');
@@ -1642,12 +1642,12 @@ app.get('/overboard.html', async (req, res, next) => {
         options.indexMode = true
         options.overboardMode = true
         const html = await rt['board'](options)
-        resetError()
+        // resetError(req)
         res.send(html)
     } catch (err) {
         console.log('Failed to get posts for overboard.')
         console.log(err)
-        lastError = err
+        req.session.lastError = err.message
         res.redirect('/home.html')
     }
     console.timeEnd('buildOverboardIndex');
@@ -1678,13 +1678,13 @@ app.get('/:board/catalog.html', async (req, res, next) => {
         options.catalogMode = true
         console.log(indexPosts.totalpages + " pages total")
         const html = await rt['board'](options)
-        resetError()
+        // resetError(req)
         res.send(html)
 
     } catch (err) {
         console.log('Failed to get posts for board \"'+req.params.board+'\".')
         console.log(err)
-        lastError = err
+        req.session.lastError = err.message
         res.redirect('/home.html')
     }
     console.timeEnd('buildCatalog');
@@ -1723,18 +1723,17 @@ app.get('/:board/:pagenumber.html', async (req, res, next) => {
 		options.indexMode = true
 		console.log(`/${req.params.board}/ page ${req.params.pagenumber}, ${indexPosts.totalpages} pages total`)
 		const html = await rt['board'](options)
-		resetError()
+		// resetError(req)
         res.send(html)
 
 	} catch (err) {
 		console.log('Failed to get posts for board \"'+req.params.board+'\".')
 		console.log(err)
-		lastError = err
+		req.session.lastError = err.message
 		res.redirect('/home.html')
 	}
     console.timeEnd('buildIndex');
 })
-
 
 const boardPagesCache = {}; //todo: reconsider
 
@@ -1769,23 +1768,17 @@ app.get('/:board/thread/:thread.html', async (req, res, next) => {
         }
         options.currentBoard = req.params.board
         const html = await rt['board'](options)
-		resetError()
+		// // resetError(req)
 		res.send(html)
 
 	} catch (err) {
 		console.log('Failed to get posts for board \"'+req.params.board+'\".')
 		console.log(err)
-		lastError = err
+		req.session.lastError = err.message
 		res.redirect('/home.html')
 	}
 
 })
-
-function resetError() {
-	lastError = undefined
-}
-
-var lastError
 
 //todo: different dependng on new thread/reply
 //todo: files
@@ -1842,7 +1835,7 @@ app.post('/submit', upload.any(), async (req, res, next) => {
 	} catch (err) {
 	  console.log('Failed to submit new post')
 	  console.log(err)
-	  lastError = err
+	  req.session.lastError = err.message
 	}
 	res.redirect(req.headers.referer);
     // res.send({ reload: true });
@@ -1900,7 +1893,7 @@ app.post('/updateConfig', upload.any(), async (req, res, next) => {
     } catch (err) {
       console.log('Failed to update configuration')
       console.log(err)
-      lastError = err
+      req.session.lastError = err.message
     }
     res.redirect(req.headers.referer);
     // res.send({ reload: true });
@@ -1938,7 +1931,7 @@ app.post('/updateGatewayConfig', upload.any(), async (req, res, next) => {
                 if (gatewayCfg.adminUser && gatewayCfg.adminPass) {
                     gatewayCfg[thisKey] = req.body[thisKey] === 'on'
                 } else {
-                    lastError = 'Admin password and username should be configured in config/gatewayConfig.json before enabling gateway mode (requires restart).' //use the last error but dont actually throw so that the other settings can be updated //todo: revisit doing this differently?
+                    req.session.lastError = 'Admin password and username should be configured in config/gatewayConfig.json before enabling gateway mode (requires restart).' //use the last error but dont actually throw so that the other settings can be updated //todo: revisit doing this differently?.message
                     //todo: change this message once UI form in implemented
                 }
             } else {
@@ -1952,7 +1945,7 @@ app.post('/updateGatewayConfig', upload.any(), async (req, res, next) => {
     } catch (err) {
       console.log('Failed to update gateway configuration')
       console.log(err)
-      lastError = err
+      req.session.lastError = err.message
     }
     res.redirect(req.headers.referer);
     // res.send({ reload: true });
@@ -1982,7 +1975,7 @@ app.get('/function/findThreadContainingPost/:board/:postHash', async (req, res, 
         }
     } catch (err) {
         console.log(err)
-        lastError = err
+        req.session.lastError = err.message
         res.redirect(req.headers.referer) //todo: check if this is working properly
     }
 })
@@ -1994,7 +1987,7 @@ async function getBoardStats(whichBoard) {
     } catch {err} {
         console.log(`Failed to get board stats for /${whichBoard}`)
         console.log(err)
-        lastError = err
+        req.session.lastError = err.message
         return {}
     }
 }
@@ -2014,12 +2007,12 @@ app.get('/home.html', async (req, res, next) => {
             options.boardStats[thisBoard] = await getBoardStats(thisBoard);
         }));
         const html = await rt['home'](options);
-        resetError();
+        // resetError(req);
         res.send(html);
     } catch (error) {
         console.log('Failed to open homepage');
         console.log(error);
-        lastError = error;
+        req.session.lastError = error.message
     }
 });
 
@@ -2032,7 +2025,7 @@ app.get('/listPeers', async (req, res, next) => {
     } catch (error) {
         console.log('Failed to list peers')
         console.log(error)
-        lastError = error
+        req.session.lastError = error.message
         res.redirect('home.html')
     }
 });
@@ -2045,13 +2038,13 @@ app.get('/files.html', async (req, res, next) => {
         options.files = await db.getAllFileDocuments()
         console.log(options.files)
         const html = await rt['files'](options)
-        resetError()
+        // resetError(req)
         res.send(html)
 
     } catch (error) {
         console.log('Failed to open files page')
         console.log(error)
-        lastError = error
+        req.session.lastError = error.message
         res.redirect('home.html')
     }
 });
@@ -2111,16 +2104,18 @@ function createCheckAccess(req) {
     }
 }
 
-
 async function standardRenderOptions (req,res) { //todo: make this into a middleware?
-    return {
+    console.log(req.session)
+    console.log('req.session.lastError:')
+    console.log(req.session.lastError)
+    const renderOptions = {
         clientId: await db.clientId(),
         req: req,
         prefillMessageBox: res.locals.prefillMessageBox,
         nonce: res.locals.nonce,
         boards: watchedBoards,
         specialPageLinks: cfg.specialPageLinks,
-        alert: lastError,
+        alert: req.session.lastError,
         loggedInAs: req.session.loggedIn,
         watchedBoards: req.visibleBoards, //todo: split visible in top versus visible in gateway manage? nicer way to visualize which are gateway boards or not?
         themes: cssThemes,
@@ -2134,6 +2129,9 @@ async function standardRenderOptions (req,res) { //todo: make this into a middle
         myMultiAddr: db.client.libp2p.getMultiaddrs()[0],
         posts: []
     }
+    //reset the error
+    req.session.lastError = ''
+    return renderOptions
 }
 
 //gateway stuff
@@ -2146,12 +2144,12 @@ app.get('/gateway.html', async (req, res, next) => {
             options.boardStats[thisBoard] = await getBoardStats(thisBoard);
         }));
         const html = await rt['gatewayHome'](options)
-        resetError()
+        // resetError(req)
         res.send(html)
     } catch (err) {
         console.log('Failed to open gateway homepage')
         console.log(err)
-        lastError = err
+        req.session.lastError = err.message
     }
 });
 
@@ -2165,12 +2163,12 @@ app.get('/gatewayconfig.html', async (req, res, next) => {
             options.boardStats[thisBoard] = await getBoardStats(thisBoard);
         }));
         const html = await rt['gatewayConfig'](options)
-        resetError()
+        // resetError(req)
         res.send(html)
     } catch (err) {
         console.log('Failed to open gateway configuration page')
         console.log(err)
-        lastError = err
+        req.session.lastError = err.message
     }
 });
 
@@ -2183,7 +2181,7 @@ app.post('/gatewayLogin', (req, res) => {
       throw new Error('Invalid username or password.');
     }
   } catch (err) {
-    lastError = err;
+    req.session.lastError = err.message
     console.log(err);
   }
   res.redirect(req.headers.referer);
@@ -2198,7 +2196,7 @@ app.post('/gatewayLogout', (req, res) => {
       throw new Error('No session to log out from.');
     }
   } catch (err) {
-    lastError = err;
+    req.session.lastError = err.message
     console.log(err);
   }
   res.redirect(req.headers.referer);
@@ -2212,7 +2210,7 @@ app.post('/restartClient', async (req, res, next) => {
         lastQueryResults = 'Error restarting client.'
         console.log('Error restarting client:',err)
         console.log(err)
-        lastError = err
+        req.session.lastError = err.message
     }
     res.redirect('/query.html')
 })
