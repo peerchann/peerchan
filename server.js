@@ -2105,9 +2105,6 @@ function createCheckAccess(req) {
 }
 
 async function standardRenderOptions (req,res) { //todo: make this into a middleware?
-    console.log(req.session)
-    console.log('req.session.lastError:')
-    console.log(req.session.lastError)
     const renderOptions = {
         clientId: await db.clientId(),
         req: req,
