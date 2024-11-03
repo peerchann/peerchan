@@ -1473,25 +1473,27 @@ app.post('/submitOrphanQuery', async (req, res, next) => {
             Object.entries(orphanedFileChunksByBoard).filter(([board, hashes]) => hashes.length > 0)
         );
 
-        const queryLimit = Math.max(0, parseInt(req.body.queryLimit) || 0);
+        const queryLimit = Math.max(0, parseInt(lastOrphanQueryLimit) || 0);
         var numResults = 0
 
         const limitOrphans = (orphanObject) => {
             const entries = Object.entries(orphanObject);
             const limitedOrphans = {};
+
             for (const [board, hashes] of entries) {
-                if (numResults >= queryLimit) break; // Stop if limit is reached
+                if (numResults >= queryLimit) break;
+                
                 const remainingLimit = queryLimit - numResults;
-                const limitedHashes = hashes.slice(0, remainingLimit); // Limit the number of hashes
+                const limitedHashes = hashes.slice(0, remainingLimit);
+                
                 if (limitedHashes.length > 0) {
                     limitedOrphans[board] = limitedHashes;
-                    numResults += limitedHashes.length; // Update numResults
+                    numResults += limitedHashes.length;
                 }
             }
             return limitedOrphans;
         };
 
-        // Limit orphan replies, file references, and file chunks
         if (queryLimit) {
             lastOrphanReplies = limitOrphans(lastOrphanReplies);
             lastOrphanFileRefs = limitOrphans(lastOrphanFileRefs);
