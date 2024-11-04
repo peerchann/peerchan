@@ -40,6 +40,7 @@ html
                   button(id="delete-file-button", class="sidebarbutton") Delete File
                 if renderFunctions.gatewayCanDo(req, 'delPost', false)
                   button(id="select-post-button", class="sidebarbutton") Select Posts
+                  button(id="mass-select-post-button", class="sidebarbutton") Mass-Select Posts
                 if renderFunctions.gatewayCanDo(req, 'delFile', false)
                   button(id="select-file-button", class="sidebarbutton") Select Files
                 button(id="delete-selected-button", class="sidebarbutton") Delete Selected

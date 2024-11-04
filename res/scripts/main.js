@@ -16,12 +16,12 @@ function deleteFile() {
   clickMode = clickMode !== 'file-del' ? 'file-del' : '';
   document.documentElement.style.cursor = clickMode ? 'crosshair' : 'default';
 
-  // Toggle the 'deletion-mode' class on embedded file elements
   const embeddedFiles = document.querySelectorAll('.embedded-file');
   embeddedFiles.forEach(file => {
     file.classList.toggle('deletion-mode', clickMode === 'file-del');
   });
 }
+let massSelectStartPost = null;
 function exitClickModeOnce(event) {
   if (event.target.tagName !== 'BUTTON') {
 
@@ -39,17 +39,29 @@ function exitClickModeOnce(event) {
           return
         }     
         break;
+      case 'mass-post-sel-start':
+        if (event.target.classList.contains('post') || event.target.classList.contains('post_reply') || event.target.classList.contains('post_catalog')) {
+          clickMode = 'mass-post-sel-end'
+          return
+        }
+        break;
+      case 'mass-post-sel-end':
+        if (event.target.classList.contains('post') || event.target.classList.contains('post_reply') || event.target.classList.contains('post_catalog')) {
+          clickMode = 'mass-post-sel-start'
+          massSelectStartPost = null;
+          return
+        }
+        break;
     }
+    massSelectStartPost = null;
     clickMode = '';
     document.documentElement.style.cursor = 'default';
-    // Toggle the 'deletion-mode' class off all embedded file elements
     const embeddedFiles = document.querySelectorAll('.embedded-file');
     embeddedFiles.forEach(file => {
       file.classList.remove('deletion-mode');
       file.classList.remove('selection-mode');
     });
 
-    // Toggle the 'deletion-mode' class off all post elements
     const allPosts = document.querySelectorAll('.post, .post_reply, .post_catalog');
     allPosts.forEach(post => {
       post.classList.remove('deletion-mode');
@@ -64,6 +76,15 @@ function selectPost() {
   const posts = document.querySelectorAll('.post, .post_reply, .post_catalog');
   posts.forEach(post => {
       post.classList.toggle('selection-mode', clickMode === 'post-sel');
+  });
+}
+function massSelectPost() {
+  clickMode = clickMode !== 'mass-post-sel-start' ? 'mass-post-sel-start' : '';
+  document.documentElement.style.cursor = clickMode ? 'crosshair' : 'default';
+
+  const posts = document.querySelectorAll('.post, .post_reply, .post_catalog');
+  posts.forEach(post => {
+      post.classList.toggle('selection-mode', (clickMode === 'mass-post-sel-start' || clickMode === 'mass-post-sel-end'));
   });
 }
 function selectFile() {
@@ -102,6 +123,30 @@ function handlePostClick(currentBoard, hash) {
         postToSelect.classList.toggle('selected');
       }      
       break;
+    case 'mass-post-sel-start':
+      massSelectStartPost = document.getElementById(hash);
+      if (massSelectStartPost) {
+        massSelectStartPost.classList.toggle('selected');
+      }      
+      break;
+    case 'mass-post-sel-end':
+      const massSelectEndPost = document.getElementById(hash);
+      if (massSelectStartPost && massSelectEndPost) {
+        selectPostsInRange(massSelectStartPost, massSelectEndPost);
+      }    
+      break;
+  }
+}
+function selectPostsInRange(startPost, endPost) {
+  // Get all posts in document order
+  const postsToSelect = Array.from(document.querySelectorAll('.post, .post_reply, .post_catalog'));
+  const startIndex = postsToSelect.indexOf(startPost);
+  const endIndex = postsToSelect.indexOf(endPost);
+  const [lowIndex, highIndex] = startIndex < endIndex 
+    ? [startIndex, endIndex] 
+    : [endIndex, startIndex];
+  for (let i = lowIndex; i <= highIndex; i++) {
+    postsToSelect[i].classList.add('selected');
   }
 }
 function handleHashClick(hash) {
@@ -214,6 +259,10 @@ document.addEventListener("DOMContentLoaded", function() {
   const selectPostButton = document.getElementById('select-post-button');
   if (selectPostButton) {
       selectPostButton.addEventListener('click', selectPost);
+  }
+  const massSelectPostButton = document.getElementById('mass-select-post-button');
+  if (massSelectPostButton) {
+      massSelectPostButton.addEventListener('click', massSelectPost);
   }
   const selectFileButton = document.getElementById('select-file-button');
   if (selectFileButton) {
