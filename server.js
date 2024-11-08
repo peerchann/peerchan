@@ -2289,17 +2289,14 @@ async function gracefulShutdown() {
   console.log('Stopping node.');
 
   try {
-    await Promise.all([
-      clientStop(),
-      new Promise((resolve, reject) => {
+    await clientStop(),
+      await new Promise((resolve, reject) => {
         pageServer.close((err) => {
           if (err) return reject(err);
           console.log(`Stopped pageserver at ${cfg.browserHost}:${cfg.browserPort}`);
           resolve();
         });
-      })
-    ]);
-
+      });
     process.exit(0);
   } catch (error) {
     console.error('Error during shutdown:', error);
