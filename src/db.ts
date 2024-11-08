@@ -9,6 +9,7 @@ import { Documents, DocumentIndex, SearchRequest, StringMatch, IsNull, Sort, Sor
 import { webSockets } from '@libp2p/websockets'
 import { all } from '@libp2p/websockets/filters'
 import { tcp } from "@libp2p/tcp"
+import { DirectSub } from "@peerbit/pubsub"
 // import { mplex } from "@libp2p/mplex";
 import { yamux } from "@chainsafe/libp2p-yamux";
 
@@ -72,6 +73,14 @@ export async function pbInitClient (createSettings: any) {
 			connectionMonitor: {
 				enabled: false
 			},
+			services: {
+				pubsub: (components) => new DirectSub(components, {
+					connectionManager: {
+						pruner: false,
+						minConnections: 0
+						},
+						canRelayMessage: true,
+					})},
 			transports: [tcp(), webSockets({filter: all})],
 			streamMuxers: [yamux()],
 			connectionEncrypters: [noise()], // Make connections encrypted

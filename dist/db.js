@@ -6,6 +6,7 @@ import { SearchRequest, StringMatch, Sort, SortDirection } from "@peerbit/docume
 import { webSockets } from '@libp2p/websockets';
 import { all } from '@libp2p/websockets/filters';
 import { tcp } from "@libp2p/tcp";
+import { DirectSub } from "@peerbit/pubsub";
 // import { mplex } from "@libp2p/mplex";
 import { yamux } from "@chainsafe/libp2p-yamux";
 //temporarily using the slower version for compatibility
@@ -49,6 +50,15 @@ export async function pbInitClient(createSettings) {
             },
             connectionMonitor: {
                 enabled: false
+            },
+            services: {
+                pubsub: (components) => new DirectSub(components, {
+                    connectionManager: {
+                        pruner: false,
+                        minConnections: 0
+                    },
+                    canRelayMessage: true,
+                })
             },
             transports: [tcp(), webSockets({ filter: all })],
             streamMuxers: [yamux()],
