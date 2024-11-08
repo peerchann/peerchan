@@ -2285,6 +2285,28 @@ async function clientStop() {
     await db.pbStopClient()
 }
 
+async function gracefulShutdown() {
+  console.log('Stopping node.');
+
+  try {
+    await Promise.all([
+      clientStop(),
+      new Promise((resolve, reject) => {
+        pageServer.close((err) => {
+          if (err) return reject(err);
+          console.log(`Stopped pageserver at ${cfg.browserHost}:${cfg.browserPort}`);
+          resolve();
+        });
+      })
+    ]);
+
+    process.exit(0);
+  } catch (error) {
+    console.error('Error during shutdown:', error);
+    process.exit(1);
+  }
+}
+
 
 async function clientBoot(configObject) {
 
@@ -2293,14 +2315,11 @@ async function clientBoot(configObject) {
     db = await import('./dist/db.js');
 
     process.on('uncaughtException', (error) => {
-        if (error instanceof DeliveryError) {
-            console.error('A DeliveryError occurred:', error.message);
-        } else {
-            console.error('An uncaught exception occurred:', error.message);
-            console.error('Stack trace:', error.stack);
-            // process.exit(1);
-        }
+        console.error('An uncaught exception occurred:', error.message);
+        console.error('Stack trace:', error.stack);
+        // process.exit(1);
     });
+
 
     try {
 
@@ -2375,11 +2394,14 @@ async function dialBootstrapNodes() {
 
 
 // Start the Server
-app.listen(cfg.browserPort, cfg.browserHost, () => {
-    console.log(`Starting Server at ${cfg.browserHost}:${cfg.browserPort}`);
+const pageServer = app.listen(cfg.browserPort, cfg.browserHost, () => {
+    console.log(`Starting pageserver at ${cfg.browserHost}:${cfg.browserPort}`);
 });
 
 (async () => {
+
+    process.on('SIGTERM', gracefulShutdown);
+    process.on('SIGINT', gracefulShutdown);
 
     await clientBoot(cfg)
 
