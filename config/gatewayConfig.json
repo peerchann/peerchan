@@ -22,6 +22,7 @@
 		"changeConfig": false,
 		"changeGatewayConfig": false,
 		"query": false,
+		"backup": false,
 		"restartClient": false
 	},
 	"maxOverboardThreads": 10,

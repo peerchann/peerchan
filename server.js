@@ -205,6 +205,7 @@ rt['gatewayHome'] = compileFile('./views/gatewayhome.pug');
 rt['gatewayConfig'] = compileFile('./views/gatewayconfig.pug');
 rt['query'] = compileFile('./views/query.pug');
 rt['prune'] = compileFile('./views/prune.pug');
+rt['backup'] = compileFile('./views/backup.pug');
 
 //todo: consider not making the bigint into a string instead show it without quotes at least for query results
 function makeRenderSafe(inputObj) {
@@ -1178,6 +1179,10 @@ var lastOrphanReplies
 var lastOrphanFileRefs
 var lastOrphanFileChunks
 
+//Backup and restore
+var lastBackupBoards
+var lastRestoreBoards
+
 //todo: also add GET API?
 //todo: add timer
 //todo: bigint handling and stuff
@@ -1509,7 +1514,6 @@ app.post('/submitOrphanQuery', async (req, res, next) => {
     res.redirect('/prune.html')
 })
 
-//todo: add link to this somewhere
 //todo: made disabled on gateway by default (check if already is)
 app.get('/query.html', async (req, res, next) => {
     try {
@@ -1580,6 +1584,24 @@ app.get('/prune.html', async (req, res, next) => {
         res.redirect('/home.html')
     }
     console.timeEnd('buildPrunePage');
+})
+
+//todo: consider splitting permission into sep for backup and restore
+app.get('/backup.html', async (req, res, next) => {
+    try {
+        gatewayCanDo(req, 'backup')
+        const options = await standardRenderOptions(req,res)
+        options.lastBackupBoards = lastBackupBoards
+        options.lastRestoreBoards = lastRestoreBoards
+
+        const html = await rt['backup'](options)
+        res.send(html)
+    } catch (err) {
+        console.log('Failed to generate backup page.')
+        console.log(err)
+        req.session.lastError = err.message
+        res.redirect('/home.html')
+    }
 })
 
 app.get('/overboard.html', async (req, res, next) => {

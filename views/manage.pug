@@ -60,6 +60,10 @@ if checkAccess(req, ["query"])
   h2
     a(href="/query.html") Query Interface
 
+if checkAccess(req, ["backup"])
+  h2
+    a(href="/backup.html") Backup Interface
+
 if checkAccess(req, ["changeGatewayConfig"])
   h2
     a(href="/gatewayconfig.html") Gateway Configuration

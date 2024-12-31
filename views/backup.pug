@@ -1,0 +1,17 @@
+extends home.pug
+
+block title
+  title #{cfg.pageTitle} - Backup
+
+block content
+  h2 Backup Boards
+  form(action="/submitBackup" method="POST" class="config-form")
+    label(for="backupBoardIds") Comma-Separated Board IDs: &nbsp;
+    input(type="text" id="backupBoardIds" name="backupBoardIds" value=lastBackupBoards)
+    |  
+    button(type="submit", class="sidebarbutton") Backup
+  form(action="/submitRestore" method="POST" class="config-form")
+    label(for="restoreBoardIds") Comma-Separated Board IDs: &nbsp;
+    input(type="text" id="restoreBoardIds" name="restoreBoardIds" value=lastRestoreBoards)
+    |  
+    button(type="submit", class="sidebarbutton") Restore
