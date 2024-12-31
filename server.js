@@ -19,10 +19,9 @@ const app = express();
 
 const storageDir = 'storage'
 const configDir = 'config'
+const backupDir = 'backup'
 
-if (!fs.existsSync(configDir)) {
-	fs.mkdirSync(configDir, { recursive: true });
-}
+ensureDirExists(configDir)
 let db
 const localhostIps = []
 //todo: another form of authentication (for bypassing gateway mode permissions)
@@ -1602,6 +1601,91 @@ app.get('/backup.html', async (req, res, next) => {
         req.session.lastError = err.message
         res.redirect('/home.html')
     }
+})
+
+function ensureDirExists(dirName) {
+    if (!fs.existsSync(dirName)) {
+        fs.mkdirSync(dirName, { recursive: true });
+    }
+}
+
+//todo: console messages, error handling/messages
+//todo: clear existing backup(?)
+//todo: option for files only or posts only?
+//todo: more granual try catch?
+//todo: local/remote considerations?
+//todo: backup into an archive, and specific backup versioning/version handling (backup manifest)
+app.post('/submitBackup', async (req, res, next) => {
+    try {
+        gatewayCanDo(req, 'backup')
+
+        ensureDirExists(backupDir)
+
+        console.log(`Starting backup.`)
+
+        lastBackupBoards = req.body.backupBoardIds
+
+        let boardsToBackup = req.body.backupBoardIds ? req.visibleBoards.filter(b => req.body.backupBoardIds.split(',').includes(b)) : req.visibleBoards
+
+        //files are stored in their fully constructed forms with a filename like "file_<boardid>_<hash>.<extension>"
+        //posts are stored as json, with bigints converted to strings, with a filename like "post_<boardid>_<hash>.json"
+        for (let thisBoard of boardsToBackup) {
+            console.log(`Backing up /${thisBoard}/.`)
+            //save every (complete) file to the filesystem
+            const allFileRefsThisBoard = await db.getFileRefs(thisBoard)
+            for (let thisFileRef of allFileRefsThisBoard) {
+                try {
+                    const thisFileData = await db.getFile(thisFileRef.hash, thisBoard)
+                    if (!thisFileData) {
+                        throw new Error('File data was empty.')
+                    }
+                    fs.writeFileSync(`${backupDir}/file_${thisBoard}_${thisFileRef.hash}`, thisFileData);
+                } catch (thisFileErr) {
+                    console.log(`Error backing up file ${thisFileRef.hash} on /${thisBoard}/:`, thisFileErr)
+                }
+            }
+            //save every post as a json file
+            const allPostsThisBoard = await db.getPosts(thisBoard)
+            for (let thisPost of allPostsThisBoard) {
+                //convert bigints to strings and save
+                fs.writeFileSync(
+                    `${backupDir}/post_${thisBoard}_${thisPost.hash}.json`,
+                    JSON.stringify(thisPost, (key, value) => 
+                        typeof value === 'bigint' ? value.toString() : value
+                    ),
+                    'utf8'
+                );
+
+            }
+            
+        }
+        console.log(`Backup complete.`)
+    } catch (err) {
+        console.log('Failed to backup.')
+        console.log(err)
+        req.session.lastError = err.message
+    }
+    res.redirect('/backup.html')
+})
+
+app.post('/submitRestore', async (req, res, next) => {
+    try {
+        gatewayCanDo(req, 'backup')
+
+        ensureDirExists(backupDir)
+
+        lastRestoreBoards = req.body.restoreBoardIds
+
+        let boardsToRestore = req.body.restoreBoardIds ? req.visibleBoards.filter(b => req.body.restoreBoardIds.split(',').includes(b)) : req.visibleBoards
+
+        //todo: actually perform the restore
+
+    } catch (err) {
+        console.log('Failed to restore.')
+        console.log(err)
+        req.session.lastError = err.message
+    }
+    res.redirect('/backup.html')
 })
 
 app.get('/overboard.html', async (req, res, next) => {
