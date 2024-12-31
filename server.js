@@ -1611,6 +1611,7 @@ function ensureDirExists(dirName) {
 
 //todo: console messages, error handling/messages
 //todo: clear existing backup(?)
+//todo: apply these to te restore function too
 //todo: option for files only or posts only?
 //todo: more granual try catch?
 //todo: local/remote considerations?
@@ -1630,7 +1631,7 @@ app.post('/submitBackup', async (req, res, next) => {
         //files are stored in their fully constructed forms with a filename like "file_<boardid>_<hash>.<extension>"
         //posts are stored as json, with bigints converted to strings, with a filename like "post_<boardid>_<hash>.json"
         for (let thisBoard of boardsToBackup) {
-            console.log(`Backing up /${thisBoard}/.`)
+            console.log(`Backing up /${thisBoard}/...`)
             //save every (complete) file to the filesystem
             const allFileRefsThisBoard = await db.getFileRefs(thisBoard)
             for (let thisFileRef of allFileRefsThisBoard) {
@@ -1668,18 +1669,59 @@ app.post('/submitBackup', async (req, res, next) => {
     res.redirect('/backup.html')
 })
 
+//todo: handle cases where the board for the given item isnt open/watched
 app.post('/submitRestore', async (req, res, next) => {
     try {
         gatewayCanDo(req, 'backup')
 
         ensureDirExists(backupDir)
 
+        console.log(`Starting restore.`)
+
+        const dbPosts = await import('./dist/posts.js')
+
         lastRestoreBoards = req.body.restoreBoardIds
 
         let boardsToRestore = req.body.restoreBoardIds ? req.visibleBoards.filter(b => req.body.restoreBoardIds.split(',').includes(b)) : req.visibleBoards
 
-        //todo: actually perform the restore
-
+        for (const file of fs.readdirSync(backupDir)) {
+            const filePath = backupDir + '/' + file
+            if (!fs.statSync(filePath).isFile()) continue;
+            const [thisType, thisBoard, thisHash] = file.split(/[_\.]/);
+            if (!boardsToRestore.includes(thisBoard)) continue;
+            switch (thisType) {
+                case 'file':
+                    await db.putFile(
+                        fs.readFileSync(filePath),
+                        thisBoard
+                    )
+                    break;
+                case 'post':
+                    const thisPostData = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+                    const newPostDocument = new dbPosts.Post(
+                        BigInt(thisPostData.date),
+                        thisPostData.replyto,
+                        thisPostData.name,
+                        thisPostData.subject,
+                        thisPostData.email,
+                        thisPostData.message,
+                        thisPostData.files.map(f => new dbPosts.PostFile(
+                            f.hash,
+                            f.filename,
+                            f.extension,
+                            BigInt(f.size)
+                        ))
+                    )
+                    console.log(thisPostData)
+                    console.log(newPostDocument)
+                    await db.makeNewPost(
+                        newPostDocument,
+                        thisBoard
+                    )
+                    break;
+            }
+        }
+        console.log(`Restore complete.`)
     } catch (err) {
         console.log('Failed to restore.')
         console.log(err)
