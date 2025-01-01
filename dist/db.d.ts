@@ -23,7 +23,7 @@ export type OpenArgs = {
         factor: any;
     };
     existing: any;
-    compatibility: any;
+    compatibility?: any;
 };
 export declare function openPostsDb(postsDbId: string | undefined, options: any): Promise<void>;
 export declare function getBoardStats(whichBoard: string): Promise<{
