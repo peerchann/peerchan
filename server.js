@@ -841,20 +841,20 @@ app.post('/deleteSelected', async (req, res, next) => {
 });
 
 //todo: consider ways to somehow preserve the scrolled-to location or at least the #div link of the url if feasible
-app.get('/function/toggleSidebar', async (req, res, next) => {
+app.post('/function/toggleSidebar', async (req, res, next) => {
   try {
-    if (req.session.hideSidebar) {
-        req.session.hideSidebar = false
+    req.session.hideSidebar = !req.session.hideSidebar
+    if (req.body.noRedirect) {
+      res.json({ success: true, hideSidebar: req.session.hideSidebar });
     } else {
-        req.session.hideSidebar = true
+      res.redirect(req.headers.referer);
     }
   } catch (err) {
-        console.log('Error toggling sidebar visibility:', err);
-        req.session.lastError = err.message
+    console.log('Error toggling sidebar visibility:', err);
+    req.session.lastError = err.message;
+    res.redirect(req.headers.referer);
   }
-  res.redirect(req.headers.referer);
 });
-
 
 const moderators = loadModerators()
 

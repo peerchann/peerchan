@@ -164,7 +164,9 @@ function deleteSelected(alsoDeleteFilesEvenIfNotSelected) {
     files: {},
     recursiveFileDelete: alsoDeleteFilesEvenIfNotSelected
   };
+function showHideSidebar() {
 
+}
   // Helper function to add hashes to the correct board
   function addHashToBoard(obj, board, hash) {
     if (!obj[board]) {
@@ -285,6 +287,34 @@ document.addEventListener("DOMContentLoaded", function() {
       cssThemeSelector.addEventListener('change', changeTheme);
   }
   document.documentElement.addEventListener('click', exitClickModeOnce);
+  const toggleSidebarButton = document.getElementById('toggleSidebar');
+  if (toggleSidebarButton) {
+    toggleSidebarButton.addEventListener('click', function(event) {
+      event.preventDefault();
+
+      const sidebarContent = document.getElementById('sidebarContent');
+      
+      if (sidebarContent.hasAttribute('hidden')) {
+        sidebarContent.removeAttribute('hidden')
+        toggleSidebarButton.textContent = '»';
+      } else {
+        sidebarContent.setAttribute('hidden', true);
+        toggleSidebarButton.textContent = '«'; 
+      }
+      fetch('/function/toggleSidebar', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          noRedirect: true,
+        })
+      })
+      .then(response => response.json())
+      .catch(error => console.error('Error updating sidebar visibility:', error));
+    });
+  }
+
 });
 
 
