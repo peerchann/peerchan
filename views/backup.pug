@@ -10,6 +10,7 @@ block content
     input(type="text" id="backupBoardIds" name="backupBoardIds" value=lastBackupBoards)
     |  
     button(type="submit", class="sidebarbutton") Backup
+  h2 Restore Boards
   form(action="/submitRestore" method="POST" class="config-form")
     label(for="restoreBoardIds") Comma-Separated Board IDs: &nbsp;
     input(type="text" id="restoreBoardIds" name="restoreBoardIds" value=lastRestoreBoards)
