@@ -11,7 +11,7 @@ Runs a [Peerbit](https://github.com/dao-xyz/peerbit) node and serves pages to yo
 Node.js (at least v20.18.0) and a package manager like yarn (reccomended) or npm (comes with Node.js).
 
 ## License
-GNU AGPLv3, see [LICENSE](LICENSE).
+GNU GPLv3, see [LICENSE](LICENSE).
 
 ## Installation
 To install dependencies:
