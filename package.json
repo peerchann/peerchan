@@ -9,7 +9,7 @@
     "build": "node -e \"fs.rmSync('node_modules', { recursive: true, force: true }); fs.rmSync('yarn.lock', { force: true });\" && yarn install"
   },
   "author": "threshold",
-  "license": "AGPL-3.0-only",
+  "license": "GPL-3.0-only",
   "dependencies": {
     "@peerbit/document": "^7.1.16",
     "express": "^4.18.2",
