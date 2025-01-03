@@ -32,7 +32,7 @@ export class BasePostDocument {
 let PostFile = class PostFile {
     // @field({type: option('bool')})
     // spoiler?: boolean
-    hash;
+    postfilehash;
     filename;
     // @field({type: 'string'})
     // originalFilename: string
@@ -58,7 +58,7 @@ let PostFile = class PostFile {
     constructor(hash, filename, extension, size) {
         // constructor(spoiler: boolean, hash: string, filename: string, originalFilename: string, mimetype: string, size: bigint, extension: string, sizeString: string, thumbextension: string, thumbhash: string, geometry: JschanPostFileGeometry, geometryString: string, hasThumb: boolean, attachment: boolean) {
         // this.spoiler = spoiler
-        this.hash = hash;
+        this.postfilehash = hash;
         this.filename = filename;
         // this.originalFilename = originalFilename
         // this.mimetype = mimetype
@@ -75,7 +75,7 @@ let PostFile = class PostFile {
 };
 __decorate([
     field({ type: 'string' })
-], PostFile.prototype, "hash", void 0);
+], PostFile.prototype, "postfilehash", void 0);
 __decorate([
     field({ type: 'string' })
 ], PostFile.prototype, "filename", void 0);

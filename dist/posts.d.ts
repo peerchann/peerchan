@@ -5,7 +5,7 @@ import { FileDatabase } from './files.js';
 export declare class BasePostDocument {
 }
 export declare class PostFile {
-    hash: string;
+    postfilehash: string;
     filename: string;
     extension?: string;
     size: bigint;

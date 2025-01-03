@@ -42,7 +42,7 @@ export class PostFile {
 	// @field({type: option('bool')})
 	// spoiler?: boolean
 	@field({type: 'string'})
-	hash: string
+	postfilehash: string
 	@field({type: 'string'})
 	filename: string
 	// @field({type: 'string'})
@@ -73,7 +73,7 @@ export class PostFile {
 
 	// constructor(spoiler: boolean, hash: string, filename: string, originalFilename: string, mimetype: string, size: bigint, extension: string, sizeString: string, thumbextension: string, thumbhash: string, geometry: JschanPostFileGeometry, geometryString: string, hasThumb: boolean, attachment: boolean) {
 		// this.spoiler = spoiler
-		this.hash = hash
+		this.postfilehash = hash
 		this.filename = filename
 		// this.originalFilename = originalFilename
 		// this.mimetype = mimetype

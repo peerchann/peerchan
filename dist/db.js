@@ -91,7 +91,7 @@ export async function openPostsDb(postsDbId = "my_post_db", options) {
                         factor: options.replicationFactor
                     },
                     existing: "reuse",
-                    compatibility: 6
+                    // compatibility: 6
                 },
             });
         }
@@ -102,7 +102,7 @@ export async function openPostsDb(postsDbId = "my_post_db", options) {
                         factor: options.replicationFactor
                     },
                     existing: "reuse",
-                    compatibility: 6
+                    // compatibility: 6
                 },
             });
         }
@@ -113,7 +113,7 @@ export async function openPostsDb(postsDbId = "my_post_db", options) {
                         factor: options.replicationFactor
                     },
                     existing: "reuse",
-                    compatibility: 6
+                    // compatibility: 6
                 },
             });
         }
@@ -123,7 +123,7 @@ export async function openPostsDb(postsDbId = "my_post_db", options) {
             await client.open(openedBoards[postsDbId].fileDb.chunks, {
                 args: {
                     existing: "reuse",
-                    compatibility: 6
+                    // compatibility: 6	
                 }
             });
         }
@@ -131,7 +131,7 @@ export async function openPostsDb(postsDbId = "my_post_db", options) {
             await client.open(openedBoards[postsDbId].fileDb, {
                 args: {
                     existing: "reuse",
-                    compatibility: 6
+                    // compatibility: 6	
                 }
             });
         }
@@ -139,7 +139,7 @@ export async function openPostsDb(postsDbId = "my_post_db", options) {
             await client.open(openedBoards[postsDbId], {
                 args: {
                     existing: "reuse",
-                    compatibility: 6
+                    // compatibility: 6	
                 }
             });
         }
@@ -202,7 +202,7 @@ export async function openFilesDb(filesDbId = "", options) {
                     factor: options.replicationFactor
                 },
                 existing: 'reuse',
-                compatibility: 6
+                // compatibility: 6
             }
         });
         await client.open(Files, {
@@ -211,7 +211,7 @@ export async function openFilesDb(filesDbId = "", options) {
                     factor: options.replicationFactor
                 },
                 existing: 'reuse',
-                compatibility: 6
+                // compatibility: 6
             }
         });
     }
@@ -219,13 +219,13 @@ export async function openFilesDb(filesDbId = "", options) {
         await client.open(Files.chunks, {
             args: {
                 existing: "reuse",
-                compatibility: 6
+                // compatibility: 6	
             }
         });
         await client.open(Files, {
             args: {
                 existing: "reuse",
-                compatibility: 6
+                // compatibility: 6	
             }
         });
     }
