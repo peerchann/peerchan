@@ -98,4 +98,9 @@ form(action="/updateConfig" method="POST" class="config-form")
         label(for="postHashLength") Post hash length
       td
         input(type="number" id="postHashLength" name="postHashLength" value=cfg.postHashLength)
+    tr
+      td
+        label(for="bootstrapOnStartup") Bootstrap on startup
+      td
+        input(type="checkbox" id="bootstrapOnStartup" name="bootstrapOnStartup" checked=cfg.bootstrapOnStartup)
   button(type="submit", class="sidebarbutton") Update Configuration

@@ -33,7 +33,6 @@ setMaxListeners(Infinity)
 //todo: automatically fix configs with missing fields
 function loadConfig() {
     const configFile = configDir+'/config.json';
-    
     try {
         const defaultConfig = JSON.parse(fs.readFileSync(configDir+'/configDefault.json', 'utf8'));
         if (fs.existsSync(configFile)) {
@@ -2024,6 +2023,7 @@ app.post('/updateConfig', upload.any(), async (req, res, next) => {
                 case 'remoteQueryPosts':
                 case 'remoteQueryFileRefs':
                 case 'remoteQueryFileChunks':
+                case 'bootstrapOnStartup':
                     cfg[thisKey] = req.body[thisKey] === 'on'
                     continue
                 case 'defaultTheme':
@@ -2424,7 +2424,9 @@ const eventListeners = {};
 
 async function clientReboot(cfg) {
     await clientStop()
+    cfg = loadConfig()
     await clientBoot(cfg)
+    dialBootstrapNodes() //don't await this
 }
 
 
@@ -2437,14 +2439,18 @@ async function gracefulShutdown() {
   console.log('Stopping node.');
 
   try {
-    await clientStop(),
-      await new Promise((resolve, reject) => {
+    await clientStop();
+    await new Promise((resolve, reject) => {
         pageServer.close((err) => {
-          if (err) return reject(err);
-          console.log(`Stopped pageserver at ${cfg.browserHost}:${cfg.browserPort}`);
-          resolve();
+            if (err) {
+                console.log(`Error stopping pageserver at ${cfg.browserHost}:${cfg.browserPort}:`, err);
+                reject(err);
+            } else {
+                console.log(`Stopped pageserver at ${cfg.browserHost}:${cfg.browserPort}`);
+                resolve();
+            }
         });
-      });
+    });
     process.exit(0);
   } catch (error) {
     console.error('Error during shutdown:', error);
