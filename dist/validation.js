@@ -44,7 +44,7 @@ const Validate = {
             throw new Error(`File count exceeded maximum of ${vConf["post"]["files"].maxFiles}.`);
         }
         for (let inpFile of inp.files) {
-            if (inpFile.hash.length != vConf["post"]["files"].hashLength) {
+            if (inpFile.postfilehash.length != vConf["post"]["files"].hashLength) {
                 throw new Error(`${inpFile.filename} hash was not ${vConf["post"]["files"].hashLength}.`);
             }
             if (inpFile.filename.length > vConf["post"]["files"]["fileName"].maxLength) {

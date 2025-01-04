@@ -225,9 +225,9 @@ function makeRenderSafe(inputObj) {
 async function addFileStatuses(inputObj = {}, whichBoard) {
     let fileStatusChecks = []
     const processFile = async (thisFile, board) => {
-        thisFile.fileStatus = await db.fileExists(thisFile.hash, board)
+        thisFile.fileStatus = await db.fileExists(thisFile.postfilehash, board)
         if (cfg.queryFromPanBoardFilesDbIfFileNotFound && !thisFile.fileStatus) {
-            thisFile.fileStatus = await db.fileExists(thisFile.hash, '')
+            thisFile.fileStatus = await db.fileExists(thisFile.postfilehash, '')
         }
     }
     const processObject = async (obj, board) => {
@@ -805,7 +805,7 @@ app.post('/deleteSelected', async (req, res, next) => {
                         if (thisPost.length) {
                             for (let thisPostFile of thisPost[0].files) {
                                 try {
-                                    await db.delFile(thisPostFile.hash, thisBoard, cfg.deleteFileRandomKey)
+                                    await db.delFile(thisPostFile.postfilehash, thisBoard, cfg.deleteFileRandomKey)
                                 } catch (delPostFileErr) {
                                     console.log(`Failed to delete file ${thisHash} from /${thisBoard}/:`, delPostFileErr)
                                 }
@@ -1385,7 +1385,7 @@ async function getOrphans(boardsToQuery) {
                 allPostsThisBoard.forEach(post => {
                     if (!allOrphanReplyHashesByBoard[board].has(post.hash)) {
                         post.files.forEach(file => {
-                            referencedFiles.add(file.hash);
+                            referencedFiles.add(file.postfilehash);
                         });
                     }
                 });
@@ -1705,7 +1705,7 @@ app.post('/submitRestore', async (req, res, next) => {
                         thisPostData.email,
                         thisPostData.message,
                         thisPostData.files.map(f => new dbPosts.PostFile(
-                            f.hash,
+                            f.postfilehash || f.hash, //f.hash is legacy behavior, could be handled more robustly with explicit backup versioning/backup manifests
                             f.filename,
                             f.extension,
                             BigInt(f.size)
