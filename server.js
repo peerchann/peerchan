@@ -20,6 +20,7 @@ const app = express();
 const storageDir = 'storage'
 const configDir = 'config'
 const backupDir = 'backup'
+const pluginDir = 'plugins'
 
 ensureDirExists(configDir)
 let db
@@ -27,8 +28,11 @@ const localhostIps = []
 //todo: another form of authentication (for bypassing gateway mode permissions)
 // const localhostIps = ['127.0.0.1', '::1']
 
-import { setMaxListeners } from 'events'
+import { setMaxListeners, EventEmitter } from 'events'
 setMaxListeners(Infinity)
+
+//used for plugins
+const eventBus = new EventEmitter();
 
 //todo: automatically fix configs with missing fields
 function loadConfig() {
@@ -734,16 +738,16 @@ app.get('/function/removeGatewayBoard/:board', async (req, res, next) => {
   }
 });
 
-app.get('/function/eventListeners', async (req, res, next) => {
-  try {
-        gatewayCanDo(req, 'seeAllBoards')
-        console.log(eventListeners)
-        res.json(eventListeners)
-  } catch (err) {
-        req.session.lastError = err.message
-        res.send('Error viewing event listeners:', err);
-  }
-});
+// app.get('/function/eventListeners', async (req, res, next) => {
+//   try {
+//         gatewayCanDo(req, 'seeAllBoards')
+//         console.log(eventListeners)
+//         res.json(eventListeners)
+//   } catch (err) {
+//         req.session.lastError = err.message
+//         res.send('Error viewing event listeners:', err);
+//   }
+// });
 
 //todo: consolidate duplicated functionality
 app.post('/addGatewayBoard', upload.any(), async (req, res, next) => {
@@ -1964,7 +1968,11 @@ app.post('/submit', upload.any(), async (req, res, next) => {
     	const Validate = await import('./dist/validation.js')
     	Validate.default.post(newPost)
         
+        eventBus.emit('newPostPre', { post: newPost, board: req.body.whichBoard });
+
         await db.makeNewPost(newPost, req.body.whichBoard, cfg.postPostRandomKey)            
+
+        eventBus.emit('newPostAfter', { post: newPost, board: req.body.whichBoard });
 
     	// await db.makeNewPost({
     	//   date:  BigInt(Date.now()),
@@ -2376,51 +2384,58 @@ async function openBoardDbs (board) {
 
 async function closeBoardDbs (board) {
     await db.closePostsDb(board)
-    await removeEventListeners(board)
+    // await removeEventListeners(board)
 }
 
 async function dropBoardDbs (board) {
     await db.dropPostsDb(board)
-    await removeEventListeners(board)
+    // await removeEventListeners(board)
 }
 
-
-//add event listeners
+// Add event listeners
 function addEventListeners(board) {
-    const eventTriggersPath = `./${configDir}/events.js`
-    import(eventTriggersPath).then(EventTriggers => {
-        const whichBoard = db.openedBoards[board]
-
-        // Store and add event handler functions
-        eventListeners[board] = {
-            posts: (event) => EventTriggers.default.onChange(event, board),
-            fileRefs: (event) => EventTriggers.default.onChange(event, board),
-            fileChunks: (event) => EventTriggers.default.onChange(event, board),
-        };
-
-        whichBoard.documents.events.addEventListener("change", eventListeners[board].posts)
-        whichBoard.fileDb.documents.events.addEventListener("change", eventListeners[board].fileRefs)
-        whichBoard.fileDb.chunks.documents.events.addEventListener("change", eventListeners[board].fileChunks)
-    })
-}
-
-//remove event listeners
-function removeEventListeners(board) {
     const whichBoard = db.openedBoards[board];
-    const handlers = eventListeners[board];
 
-    if (handlers) {
-        whichBoard.documents.events.removeEventListener("change", handlers.posts);
-        whichBoard.fileDb.documents.events.removeEventListener("change", handlers.fileRefs);
-        whichBoard.fileDb.chunks.documents.events.removeEventListener("change", handlers.fileChunks);
-        delete eventListeners[board];
-    } else {
-        console.log(`No event listeners to delete for /${board}/`);
-    }
+    //evoked when a new post is attempted via /submit, after the validation step
+    eventBus.on('newPostPre', (event) => {
+        for (const pluginName in plugins) {
+            const plugin = plugins[pluginName];
+            plugin.module.newPostPre(event, event.board); 
+        }
+    });
+
+    //evoked after a new post is successfully made via /submit
+    eventBus.on('newPostAfter', (event) => {
+        for (const pluginName in plugins) {
+            const plugin = plugins[pluginName];
+            plugin.module.newPostAfter(event, event.board); 
+        }
+    });
+
+    //evoked when the local copy of a board is updated
+    const boardUpdateHandler = (event) => {
+        for (const pluginName in plugins) {
+            const plugin = plugins[pluginName];
+            plugin.module.onChange(event, board);
+        }
+    };
+    whichBoard.documents.events.addEventListener("change", boardUpdateHandler);
+    whichBoard.fileDb.documents.events.addEventListener("change", boardUpdateHandler);
+    whichBoard.fileDb.chunks.documents.events.addEventListener("change", boardUpdateHandler);
 }
 
-//store references to event listeners so they can be deleted upon board closing
-const eventListeners = {};
+// //remove event listeners
+// function removeEventListeners(board) {
+//     const whichBoard = db.openedBoards[board];
+//     whichBoard.documents.events.removeEventListener("change", globalEventHandler);
+//     whichBoard.fileDb.documents.events.removeEventListener("change", globalEventHandler);
+//     whichBoard.fileDb.chunks.documents.events.removeEventListener("change", globalEventHandler);
+//     console.log(`Event listeners removed for board: ${board}`);
+// }
+
+// this can probably be handled fine by the engine
+// //store references to event listeners so they can be deleted upon board closing
+// const eventListeners = {};
 
 async function clientReboot(cfg) {
     await clientStop()
@@ -2542,7 +2557,37 @@ async function dialBootstrapNodes() {
     }
 }
 
+const plugins = {}
 
+async function loadPlugins() {
+    console.log('Loading plugins...')
+    try {
+        const pluginFolders = fs.readdirSync(pluginDir, { withFileTypes: true })
+        for (const pluginFolder of pluginFolders) {
+            // Ensure we only process directories
+            if (pluginFolder.isDirectory()) {
+                const pluginPath = `${pluginDir}/${pluginFolder.name}`
+                try {
+                    const manifestPath = `${pluginPath}/manifest.json`
+                    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+                    const pluginModule = await import(`./${pluginPath}/main.js`);
+                    plugins[manifest.name] = {
+                        manifest,
+                        module: pluginModule.default,
+                    };
+                    console.log(`Loaded plugin: ${manifest.name}`);
+                } catch (err) {
+                    console.error(`Failed to load plugin in folder: ${pluginFolder.name}`);
+                    console.error(err);
+                }
+            }
+        }
+    } catch (err) {
+        console.error('Failed to read plugins directory.');
+        console.error(err);
+    }
+    console.log('Plugins loaded.')
+}
 
 // Start the Server
 const pageServer = app.listen(cfg.browserPort, cfg.browserHost, () => {
@@ -2553,6 +2598,8 @@ const pageServer = app.listen(cfg.browserPort, cfg.browserHost, () => {
 
     process.on('SIGTERM', gracefulShutdown);
     process.on('SIGINT', gracefulShutdown);
+
+    await loadPlugins()
 
     await clientBoot(cfg)
 

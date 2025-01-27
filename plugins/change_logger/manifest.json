@@ -1,0 +1,4 @@
+{
+	"name": "Database Change Logger",
+	"description": "This plugin logs local database changes in the console."
+}
