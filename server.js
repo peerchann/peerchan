@@ -2392,25 +2392,9 @@ async function dropBoardDbs (board) {
     // await removeEventListeners(board)
 }
 
-// Add event listeners
+// other event handlers are handled in loadPlugins()
 function addEventListeners(board) {
     const whichBoard = db.openedBoards[board];
-
-    //evoked when a new post is attempted via /submit, after the validation step
-    eventBus.on('newPostPre', (event) => {
-        for (const pluginName in plugins) {
-            const plugin = plugins[pluginName];
-            plugin.module.newPostPre(event, event.board); 
-        }
-    });
-
-    //evoked after a new post is successfully made via /submit
-    eventBus.on('newPostAfter', (event) => {
-        for (const pluginName in plugins) {
-            const plugin = plugins[pluginName];
-            plugin.module.newPostAfter(event, event.board); 
-        }
-    });
 
     //evoked when the local copy of a board is updated
     const boardUpdateHandler = (event) => {
@@ -2586,6 +2570,32 @@ async function loadPlugins() {
         console.error('Failed to read plugins directory.');
         console.error(err);
     }
+
+    //now instantiate the event listeners
+    try {
+        //evoked when a new post is attempted via /submit, after the validation step
+        eventBus.on('newPostPre', (event) => {
+            console.log('newPostPre triggered');
+            for (const pluginName in plugins) {
+                const plugin = plugins[pluginName];
+                plugin.module?.newPostPre(event, event.board); 
+            }
+        });
+
+        //evoked after a new post is successfully made via /submit
+        eventBus.on('newPostAfter', (event) => {
+            for (const pluginName in plugins) {
+                const plugin = plugins[pluginName];
+                plugin.module?.newPostAfter(event, event.board); 
+            }
+        });
+    } catch (err) {
+        console.error('Failed to instantiate plugin event listeners.')
+        console.error(err)
+    }
+
+
+
     console.log('Plugins loaded.')
 }
 
