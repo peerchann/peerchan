@@ -1,5 +1,6 @@
 {
 	"multiAddrs": [
+		"/dns4/peerchan.net/tcp/8111/wss/p2p/12D3KooWDN1wcX2haVFrgWHsQ4Wyj9pWetakkRzevPUxJ4SqmsGA",
 		"/dns4/fa1d122538a82ca185415fd123e5c39acdb6ee50.peerchecker.com/tcp/4003/wss/p2p/12D3KooWQ1cExXF89WwmnqB9zbwdwbyRp35zf1zBY9nEJPwwXEPz"
 	]
 }
